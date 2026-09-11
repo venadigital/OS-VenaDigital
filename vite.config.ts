@@ -1,4 +1,5 @@
 /// <reference types="vitest/config" />
+import { fileURLToPath, URL } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
@@ -41,6 +42,9 @@ export default defineConfig({
       },
     }),
   ],
+  resolve: {
+    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+  },
   // Excalidraw reads process.env.IS_PREACT to choose its build.
   define: { 'process.env.IS_PREACT': JSON.stringify('false') },
   build: { chunkSizeWarningLimit: 4000 },
