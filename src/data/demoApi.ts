@@ -258,6 +258,7 @@ const later = <T>(v: T) => new Promise<T>((r) => setTimeout(() => r(v), 60));
 
 export function createDemoApi(): Api {
   const s = seed(new Date());
+  const boardFiles = new Map<string, Blob>(); // "<board id>/<file id>"
   const timerListeners = new Set<() => void>();
   const notifyTimer = () => timerListeners.forEach((fn) => fn());
 
@@ -408,7 +409,18 @@ export function createDemoApi(): Api {
     },
     async deleteBoard(id) {
       s.boards = s.boards.filter((b) => b.id !== id);
+      for (const key of [...boardFiles.keys()]) if (key.startsWith(`${id}/`)) boardFiles.delete(key);
       return later(undefined);
+    },
+    async uploadBoardFile(boardId, fileId, data) {
+      boardFiles.set(`${boardId}/${fileId}`, data);
+      return later(undefined);
+    },
+    async boardFiles(boardId, fileIds) {
+      return later(fileIds.flatMap((id) => {
+        const data = boardFiles.get(`${boardId}/${id}`);
+        return data ? [{ id, data }] : [];
+      }));
     },
 
     // ---------- Consumo IA ----------

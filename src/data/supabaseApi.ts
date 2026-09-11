@@ -24,6 +24,13 @@ function check<T>(res: { data: T | null; error: { message: string } | null }): T
 const num = (v: unknown) => (typeof v === 'number' ? v : Number(v ?? 0));
 
 export function createSupabaseApi(sb: SupabaseClient): Api {
+  const userId = async () => {
+    const { data } = await sb.auth.getUser();
+    if (!data.user) throw new Error('Sesión expirada');
+    return data.user.id;
+  };
+  const boardFolder = async (boardId: string) => `${await userId()}/${boardId}`;
+
   return {
     mode: 'supabase',
 
@@ -109,10 +116,8 @@ export function createSupabaseApi(sb: SupabaseClient): Api {
       return (res.data ?? {}) as LinkPreview;
     },
     async uploadNoteImage(file) {
-      const { data: auth } = await sb.auth.getUser();
-      if (!auth.user) throw new Error('Sesión expirada');
       const ext = (file.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
-      const path = `${auth.user.id}/${crypto.randomUUID()}.${ext}`;
+      const path = `${await userId()}/${crypto.randomUUID()}.${ext}`;
       const res = await sb.storage.from('notes').upload(path, file, { contentType: file.type, upsert: false });
       if (res.error) throw new Error(res.error.message);
       return path;
@@ -143,6 +148,31 @@ export function createSupabaseApi(sb: SupabaseClient): Api {
     },
     async deleteBoard(id) {
       check(await sb.from('boards').delete().eq('id', id));
+      // Its images too; a leftover file is harmless, so this never fails the delete.
+      try {
+        const folder = await boardFolder(id);
+        const { data } = await sb.storage.from('boards').list(folder, { limit: 1000 });
+        if (data?.length) await sb.storage.from('boards').remove(data.map((f) => `${folder}/${f.name}`));
+      } catch {
+        // keep the delete
+      }
+    },
+    async uploadBoardFile(boardId, fileId, data) {
+      const path = `${await boardFolder(boardId)}/${fileId}`;
+      const res = await sb.storage.from('boards').upload(path, data, { contentType: data.type, upsert: false });
+      // Excalidraw names files by their content, so an existing one is the same image.
+      if (res.error && !/already exists|duplicate/i.test(res.error.message)) throw new Error(res.error.message);
+    },
+    async boardFiles(boardId, fileIds) {
+      if (!fileIds.length) return [];
+      const folder = await boardFolder(boardId);
+      const found = await Promise.all(
+        fileIds.map(async (id) => {
+          const res = await sb.storage.from('boards').download(`${folder}/${id}`);
+          return res.data ? [{ id, data: res.data }] : [];
+        }),
+      );
+      return found.flat();
     },
 
     // ---------- Consumo IA ----------

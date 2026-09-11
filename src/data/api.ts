@@ -57,6 +57,10 @@ export interface Api {
   createBoard(name: string): Promise<BoardSummary>;
   updateBoard(id: string, patch: { name?: string; scene?: BoardScene; thumbnail?: string | null }): Promise<void>;
   deleteBoard(id: string): Promise<void>;
+  /** Images placed on a board live apart from the scene, one per Excalidraw file id. */
+  uploadBoardFile(boardId: string, fileId: string, data: Blob): Promise<void>;
+  /** The requested images that exist; missing ones are left out. */
+  boardFiles(boardId: string, fileIds: string[]): Promise<{ id: string; data: Blob }[]>;
 
   // Consumo IA
   /** Rows with fromDay <= day < toDay (yyyy-mm-dd). */

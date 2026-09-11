@@ -30,6 +30,9 @@ const SUPABASE_STUBS = `
   create function storage.foldername(name text) returns text[] language sql immutable as $$
     select (string_to_array(name, '/'))[1:array_length(string_to_array(name, '/'), 1) - 1]
   $$;
+  grant usage on schema storage to authenticated;
+  grant select, insert, delete on storage.objects to authenticated;
+  grant execute on function storage.foldername(text) to authenticated;
 
   create schema extensions;
   create type extensions.http_response as (status integer, content_type varchar, headers text[], content varchar);
@@ -215,6 +218,26 @@ describe('notas', () => {
     expect(internal.rows[0].link_preview).toEqual({ site: 'localhost' });
     await expect(
       as(null, 'anon', () => db.query(`select public.link_preview('https://supabase.com')`)),
+    ).rejects.toThrow();
+  });
+});
+
+describe('tableros', () => {
+  it('keeps board images in a private bucket, one folder per user', async () => {
+    const bucket = await db.query(`select public from storage.buckets where id = 'boards'`);
+    expect(bucket.rows).toEqual([{ public: false }]);
+
+    const path = `${USER_A}/board-1/3cebd7720911620a3938ce77243696149da03861`;
+    await as(USER_A, 'authenticated', () => db.query(`insert into storage.objects (bucket_id, name) values ('boards', $1)`, [path]));
+    const mine = await as(USER_A, 'authenticated', () => db.query(`select name from storage.objects where bucket_id = 'boards'`));
+    expect(mine.rows).toEqual([{ name: path }]);
+
+    const other = await as(USER_B, 'authenticated', () => db.query(`select name from storage.objects where bucket_id = 'boards'`));
+    expect(other.rows).toHaveLength(0);
+    await expect(
+      as(USER_B, 'authenticated', () =>
+        db.query(`insert into storage.objects (bucket_id, name) values ('boards', $1)`, [`${USER_A}/board-1/intruso`]),
+      ),
     ).rejects.toThrow();
   });
 });

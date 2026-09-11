@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Check, ChevronLeft, Download, LoaderCircle, Shapes, Trash2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { convertToExcalidrawElements, Excalidraw, exportToBlob, getSceneVersion, serializeAsJSON } from '@excalidraw/excalidraw';
-import type { AppState, BinaryFiles, ExcalidrawImperativeAPI, ExcalidrawProps } from '@excalidraw/excalidraw/types';
+import type { AppState, BinaryFileData, BinaryFiles, ExcalidrawImperativeAPI, ExcalidrawProps } from '@excalidraw/excalidraw/types';
 import '@excalidraw/excalidraw/index.css';
 import { useApi } from '@/data/ApiContext';
 import { qk, useBoard } from '@/data/hooks';
@@ -25,6 +25,15 @@ function blobToDataUrl(blob: Blob): Promise<string> {
     r.onerror = () => reject(r.error);
     r.readAsDataURL(blob);
   });
+}
+
+/** Ids of the images (Excalidraw files) placed on the board. */
+function usedFileIds(elements: readonly unknown[]): string[] {
+  const ids = new Set<string>();
+  for (const e of elements as { type?: string; isDeleted?: boolean; fileId?: string | null }[]) {
+    if (e.type === 'image' && e.fileId && !e.isDeleted) ids.add(e.fileId);
+  }
+  return [...ids];
 }
 
 export default function BoardEditor() {
@@ -57,11 +66,17 @@ function Editor({ id, name: initialName, scene }: { id: string; name: string; sc
   const [params] = useSearchParams();
   const [name, setName] = useState(initialName);
   const [status, setStatus] = useState<Status>('idle');
-  const excali = useRef<ExcalidrawImperativeAPI | null>(null);
+  const [canvas, setCanvas] = useState<ExcalidrawImperativeAPI | null>(null);
   const lastVersion = useRef<number>(-1);
-  const pending = useRef<{ elements: Elements; appState: AppState; files: BinaryFiles } | null>(null);
+  const pending = useRef<{ elements: Elements; appState: AppState } | null>(null);
+  const saving = useRef<Promise<void>>(Promise.resolve());
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastThumb = useRef(0);
+  // Images are stored apart from the scene: what the canvas holds, which ones are already
+  // stored, and whether the saved ones are loaded (thumbnails wait for them).
+  const files = useRef<BinaryFiles>({});
+  const storedFiles = useRef(new Set<string>());
+  const filesLoaded = useRef(false);
   const nameRef = useRef<HTMLInputElement>(null);
   const { theme } = useTheme();
 
@@ -82,6 +97,35 @@ function Editor({ id, name: initialName, scene }: { id: string; name: string; sc
     }
   }, [params]);
 
+  // Bring the board's saved images; the canvas shows placeholders until they arrive.
+  useEffect(() => {
+    if (!canvas) return;
+    const ids = usedFileIds(initialData.elements).filter((f) => !(f in initialData.files));
+    if (!ids.length) {
+      filesLoaded.current = true;
+      return;
+    }
+    let alive = true;
+    api
+      .boardFiles(id, ids)
+      .then((found) =>
+        Promise.all(
+          found.map(async (f) => ({ id: f.id, mimeType: f.data.type, dataURL: await blobToDataUrl(f.data), created: Date.now() }) as BinaryFileData),
+        ),
+      )
+      .then((loaded) => {
+        loaded.forEach((f) => storedFiles.current.add(f.id));
+        if (alive && loaded.length) canvas.addFiles(loaded);
+      })
+      .catch(() => undefined) // placeholders stay; opening the board again retries
+      .finally(() => {
+        filesLoaded.current = true;
+      });
+    return () => {
+      alive = false;
+    };
+  }, [api, canvas, id, initialData]);
+
   const makeThumbnail = useCallback(async (elements: Elements, appState: AppState, files: BinaryFiles) => {
     const visible = elements.filter((e) => !e.isDeleted);
     if (!visible.length) return null;
@@ -97,20 +141,28 @@ function Editor({ id, name: initialName, scene }: { id: string; name: string; sc
     return blobToDataUrl(blob);
   }, []);
 
-  const flush = useCallback(
-    async (withThumbnail = false) => {
+  const save = useCallback(
+    async (withThumbnail: boolean) => {
       const p = pending.current;
       if (!p) return;
       pending.current = null;
       setStatus('saving');
       try {
-        const json = JSON.parse(serializeAsJSON(p.elements, p.appState, p.files, 'database')) as BoardScene & { type?: string };
+        // New images first, once each, so a saved scene never points at an image that is not stored.
+        for (const fileId of usedFileIds(p.elements)) {
+          const file = files.current[fileId];
+          if (!file || storedFiles.current.has(fileId)) continue;
+          await api.uploadBoardFile(id, fileId, await (await fetch(file.dataURL)).blob());
+          storedFiles.current.add(fileId);
+        }
+        // 'database' keeps the images out of the scene JSON.
+        const json = JSON.parse(serializeAsJSON(p.elements, p.appState, {}, 'database')) as BoardScene & { type?: string };
         const patch: { scene: BoardScene; thumbnail?: string | null } = {
-          scene: { elements: json.elements, appState: json.appState, files: json.files },
+          scene: { elements: json.elements, appState: json.appState },
         };
-        if (withThumbnail || Date.now() - lastThumb.current > THUMB_EVERY) {
+        if (filesLoaded.current && (withThumbnail || Date.now() - lastThumb.current > THUMB_EVERY)) {
           lastThumb.current = Date.now();
-          patch.thumbnail = await makeThumbnail(p.elements, p.appState, p.files).catch(() => undefined);
+          patch.thumbnail = await makeThumbnail(p.elements, p.appState, files.current).catch(() => undefined);
           if (patch.thumbnail === undefined) delete patch.thumbnail;
         }
         await api.updateBoard(id, patch);
@@ -125,8 +177,18 @@ function Editor({ id, name: initialName, scene }: { id: string; name: string; sc
     [api, id, makeThumbnail, qc, toast],
   );
 
+  // One save at a time and in order: uploading an image can take a while on the phone.
+  const flush = useCallback(
+    (withThumbnail = false) => {
+      saving.current = saving.current.then(() => save(withThumbnail));
+      return saving.current;
+    },
+    [save],
+  );
+
   const onChange = useCallback<NonNullable<ExcalidrawProps['onChange']>>(
-    (elements, appState, files) => {
+    (elements, appState, canvasFiles) => {
+      files.current = canvasFiles; // kept here: the canvas empties its own copy when it closes
       const version = getSceneVersion(elements);
       if (lastVersion.current === -1) {
         lastVersion.current = version; // initial render is not a change
@@ -134,7 +196,7 @@ function Editor({ id, name: initialName, scene }: { id: string; name: string; sc
       }
       if (version === lastVersion.current) return;
       lastVersion.current = version;
-      pending.current = { elements, appState, files };
+      pending.current = { elements, appState };
       setStatus('saving');
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => void flush(), SAVE_DELAY);
@@ -168,7 +230,7 @@ function Editor({ id, name: initialName, scene }: { id: string; name: string; sc
   };
 
   const exportPng = async () => {
-    const x = excali.current;
+    const x = canvas;
     if (!x) return;
     const elements = x.getSceneElements();
     if (!elements.length) return toast('El tablero está vacío');
@@ -234,7 +296,7 @@ function Editor({ id, name: initialName, scene }: { id: string; name: string; sc
       </header>
       <div className="excalidraw-host relative min-h-0 flex-1">
         <Excalidraw
-          excalidrawAPI={(x) => (excali.current = x)}
+          excalidrawAPI={setCanvas}
           initialData={initialData}
           onChange={onChange}
           langCode="es-ES"
