@@ -1,7 +1,42 @@
-import { useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNow, useProjects, useRunning, useTasks } from '@/data/hooks';
 import type { Project, Task, TimeEntry } from '@/data/types';
 import { overlapMinutes } from '@/lib/time';
+
+const OPEN_KEY = 'vena-os-open-projects';
+
+function readOpen(): Set<string> {
+  try {
+    const v: unknown = JSON.parse(localStorage.getItem(OPEN_KEY) ?? '[]');
+    if (Array.isArray(v)) return new Set(v.filter((x): x is string => typeof x === 'string'));
+  } catch {
+    // storage unavailable
+  }
+  return new Set();
+}
+
+/** Projects unfolded in "Proyectos y tareas". All folded by default; remembered per device (localStorage). */
+export function useOpenProjects() {
+  const [open, setOpen] = useState(readOpen);
+  useEffect(() => {
+    try {
+      localStorage.setItem(OPEN_KEY, JSON.stringify([...open]));
+    } catch {
+      // storage unavailable
+    }
+  }, [open]);
+  const toggle = useCallback(
+    (id: string) =>
+      setOpen((s) => {
+        const next = new Set(s);
+        if (!next.delete(id)) next.add(id);
+        return next;
+      }),
+    [],
+  );
+  const expand = useCallback((id: string) => setOpen((s) => (s.has(id) ? s : new Set(s).add(id))), []);
+  return { open, toggle, expand };
+}
 
 export function useTimeData() {
   const projects = useProjects();

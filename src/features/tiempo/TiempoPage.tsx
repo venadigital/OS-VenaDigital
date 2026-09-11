@@ -11,7 +11,7 @@ import { projectForFolder, sessionCost } from '@/lib/pricing';
 import { isCurrent, RANGE_LABELS, rangeFor, rangeLabel, shiftAnchor, type RangeMode } from '@/lib/time';
 import { DayTimeline, ProjectLegend, StackedColumns } from './charts';
 import { EntryDialog, ProjectDialog, TaskDialog } from './dialogs';
-import { totalsByProject, useRunningTimer, useTimeData } from './model';
+import { totalsByProject, useOpenProjects, useRunningTimer, useTimeData } from './model';
 
 export function TiempoPage() {
   const [mode, setMode] = useState<RangeMode>('day');
@@ -20,6 +20,7 @@ export function TiempoPage() {
   const [taskDialog, setTaskDialog] = useState<{ open: boolean; task?: Task; projectId?: string }>({ open: false });
   const [projectDialog, setProjectDialog] = useState<{ open: boolean; project?: Project }>({ open: false });
   const [editing, setEditing] = useState<TimeEntry | null>(null);
+  const openProjects = useOpenProjects();
 
   const { from, to } = useMemo(() => rangeFor(mode, anchor), [mode, anchor]);
   const data = useTimeData();
@@ -161,6 +162,8 @@ export function TiempoPage() {
               projects={data.projects}
               tasks={data.tasks}
               todayTotals={totals}
+              open={openProjects.open}
+              onToggle={openProjects.toggle}
               onNewProject={() => setProjectDialog({ open: true })}
               onEditProject={(p) => setProjectDialog({ open: true, project: p })}
               onNewTask={(projectId) => setTaskDialog({ open: true, projectId })}
@@ -177,6 +180,7 @@ export function TiempoPage() {
         defaultProjectId={taskDialog.projectId}
         projects={data.projects}
         onClose={() => setTaskDialog({ open: false })}
+        onCreated={(t) => openProjects.expand(t.project_id)}
       />
       <ProjectDialog open={projectDialog.open} project={projectDialog.project} projects={data.projects} onClose={() => setProjectDialog({ open: false })} />
       <EntryDialog entry={editing} onClose={() => setEditing(null)} tasks={data.tasks} projects={data.projects} />
@@ -445,6 +449,8 @@ function ProjectsPanel({
   projects,
   tasks,
   todayTotals,
+  open,
+  onToggle,
   onNewProject,
   onEditProject,
   onNewTask,
@@ -454,6 +460,8 @@ function ProjectsPanel({
   projects: Project[];
   tasks: Task[];
   todayTotals: { byProject: { project: Project; minutes: number; tasks: Map<string, number> }[] };
+  open: Set<string>;
+  onToggle: (projectId: string) => void;
   onNewProject: () => void;
   onEditProject: (p: Project) => void;
   onNewTask: (projectId?: string) => void;
@@ -496,17 +504,36 @@ function ProjectsPanel({
         {visible.map((p, gi) => {
           const pm = minutesFor(p);
           const ts = tasks.filter((t) => t.project_id === p.id && (showArchived || !t.archived));
+          const isOpen = open.has(p.id);
           return (
-            <div key={p.id} className={cx('flex flex-col pt-2.5 pb-0.5', gi > 0 && 'border-t border-rule')}>
-              <div className="group flex h-7 items-center gap-2">
-                <Dot color={p.color} />
-                <span className={cx('flex-1 truncate text-[13px] font-semibold', p.archived ? 'text-ink-3' : 'text-ink')}>
-                  {p.name}
-                  {p.archived && ' (archivado)'}
-                </span>
-                <span className="tnum text-xs text-ink-3" title={rangeText}>
-                  {pm ? dur(pm.minutes) : ''}
-                </span>
+            <div key={p.id} className={cx('flex flex-col', isOpen && 'pb-1', gi > 0 && 'border-t border-rule')}>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => onToggle(p.id)}
+                  aria-expanded={isOpen}
+                  className="group flex h-10 min-w-0 flex-1 items-center gap-2 text-left"
+                >
+                  <ChevronRight
+                    size={14}
+                    strokeWidth={2.2}
+                    className={cx('-mr-0.5 -ml-1 shrink-0 text-ink-3 transition-transform group-hover:text-ink', isOpen && 'rotate-90')}
+                  />
+                  <Dot color={p.color} />
+                  <span className={cx('truncate text-[13px] font-semibold', p.archived ? 'text-ink-3' : 'text-ink')}>
+                    {p.name}
+                    {p.archived && ' (archivado)'}
+                  </span>
+                  {ts.length > 0 && <span className="tnum shrink-0 text-xs text-ink-4">{ts.length}</span>}
+                  <span className="ml-auto flex shrink-0 items-center gap-2 pl-1">
+                    {timer?.task?.project_id === p.id && <LiveDot hideLabel />}
+                    {pm && (
+                      <span className="tnum text-xs text-ink-3" title={rangeText}>
+                        {dur(pm.minutes)}
+                      </span>
+                    )}
+                  </span>
+                </button>
                 <Menu
                   items={[
                     { label: 'Nueva tarea aquí', icon: <Plus size={14} />, onSelect: () => onNewTask(p.id) },
@@ -521,12 +548,12 @@ function ProjectsPanel({
                   ]}
                 />
               </div>
-              {ts.length === 0 && <div className="py-2 pl-[18px] text-xs text-ink-4">Sin tareas</div>}
-              {ts.map((t) => {
+              {isOpen && ts.length === 0 && <div className="pb-2 pl-8 text-xs text-ink-4">Sin tareas</div>}
+              {isOpen && ts.map((t) => {
                 const running = timer?.task?.id === t.id;
                 const m = pm?.tasks.get(t.id) ?? 0;
                 return (
-                  <div key={t.id} className="flex min-h-[46px] items-center gap-2.5 pl-[18px]">
+                  <div key={t.id} className="flex min-h-[46px] items-center gap-2.5 pl-8">
                     <div className="flex min-w-0 flex-1 flex-col">
                       <span className={cx('truncate text-[13.5px] font-medium', t.archived ? 'text-ink-3' : 'text-ink')}>{t.name}</span>
                       <span className={cx('tnum text-xs', running ? 'text-ink-2' : 'text-ink-3')}>

@@ -107,14 +107,14 @@ export function Dot({ color, size = 8, className }: { color: string; size?: numb
   return <span className={cx('inline-block shrink-0 rounded-full', className)} style={{ width: size, height: size, background: color }} />;
 }
 
-export function LiveDot({ label = 'En curso' }: { label?: string }) {
+export function LiveDot({ label = 'En curso', hideLabel }: { label?: string; hideLabel?: boolean }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-2">
+    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-2" title={hideLabel ? label : undefined}>
       <span className="relative inline-flex h-[7px] w-[7px]">
         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-good opacity-40" />
         <span className="relative inline-flex h-[7px] w-[7px] rounded-full bg-good" />
       </span>
-      {label}
+      <span className={hideLabel ? 'sr-only' : undefined}>{label}</span>
     </span>
   );
 }
