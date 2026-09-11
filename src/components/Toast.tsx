@@ -24,7 +24,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {items.map((t) => (
           <div
             key={t.id}
-            className="pointer-events-auto flex max-w-md items-center gap-2 rounded-xl border border-line bg-white px-4 py-2.5 text-[13.5px] text-ink shadow-[0_8px_24px_rgba(31,30,28,0.12)]"
+            className="pointer-events-auto flex max-w-md items-center gap-2 rounded-xl border border-line bg-overlay px-4 py-2.5 text-[13.5px] text-ink shadow-[0_8px_24px_rgb(var(--shade)/0.12)]"
           >
             {t.kind === 'error' ? <CircleAlert size={16} className="shrink-0 text-crit" /> : <CircleCheck size={16} className="shrink-0 text-good" />}
             <span>{t.text}</span>

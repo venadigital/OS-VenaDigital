@@ -154,12 +154,12 @@ function Chip({ on, onClick, label, count, dot }: { on: boolean; onClick: () => 
       onClick={onClick}
       className={cx(
         'flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] transition-colors md:h-[30px] md:px-3',
-        on ? 'bg-ink font-semibold text-white' : 'bg-fill font-medium text-ink-2 hover:bg-fill-2',
+        on ? 'bg-ink font-semibold text-page' : 'bg-fill font-medium text-ink-2 hover:bg-fill-2',
       )}
     >
       {dot && <Dot color={dot} size={7} />}
       {label}
-      <span className={cx('tnum', on ? 'text-white/65' : 'text-ink-3')}>{count}</span>
+      <span className={cx('tnum', on ? 'text-page/65' : 'text-ink-3')}>{count}</span>
     </button>
   );
 }
@@ -186,7 +186,7 @@ export function CaptureBar({ defaultType = 'nota', placeholder }: { defaultType?
         e.preventDefault();
         void submit();
       }}
-      className="flex h-12 items-center gap-3 rounded-xl border border-line bg-plane pr-2 pl-4 focus-within:border-line-2 focus-within:bg-white"
+      className="flex h-12 items-center gap-3 rounded-xl border border-line bg-plane pr-2 pl-4 focus-within:border-line-2 focus-within:bg-surface"
     >
       <Plus size={18} className="shrink-0 text-ink-3" />
       <input
@@ -205,7 +205,7 @@ export function CaptureBar({ defaultType = 'nota', placeholder }: { defaultType?
           <select
             value={type}
             onChange={(e) => setType(e.target.value as NoteType)}
-            className="h-7 rounded-lg border border-line-2 bg-white px-2 text-[12.5px] font-medium text-ink-2 outline-none"
+            className="h-7 rounded-lg border border-line-2 bg-surface px-2 text-[12.5px] font-medium text-ink-2 outline-none"
             aria-label="Tipo de nota"
           >
             {NOTE_TYPES.filter((t) => t.value !== 'link').map((t) => (
@@ -222,7 +222,7 @@ export function CaptureBar({ defaultType = 'nota', placeholder }: { defaultType?
         className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-[12px] text-ink-3 disabled:opacity-50"
         aria-label="Guardar"
       >
-        <span className="flex h-5 w-6 items-center justify-center rounded-[5px] border border-[#e3e1da] bg-white">
+        <span className="flex h-5 w-6 items-center justify-center rounded-[5px] border border-line-2 bg-surface">
           <CornerDownLeft size={12} className="text-ink-2" />
         </span>
         <span className="hidden md:inline">guardar</span>
@@ -312,7 +312,7 @@ function NoteDialog({ note, onClose, imageUrl }: { note: Note | 'new' | null; on
             onClick={() => setType(t.value)}
             className={cx(
               'flex h-8 items-center gap-1.5 rounded-full border px-3 text-[12.5px] font-medium',
-              type === t.value ? 'border-ink bg-ink text-white' : 'border-line-2 text-ink-2 hover:bg-plane',
+              type === t.value ? 'border-ink bg-ink text-page' : 'border-line-2 text-ink-2 hover:bg-plane',
             )}
           >
             <Dot color={t.dot} size={7} />
@@ -351,7 +351,7 @@ function NoteDialog({ note, onClose, imageUrl }: { note: Note | 'new' | null; on
               <img src={preview ?? existingImage} alt="" className="max-h-56 w-full rounded-[10px] object-cover" />
               <button
                 type="button"
-                className="absolute top-2 right-2 rounded-full bg-white/90 p-1.5 text-ink-2 shadow"
+                className="absolute top-2 right-2 rounded-full bg-overlay/90 p-1.5 text-ink-2 shadow"
                 aria-label="Quitar imagen"
                 onClick={() => {
                   setFile(null);

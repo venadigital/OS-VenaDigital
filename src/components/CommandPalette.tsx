@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CornerDownLeft, NotebookPen, Play, Search, Settings2, Shapes } from 'lucide-react';
+import { CornerDownLeft, Moon, NotebookPen, Play, Search, Settings2, Shapes, Sun } from 'lucide-react';
 import { useBoards, useNotes, useStartTimer } from '@/data/hooks';
 import { useTimeData } from '@/features/tiempo/model';
 import { NAV } from './Shell';
 import { cx, Dot } from './ui';
 import { norm } from '@/lib/text';
+import { toggleTheme, useTheme } from '@/lib/theme';
 
 const EVENT = 'vena:open-palette';
 export const openPalette = () => window.dispatchEvent(new Event(EVENT));
@@ -23,6 +24,7 @@ export function CommandPalette() {
   const boards = useBoards();
   const { tasks, projectById } = useTimeData();
   const start = useStartTimer();
+  const { theme } = useTheme();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -55,6 +57,9 @@ export function CommandPalette() {
       { id: 'nav:ajustes', group: 'Ir a', label: 'Ajustes', icon: <Settings2 size={16} />, run: go('/ajustes') },
       { id: 'act:note', group: 'Crear', label: 'Nueva nota', icon: <NotebookPen size={16} />, run: go('/notas?nueva=1') },
       { id: 'act:board', group: 'Crear', label: 'Nuevo tablero', icon: <Shapes size={16} />, run: go('/tableros?nuevo=1') },
+      theme === 'dark'
+        ? { id: 'act:theme', group: 'Apariencia', label: 'Usar modo claro', icon: <Sun size={16} />, run: toggleTheme }
+        : { id: 'act:theme', group: 'Apariencia', label: 'Usar modo oscuro', icon: <Moon size={16} />, run: toggleTheme },
     ];
     const tq = norm(q.trim());
     if (!tq) return base;
@@ -90,7 +95,7 @@ export function CommandPalette() {
         })),
     ];
     return [...base.filter((i) => match(i.label)), ...found];
-  }, [q, tasks, boards.data, notes.data, projectById, navigate, start]);
+  }, [q, tasks, boards.data, notes.data, projectById, navigate, start, theme]);
 
   if (!open) return null;
 
@@ -101,9 +106,9 @@ export function CommandPalette() {
 
   let lastGroup = '';
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-[rgb(31_30_28/0.28)] px-3 pt-[12vh]" onMouseDown={() => setOpen(false)}>
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-[var(--backdrop)] px-3 pt-[12vh]" onMouseDown={() => setOpen(false)}>
       <div
-        className="flex max-h-[70vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-[0_24px_64px_rgba(31,30,28,0.22)]"
+        className="flex max-h-[70vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-line bg-overlay shadow-[0_24px_64px_rgb(var(--shade)/0.22)]"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2.5 border-b border-rule px-4">
@@ -149,7 +154,7 @@ export function CommandPalette() {
                   <span className="flex-1 truncate">{it.label}</span>
                   {it.hint && (
                     <span className="flex items-center gap-1.5 text-xs text-ink-3">
-                      <Dot color="#c3c2b7" size={6} />
+                      <Dot color="var(--color-mute)" size={6} />
                       {it.hint}
                     </span>
                   )}

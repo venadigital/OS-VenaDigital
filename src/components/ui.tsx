@@ -1,7 +1,9 @@
 // Small UI kit matching the design: warm grays, one accent, hairline borders.
 import {
   forwardRef,
+  useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ButtonHTMLAttributes,
@@ -10,6 +12,7 @@ import {
   type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from 'react';
+import { createPortal } from 'react-dom';
 import { MoreHorizontal, X } from 'lucide-react';
 
 export const cx = (...xs: (string | false | null | undefined)[]) => xs.filter(Boolean).join(' ');
@@ -18,8 +21,8 @@ type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'subtle';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: 'bg-accent text-white hover:bg-accent-strong',
-  secondary: 'bg-white text-ink border border-line-2 hover:bg-plane',
+  primary: 'bg-accent text-on-accent hover:bg-accent-strong',
+  secondary: 'bg-surface text-ink border border-line-2 hover:bg-plane',
   ghost: 'text-ink-2 hover:bg-fill',
   danger: 'bg-crit-soft text-crit hover:brightness-[0.97]',
   subtle: 'bg-fill text-ink-2 hover:bg-fill-2',
@@ -64,9 +67,9 @@ export function IconButton({
 }: ButtonHTMLAttributes<HTMLButtonElement> & { label: string; size?: number; variant?: 'ghost' | 'bordered' | 'round' | 'accent' | 'danger' }) {
   const styles = {
     ghost: 'rounded-lg text-ink-2 hover:bg-fill',
-    bordered: 'rounded-lg border border-line-2 bg-white text-ink-2 hover:bg-plane',
+    bordered: 'rounded-lg border border-line-2 bg-surface text-ink-2 hover:bg-plane',
     round: 'rounded-full bg-fill-2 text-ink-2 hover:brightness-95',
-    accent: 'rounded-full bg-accent text-white hover:bg-accent-strong',
+    accent: 'rounded-full bg-accent text-on-accent hover:bg-accent-strong',
     danger: 'rounded-full bg-crit-soft text-crit hover:brightness-[0.97]',
   }[variant];
   return (
@@ -84,7 +87,7 @@ export function IconButton({
 }
 
 export function Card({ className, children, as: Tag = 'div' }: { className?: string; children: ReactNode; as?: 'div' | 'section' }) {
-  return <Tag className={cx('flex flex-col gap-4 rounded-[14px] border border-line bg-white p-5', className)}>{children}</Tag>;
+  return <Tag className={cx('flex flex-col gap-4 rounded-[14px] border border-line bg-surface p-5', className)}>{children}</Tag>;
 }
 
 export function CardHead({ title, right, className }: { title: ReactNode; right?: ReactNode; className?: string }) {
@@ -118,7 +121,7 @@ export function LiveDot({ label = 'En curso' }: { label?: string }) {
 
 export function Pill({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <span className={cx('inline-flex h-[22px] items-center rounded-md bg-accent-soft px-2 text-[12.5px] font-semibold text-accent', className)}>
+    <span className={cx('inline-flex h-[22px] shrink-0 items-center rounded-md bg-accent-soft px-2 text-[12.5px] font-semibold whitespace-nowrap text-accent', className)}>
       {children}
     </span>
   );
@@ -152,7 +155,7 @@ export function Segmented<T extends string>({
               'flex items-center justify-center rounded-[7px] px-3.5 text-[13px] transition-colors',
               size === 'lg' ? 'h-10' : 'h-[26px]',
               full && 'flex-1',
-              on ? 'bg-white font-semibold text-ink shadow-[0_1px_2px_rgba(31,30,28,0.10),0_0_0_0.5px_rgba(31,30,28,0.08)]' : 'font-medium text-ink-2 hover:text-ink',
+              on ? 'bg-raised font-semibold text-ink shadow-[0_1px_2px_rgb(var(--shade)/0.10),0_0_0_0.5px_rgb(var(--shade)/0.08)]' : 'font-medium text-ink-2 hover:text-ink',
             )}
           >
             {o.label}
@@ -164,7 +167,7 @@ export function Segmented<T extends string>({
 }
 
 const fieldBase =
-  'w-full rounded-[10px] border border-line-2 bg-white px-3 text-[14px] text-ink placeholder:text-ink-4 outline-none transition-shadow focus:border-accent focus:ring-4 focus:ring-accent-soft';
+  'w-full rounded-[10px] border border-line-2 bg-surface px-3 text-[14px] text-ink placeholder:text-ink-4 outline-none transition-shadow focus:border-accent focus:ring-4 focus:ring-accent-soft';
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function Input({ className, ...rest }, ref) {
   return <input ref={ref} className={cx(fieldBase, 'h-10', className)} {...rest} />;
@@ -230,7 +233,7 @@ export function Dialog({
       onClick={(e) => {
         if (e.target === ref.current) onClose();
       }}
-      className="m-auto max-h-[calc(100dvh-32px)] w-[calc(100vw-24px)] rounded-2xl border border-line bg-white p-0 text-ink shadow-[0_24px_64px_rgba(31,30,28,0.18)]"
+      className="m-auto max-h-[calc(100dvh-32px)] w-[calc(100vw-24px)] rounded-2xl border border-line bg-overlay p-0 text-ink shadow-[0_24px_64px_rgb(var(--shade)/0.18)]"
       style={{ maxWidth: width }}
     >
       {open && (
@@ -251,25 +254,54 @@ export function Dialog({
 
 export type MenuItem = { label: string; onSelect: () => void; danger?: boolean; icon?: ReactNode };
 
-/** "…" button with a small popover of actions. */
+/** "…" button with a small popover of actions. The popover floats above the page, so cards never clip it. */
 export function Menu({ items, label = 'Más opciones', align = 'right', trigger }: { items: MenuItem[]; label?: string; align?: 'left' | 'right'; trigger?: ReactNode }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const anchor = useRef<HTMLDivElement>(null);
+  const popover = useRef<HTMLDivElement>(null);
+
+  // Below the button, or above it when there is no room; always inside the screen.
+  const place = useCallback(() => {
+    const a = anchor.current?.getBoundingClientRect();
+    const m = popover.current;
+    if (!a || !m) return;
+    const gap = 4;
+    const edge = 8;
+    const up = a.bottom + gap + m.offsetHeight > window.innerHeight - edge && a.top - gap - m.offsetHeight >= edge;
+    const left = align === 'right' ? a.right - m.offsetWidth : a.left;
+    setPos({
+      top: up ? a.top - gap - m.offsetHeight : a.bottom + gap,
+      left: Math.min(Math.max(edge, left), window.innerWidth - m.offsetWidth - edge),
+    });
+  }, [align]);
+
+  useLayoutEffect(() => {
+    if (open) place();
+    else setPos(null);
+  }, [open, place]);
+
   useEffect(() => {
     if (!open) return;
-    const onDoc = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    const onDown = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (!anchor.current?.contains(t) && !popover.current?.contains(t)) setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
-    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('pointerdown', onDown);
     document.addEventListener('keydown', onKey);
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
     return () => {
-      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('pointerdown', onDown);
       document.removeEventListener('keydown', onKey);
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
     };
-  }, [open]);
+  }, [open, place]);
+
   return (
-    <div ref={ref} className="relative" onClick={(e) => e.stopPropagation()}>
+    <div ref={anchor} className="relative" onClick={(e) => e.stopPropagation()}>
       {trigger ? (
         <span onClick={() => setOpen((o) => !o)}>{trigger}</span>
       ) : (
@@ -277,34 +309,35 @@ export function Menu({ items, label = 'Más opciones', align = 'right', trigger 
           <MoreHorizontal size={18} />
         </IconButton>
       )}
-      {open && (
-        <div
-          role="menu"
-          className={cx(
-            'absolute top-full z-30 mt-1 min-w-44 rounded-xl border border-line bg-white p-1 shadow-[0_12px_32px_rgba(31,30,28,0.14)]',
-            align === 'right' ? 'right-0' : 'left-0',
-          )}
-        >
-          {items.map((it) => (
-            <button
-              key={it.label}
-              role="menuitem"
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                it.onSelect();
-              }}
-              className={cx(
-                'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13.5px] hover:bg-fill',
-                it.danger ? 'text-crit' : 'text-ink',
-              )}
-            >
-              {it.icon}
-              {it.label}
-            </button>
-          ))}
-        </div>
-      )}
+      {open &&
+        createPortal(
+          <div
+            ref={popover}
+            role="menu"
+            className="fixed z-50 min-w-44 rounded-xl border border-line bg-overlay p-1 shadow-[0_12px_32px_rgb(var(--shade)/0.14)]"
+            style={{ top: pos?.top ?? 0, left: pos?.left ?? 0, visibility: pos ? 'visible' : 'hidden' }}
+          >
+            {items.map((it) => (
+              <button
+                key={it.label}
+                role="menuitem"
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  it.onSelect();
+                }}
+                className={cx(
+                  'flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13.5px] whitespace-nowrap hover:bg-fill',
+                  it.danger ? 'text-crit' : 'text-ink',
+                )}
+              >
+                {it.icon}
+                {it.label}
+              </button>
+            ))}
+          </div>,
+          anchor.current?.closest('dialog') ?? document.body,
+        )}
     </div>
   );
 }
@@ -333,7 +366,7 @@ export function ColorSwatches({ colors, value, onChange }: { colors: string[]; v
           type="button"
           aria-label={`Color ${c}`}
           onClick={() => onChange(c)}
-          className={cx('h-7 w-7 rounded-full ring-offset-2 transition-shadow', value === c && 'ring-2 ring-ink')}
+          className={cx('h-7 w-7 rounded-full ring-offset-2 ring-offset-overlay transition-shadow', value === c && 'ring-2 ring-ink')}
           style={{ background: c }}
         />
       ))}

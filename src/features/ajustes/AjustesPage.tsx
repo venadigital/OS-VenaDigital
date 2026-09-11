@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { Download, KeyRound, Laptop, LogOut, Smartphone } from 'lucide-react';
 import { subYears } from 'date-fns';
 import { Page, PageHeader } from '@/components/Shell';
-import { Button, Card, CardHead, cx, Field, Input } from '@/components/ui';
+import { Button, Card, CardHead, cx, Field, Input, Segmented } from '@/components/ui';
 import { useAccount, useApi } from '@/data/ApiContext';
 import { useToast } from '@/components/Toast';
 import { ACCENTS } from '@/lib/palette';
 import { saveAccent, storedAccent } from '@/lib/accent';
+import { setThemePref, useTheme } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
 import { dayKey } from '@/lib/time';
 import { CollectorDialog } from '@/features/consumo/dialogs';
@@ -14,6 +15,7 @@ import { CollectorDialog } from '@/features/consumo/dialogs';
 export function AjustesPage() {
   const { user, signOut, mode } = useAccount();
   const [accent, setAccent] = useState(storedAccent());
+  const { pref: themePref, theme } = useTheme();
   const [collectorOpen, setCollectorOpen] = useState(false);
 
   return (
@@ -35,6 +37,21 @@ export function AjustesPage() {
       <Card>
         <CardHead title="Apariencia" />
         <div className="flex flex-col gap-2">
+          <span className="text-[13px] font-medium text-ink-2">Tema</span>
+          <div className="self-start">
+            <Segmented
+              value={themePref}
+              onChange={setThemePref}
+              options={[
+                { value: 'system', label: 'Sistema' },
+                { value: 'light', label: 'Claro' },
+                { value: 'dark', label: 'Oscuro' },
+              ]}
+            />
+          </div>
+          <span className="text-xs text-ink-3">«Sistema» cambia solo según el modo claro u oscuro de tu Mac o iPhone.</span>
+        </div>
+        <div className="flex flex-col gap-2">
           <span className="text-[13px] font-medium text-ink-2">Color de acento</span>
           <div className="flex flex-wrap gap-2">
             {ACCENTS.map((a) => (
@@ -50,7 +67,7 @@ export function AjustesPage() {
                   accent === a.value ? 'border-ink text-ink' : 'border-line-2 text-ink-2 hover:bg-plane',
                 )}
               >
-                <span className="h-3.5 w-3.5 rounded-full" style={{ background: a.value }} />
+                <span className="h-3.5 w-3.5 rounded-full" style={{ background: theme === 'dark' ? a.dark : a.value }} />
                 {a.label}
               </button>
             ))}

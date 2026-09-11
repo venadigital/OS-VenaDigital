@@ -16,15 +16,15 @@ export type NoteActions = {
 
 function PageSkeleton() {
   return (
-    <div className="flex h-[88px] flex-col gap-[7px] overflow-hidden rounded-[10px] bg-[#f4f3ef] px-3.5 py-3">
+    <div className="flex h-[88px] flex-col gap-[7px] overflow-hidden rounded-[10px] bg-fill px-3.5 py-3">
       <div className="flex gap-[5px]">
-        <span className="h-1.5 w-1.5 rounded-full bg-[#d9d7d0]" />
-        <span className="h-1.5 w-1.5 rounded-full bg-[#d9d7d0]" />
-        <span className="h-1.5 w-1.5 rounded-full bg-[#d9d7d0]" />
+        <span className="h-1.5 w-1.5 rounded-full bg-bar" />
+        <span className="h-1.5 w-1.5 rounded-full bg-bar" />
+        <span className="h-1.5 w-1.5 rounded-full bg-bar" />
       </div>
-      <div className="h-[9px] w-[62%] rounded-[3px] bg-[#d9d7d0]" />
-      <div className="h-[5px] w-[88%] rounded-[3px] bg-[#e4e2dc]" />
-      <div className="h-[5px] w-[76%] rounded-[3px] bg-[#e4e2dc]" />
+      <div className="h-[9px] w-[62%] rounded-[3px] bg-bar" />
+      <div className="h-[5px] w-[88%] rounded-[3px] bg-line-2" />
+      <div className="h-[5px] w-[76%] rounded-[3px] bg-line-2" />
     </div>
   );
 }
@@ -53,18 +53,18 @@ export function NoteCard({ note, imageUrl, compact, ...actions }: { note: Note; 
       className={cx(
         'group relative flex flex-col gap-2.5 rounded-[14px] border',
         compact ? 'px-3.5 py-3' : 'px-4 py-3.5',
-        note.type === 'link' ? 'border-line' : 'border-[rgba(31,30,28,0.05)]',
+        note.type === 'link' ? 'border-line' : 'border-[var(--note-edge)]',
         note.done && 'opacity-60',
       )}
       style={{ background: t.tint }}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1.5 text-[11.5px] font-semibold text-ink-2">
+        <span className="inline-flex min-w-0 items-center gap-1.5 text-[11.5px] font-semibold text-ink-2">
           <Dot color={t.dot} size={7} />
-          {t.label}
+          <span className="truncate">{t.label}</span>
         </span>
         <div className="-my-1.5 -mr-1.5 flex items-center gap-0.5">
-          {note.pinned && <Pin size={14} className="text-ink-3" />}
+          {note.pinned && !compact && <Pin size={14} className="text-ink-3" />}
           <div className={cx(!compact && 'opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100')}>{menu}</div>
         </div>
       </div>

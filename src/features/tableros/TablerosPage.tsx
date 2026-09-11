@@ -93,9 +93,9 @@ export function TablerosPage() {
       ) : (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {boards.map((b) => (
-            <article key={b.id} className="group relative flex flex-col overflow-hidden rounded-[14px] border border-line bg-white transition-shadow hover:shadow-[0_8px_24px_rgba(31,30,28,0.08)]">
+            <article key={b.id} className="group relative flex flex-col overflow-hidden rounded-[14px] border border-line bg-surface transition-shadow hover:shadow-[0_8px_24px_rgb(var(--shade)/0.08)]">
               <Link to={`/tableros/${b.id}`} className="dots-bg flex h-[196px] items-center justify-center border-b border-rule p-2.5">
-                {b.thumbnail ? <img src={b.thumbnail} alt="" className="h-full w-full object-contain" loading="lazy" /> : <Shapes size={28} className="text-ink-4" />}
+                {b.thumbnail ? <img src={b.thumbnail} alt="" className="board-thumb h-full w-full object-contain" loading="lazy" /> : <Shapes size={28} className="text-ink-4" />}
               </Link>
               <div className="flex items-center justify-between gap-2 px-4 pt-3 pb-3.5">
                 <Link to={`/tableros/${b.id}`} className="flex min-w-0 flex-col gap-0.5">

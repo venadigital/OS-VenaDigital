@@ -10,6 +10,7 @@ import { qk, useBoard } from '@/data/hooks';
 import type { BoardScene } from '@/data/types';
 import { Button, Menu } from '@/components/ui';
 import { useToast } from '@/components/Toast';
+import { useTheme } from '@/lib/theme';
 
 type Elements = Parameters<NonNullable<ExcalidrawProps['onChange']>>[0];
 type Status = 'idle' | 'saving' | 'saved' | 'error';
@@ -62,6 +63,7 @@ function Editor({ id, name: initialName, scene }: { id: string; name: string; sc
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastThumb = useRef(0);
   const nameRef = useRef<HTMLInputElement>(null);
+  const { theme } = useTheme();
 
   const initialData = useMemo(() => {
     const elements = scene.elements?.length ? scene.elements : scene.skeleton?.length ? convertToExcalidrawElements(scene.skeleton as never) : [];
@@ -85,7 +87,8 @@ function Editor({ id, name: initialName, scene }: { id: string; name: string; sc
     if (!visible.length) return null;
     const blob = await exportToBlob({
       elements: visible,
-      appState: { ...appState, exportBackground: true, viewBackgroundColor: '#fcfcfb', exportWithDarkMode: false },
+      // Transparent, so the card's dotted background shows through (and dark mode can invert it).
+      appState: { ...appState, exportBackground: false, exportWithDarkMode: false },
       files,
       mimeType: 'image/png',
       maxWidthOrHeight: 520,
@@ -193,9 +196,9 @@ function Editor({ id, name: initialName, scene }: { id: string; name: string; sc
   };
 
   return (
-    <div className="flex h-dvh flex-col bg-[#fcfcfb]">
+    <div className="flex h-dvh flex-col bg-page">
       <header
-        className="flex shrink-0 items-center justify-between gap-3 border-b border-line bg-white px-3 md:px-4"
+        className="flex shrink-0 items-center justify-between gap-3 border-b border-line bg-page px-3 md:px-4"
         style={{ paddingTop: 'var(--safe-top)', minHeight: 'calc(52px + var(--safe-top))' }}
       >
         <div className="flex min-w-0 items-center gap-2 md:gap-3">
@@ -235,7 +238,7 @@ function Editor({ id, name: initialName, scene }: { id: string; name: string; sc
           initialData={initialData}
           onChange={onChange}
           langCode="es-ES"
-          theme="light"
+          theme={theme}
           name={name}
           UIOptions={{ canvasActions: { saveToActiveFile: false, loadScene: false, toggleTheme: false } }}
         />

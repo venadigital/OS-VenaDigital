@@ -12,8 +12,14 @@ export function storedAccent(): string {
   return ACCENTS[0].value;
 }
 
+/** Sets the accent for both themes; index.css picks the one for the active theme. */
 export function applyAccent(color: string) {
-  document.documentElement.style.setProperty('--accent', color);
+  const a = ACCENTS.find((x) => x.value.toLowerCase() === color.toLowerCase());
+  const root = document.documentElement.style;
+  root.setProperty('--accent-l', color);
+  root.setProperty('--on-accent-l', '#ffffff');
+  root.setProperty('--accent-d', a?.dark ?? `color-mix(in srgb, ${color} 75%, white)`);
+  root.setProperty('--on-accent-d', a?.onDark ?? '#ffffff');
 }
 
 export function saveAccent(color: string) {

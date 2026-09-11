@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronRight, Play, Plus, Shapes, Square } from 'lucide-react';
-import { Page, PageHeader } from '@/components/Shell';
-import { Button, Card, cx, Dot, Label, LiveDot, Menu, Pill, Skeleton } from '@/components/ui';
+import { ChevronRight, Play, Plus, Settings2, Shapes, Square } from 'lucide-react';
+import { Page, PageHeader, ThemeButton } from '@/components/Shell';
+import { Button, Card, cx, Dot, IconButton, Label, LiveDot, Menu, Pill, Skeleton } from '@/components/ui';
 import { useAccount } from '@/data/ApiContext';
 import { qk, useApiMutation, useBoards, useEntries, useNoteImages, useNotes, useNow, useStartTimer, useStopTimer } from '@/data/hooks';
 import { clock, dur, greeting, hhmm, longDate, monthName, ratio, relativeDay, usd } from '@/lib/format';
@@ -21,7 +21,18 @@ export function HomePage() {
   return (
     <Page>
       <PageHeader
-        eyebrow={longDate(now)}
+        eyebrow={
+          <>
+            <span className="flex-1">{longDate(now)}</span>
+            {/* On the phone there is no sidebar: theme and settings live here. */}
+            <span className="-my-2 -mr-2 flex md:hidden">
+              <ThemeButton size={34} />
+              <IconButton label="Ajustes" onClick={() => navigate('/ajustes')}>
+                <Settings2 size={17} />
+              </IconButton>
+            </span>
+          </>
+        }
         title={`${greeting(now)}, ${user.name}`}
         right={
           <Menu
@@ -55,10 +66,10 @@ export function HomePage() {
 
 function CardTop({ title, to, link }: { title: string; to?: string; link?: string }) {
   return (
-    <div className="flex items-center justify-between">
-      <Label>{title}</Label>
+    <div className="flex items-center justify-between gap-3">
+      <span className="min-w-0 truncate text-[13px] font-medium text-ink-2">{title}</span>
       {to && (
-        <Link to={to} className="flex items-center gap-0.5 text-[13px] font-medium text-ink-2 hover:text-ink">
+        <Link to={to} className="flex shrink-0 items-center gap-0.5 text-[13px] font-medium whitespace-nowrap text-ink-2 hover:text-ink">
           {link}
           <ChevronRight size={14} className="text-ink-3" />
         </Link>
@@ -112,7 +123,7 @@ function TimerCard() {
                 onClick={() => start.mutate(t.id)}
                 className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-left hover:bg-plane"
               >
-                <Dot color={projectById.get(t.project_id)?.color ?? '#c3c2b7'} />
+                <Dot color={projectById.get(t.project_id)?.color ?? 'var(--color-mute)'} />
                 <span className="flex-1 truncate text-[13.5px] text-ink">{t.name}</span>
                 <Play size={12} className="text-ink-3" fill="currentColor" />
               </button>
@@ -156,7 +167,8 @@ function TodayCard({ now }: { now: Date }) {
       <div className="flex flex-col gap-0.5">
         <div className="text-[30px] leading-9 font-semibold tracking-[-0.02em] text-ink">{dur(totals.total)}</div>
         <div className="text-[12.5px] text-ink-3">
-          {totals.byProject.length} {totals.byProject.length === 1 ? 'proyecto' : 'proyectos'} · {(entries.data ?? []).length} sesiones
+          {totals.byProject.length} {totals.byProject.length === 1 ? 'proyecto' : 'proyectos'} · {(entries.data ?? []).length}{' '}
+          {(entries.data ?? []).length === 1 ? 'sesión' : 'sesiones'}
         </div>
       </div>
       {totals.total > 0 ? (
@@ -165,7 +177,7 @@ function TodayCard({ now }: { now: Date }) {
             {totals.byProject.map((b, i) => (
               <div
                 key={b.project.id}
-                className={cx(i === totals.byProject.length - 1 && 'rounded-r')}
+                className={cx(i === 0 && 'rounded-l', i === totals.byProject.length - 1 && 'rounded-r')}
                 style={{ flexGrow: b.minutes, flexBasis: 0, background: b.project.color }}
               />
             ))}
@@ -203,7 +215,7 @@ function AiCard({ now }: { now: Date }) {
 
   return (
     <Card>
-      <CardTop title={`Consumo IA · ${monthName(now)}`} to="/consumo" link="Ver consumo" />
+      <CardTop title="Consumo IA" to="/consumo" link="Ver consumo" />
       {loading ? (
         <Skeleton className="h-28" />
       ) : (
@@ -211,7 +223,7 @@ function AiCard({ now }: { now: Date }) {
           <div className="flex flex-col gap-0.5">
             <div className="text-[30px] leading-9 font-semibold tracking-[-0.02em] text-ink">{usd(summary.cost)}</div>
             <div className="text-[12.5px] text-ink-3">
-              Valor a precio API
+              Valor a precio API · {monthName(now)}
               {summary.unpriced.length > 0 && ` · ${summary.unpriced.length} ${summary.unpriced.length === 1 ? 'modelo' : 'modelos'} sin precio`}
             </div>
           </div>
@@ -221,7 +233,7 @@ function AiCard({ now }: { now: Date }) {
                 <div
                   key={i}
                   className="w-3.5 rounded-t-[2px]"
-                  style={{ height: `${Math.max(4, (v / max) * 100)}%`, background: i === values.length - 1 ? 'var(--accent)' : '#d9d7d0' }}
+                  style={{ height: `${Math.max(4, (v / max) * 100)}%`, background: i === values.length - 1 ? 'var(--accent)' : 'var(--color-bar)' }}
                 />
               ))}
             </div>
@@ -295,11 +307,11 @@ function RecentBoards() {
           Crea tu primer tablero →
         </Link>
       ) : (
-        <div className="flex flex-col rounded-[14px] border border-line bg-white py-1">
+        <div className="flex flex-col rounded-[14px] border border-line bg-surface py-1">
           {boards.map((b, i) => (
             <Link key={b.id} to={`/tableros/${b.id}`} className={cx('flex items-center gap-3.5 px-3 py-2.5 hover:bg-plane', i > 0 && 'border-t border-rule')}>
               <div className="dots-bg flex h-[50px] w-[76px] shrink-0 items-center justify-center overflow-hidden rounded-lg border border-line">
-                {b.thumbnail ? <img src={b.thumbnail} alt="" className="h-full w-full object-contain" /> : <Shapes size={18} className="text-ink-4" />}
+                {b.thumbnail ? <img src={b.thumbnail} alt="" className="board-thumb h-full w-full object-contain" /> : <Shapes size={18} className="text-ink-4" />}
               </div>
               <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="truncate text-[14px] font-medium text-ink">{b.name}</span>

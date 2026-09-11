@@ -6,11 +6,11 @@ import { useToast } from '@/components/Toast';
 import { domainOf } from '@/lib/format';
 
 export const NOTE_TYPES: { value: NoteType; label: string; tint: string; dot: string }[] = [
-  { value: 'hacer', label: 'Por hacer', tint: '#fdf4d3', dot: '#eda100' },
-  { value: 'investigar', label: 'Por investigar', tint: '#eaf2fb', dot: '#2a78d6' },
-  { value: 'link', label: 'Link', tint: '#ffffff', dot: '#898781' },
-  { value: 'nota', label: 'Nota', tint: '#e9f5ee', dot: '#1baf7a' },
-  { value: 'inspiracion', label: 'Inspiración', tint: '#fbeef3', dot: '#e87ba4' },
+  { value: 'hacer', label: 'Por hacer', tint: 'var(--note-hacer)', dot: '#eda100' },
+  { value: 'investigar', label: 'Por investigar', tint: 'var(--note-investigar)', dot: '#2a78d6' },
+  { value: 'link', label: 'Link', tint: 'var(--note-link)', dot: 'var(--color-ink-3)' },
+  { value: 'nota', label: 'Nota', tint: 'var(--note-nota)', dot: '#1baf7a' },
+  { value: 'inspiracion', label: 'Inspiración', tint: 'var(--note-inspiracion)', dot: '#e87ba4' },
 ];
 
 export const typeMeta = (t: NoteType) => NOTE_TYPES.find((x) => x.value === t) ?? NOTE_TYPES[3];

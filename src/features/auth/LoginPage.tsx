@@ -56,7 +56,7 @@ export function LoginPage() {
 
   return (
     <AuthLayout>
-      <form onSubmit={submit} className="flex flex-col gap-4 rounded-2xl border border-line bg-white p-6">
+      <form onSubmit={submit} className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-6">
         <h2 className="text-[17px] font-semibold">{mode === 'signin' ? 'Entrar' : mode === 'signup' ? 'Crear tu cuenta' : 'Recuperar contraseña'}</h2>
         <Field label="Correo">
           <Input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -104,7 +104,7 @@ export function LoginPage() {
 export function SetupPage() {
   return (
     <AuthLayout>
-      <div className="flex flex-col gap-3 rounded-2xl border border-line bg-white p-6 text-[14px] leading-6 text-ink-2">
+      <div className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-6 text-[14px] leading-6 text-ink-2">
         <h2 className="text-[17px] font-semibold text-ink">Falta conectar Supabase</h2>
         <ol className="list-decimal space-y-1.5 pl-5">
           <li>Crea un proyecto en Supabase para el OS.</li>

@@ -53,7 +53,7 @@ export function DayTimeline({ entries, day, now, taskById, projectById }: { entr
               left: pct(hourOf(b.s)),
               width: `calc(${(((b.end - b.s) / 3_600_000 / span) * 100).toFixed(3)}% - 2px)`,
               minWidth: 3,
-              background: b.project?.color ?? '#c3c2b7',
+              background: b.project?.color ?? 'var(--color-mute)',
             }}
           />
         ))}
@@ -117,7 +117,7 @@ export function StackedColumns({
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full" role="img" aria-label="Tiempo por día">
-      <line x1={0} x2={W} y1={base} y2={base} stroke="#c3c2b7" strokeWidth={1} />
+      <line x1={0} x2={W} y1={base} y2={base} className="stroke-mute" strokeWidth={1} />
       {data.map(({ d, perProject, total }, i) => {
         const x = i * slot + slot / 2 - bw / 2;
         const segs = order.filter((id) => (perProject.get(id) ?? 0) > 0).map((id) => ({ id, v: perProject.get(id)!, color: projectById.get(id)!.color }));
@@ -138,12 +138,12 @@ export function StackedColumns({
               return <path key={s.id} d={path} fill={s.color} />;
             })}
             {today && total > 0 && (
-              <text x={x + bw / 2} y={base - total * k - 8} textAnchor="middle" fontSize={11} fontWeight={600} fill="#52514e" className="tnum">
+              <text x={x + bw / 2} y={base - total * k - 8} textAnchor="middle" fontSize={11} fontWeight={600} className="tnum fill-ink-2">
                 {durShort(total)}
               </text>
             )}
             {showLabel && (
-              <text x={x + bw / 2} y={base + 18} textAnchor="middle" fontSize={11} fontWeight={today ? 600 : 400} fill={today ? '#1f1e1c' : '#898781'}>
+              <text x={x + bw / 2} y={base + 18} textAnchor="middle" fontSize={11} fontWeight={today ? 600 : 400} className={today ? 'fill-ink' : 'fill-ink-3'}>
                 {today && !monthly ? 'Hoy' : label}
               </text>
             )}

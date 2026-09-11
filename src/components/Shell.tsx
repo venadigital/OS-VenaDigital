@@ -1,13 +1,14 @@
 import { useEffect, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { ChevronsUpDown, Home, NotebookPen, Search, Settings2, Shapes, Sparkles, Square, Timer } from 'lucide-react';
+import { ChevronsUpDown, Home, Moon, NotebookPen, Search, Settings2, Shapes, Sparkles, Square, Sun, Timer } from 'lucide-react';
 import { useAccount } from '@/data/ApiContext';
 import { useBoards, useTimerSync } from '@/data/hooks';
 import { useRunningTimer } from '@/features/tiempo/model';
 import { clock } from '@/lib/format';
 import { useStopTimer } from '@/data/hooks';
 import { CommandPalette, openPalette } from './CommandPalette';
-import { cx, LiveDot } from './ui';
+import { cx, IconButton, LiveDot } from './ui';
+import { toggleTheme, useTheme } from '@/lib/theme';
 import { leaveDemo } from '@/data/ApiContext';
 
 export const NAV = [
@@ -28,7 +29,7 @@ export function Shell() {
   }, [loc.pathname]);
 
   return (
-    <div className="flex min-h-dvh bg-white">
+    <div className="flex min-h-dvh bg-page">
       <Sidebar showTimer={!timerShownInPage} />
       <main className="min-w-0 flex-1 pb-[calc(96px+var(--safe-bottom))] md:pb-0">
         <DemoBanner />
@@ -58,7 +59,7 @@ function Sidebar({ showTimer }: { showTimer: boolean }) {
   const boards = useBoards();
   const recent = (boards.data ?? []).slice(0, 3);
   return (
-    <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-[18px] border-r border-[#ecebe6] bg-plane px-2.5 pt-3 pb-3.5 md:flex">
+    <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-[18px] border-r border-line bg-plane px-2.5 pt-3 pb-3.5 md:flex">
       <Link to="/" className="flex h-9 items-center gap-2.5 rounded-lg px-2 hover:bg-fill">
         <img src="/vena-isotipo.png" alt="" className="h-6 w-6" />
         <span className="flex-1 text-sm font-semibold text-ink">Vena OS</span>
@@ -93,14 +94,26 @@ function Sidebar({ showTimer }: { showTimer: boolean }) {
         <SideLink to="/ajustes" icon={<Settings2 size={18} strokeWidth={1.75} />}>
           Ajustes
         </SideLink>
-        <div className="flex h-9 items-center gap-2.5 px-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#e3e1da] text-[10.5px] font-bold text-ink-2">
+        <div className="flex h-9 items-center gap-2.5 pr-0.5 pl-2">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-fill-2 text-[10.5px] font-bold text-ink-2">
             {user.name.slice(0, 2).toUpperCase()}
           </span>
-          <span className="truncate text-[13.5px] font-medium text-nav">{user.name}</span>
+          <span className="flex-1 truncate text-[13.5px] font-medium text-nav">{user.name}</span>
+          <ThemeButton />
         </div>
       </div>
     </aside>
+  );
+}
+
+/** Quick light/dark switch (Ajustes also offers "Sistema"). */
+export function ThemeButton({ size = 30 }: { size?: number }) {
+  const { theme } = useTheme();
+  const label = theme === 'dark' ? 'Usar modo claro' : 'Usar modo oscuro';
+  return (
+    <IconButton label={label} size={size} onClick={toggleTheme}>
+      {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+    </IconButton>
   );
 }
 
@@ -127,7 +140,7 @@ function SidebarTimer() {
   const stop = useStopTimer();
   if (!timer) return null;
   return (
-    <div className="flex flex-col gap-1.5 rounded-xl border border-line bg-white p-3 shadow-[0_1px_2px_rgba(31,30,28,0.04)]">
+    <div className="flex flex-col gap-1.5 rounded-xl border border-line bg-surface p-3 shadow-[0_1px_2px_rgb(var(--shade)/0.04)]">
       <LiveDot />
       <Link to="/tiempo" className="flex flex-col">
         <span className="truncate text-[13px] font-semibold text-ink">{timer.task?.name ?? 'Tarea'}</span>
@@ -153,14 +166,14 @@ function MobileNav({ showTimer }: { showTimer: boolean }) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 md:hidden">
       {showTimer && <MiniTimer />}
-      <nav className="flex border-t border-line bg-white px-2" style={{ paddingBottom: 'var(--safe-bottom)' }}>
+      <nav className="flex border-t border-line bg-page px-2" style={{ paddingBottom: 'var(--safe-bottom)' }}>
         {NAV.map((n) => (
           <NavLink
             key={n.to}
             to={n.to}
             end={n.to === '/'}
             className={({ isActive }) =>
-              cx('flex h-[52px] flex-1 flex-col items-center justify-center gap-0.5 text-[10px]', isActive ? 'font-semibold text-accent' : 'font-medium text-[#8c8a84]')
+              cx('flex h-[52px] flex-1 flex-col items-center justify-center gap-0.5 text-[10px]', isActive ? 'font-semibold text-accent' : 'font-medium text-ink-3')
             }
           >
             <n.icon size={24} strokeWidth={1.75} />
@@ -177,7 +190,7 @@ function MiniTimer() {
   const stop = useStopTimer();
   if (!timer) return null;
   return (
-    <div className="mx-3 mb-2 flex h-[54px] items-center gap-2.5 rounded-[14px] border border-line bg-white pr-2.5 pl-3.5 shadow-[0_8px_24px_rgba(31,30,28,0.12)]">
+    <div className="mx-3 mb-2 flex h-[54px] items-center gap-2.5 rounded-[14px] border border-line bg-overlay pr-2.5 pl-3.5 shadow-[0_8px_24px_rgb(var(--shade)/0.12)]">
       <span className="h-2 w-2 shrink-0 rounded-full bg-good" />
       <Link to="/tiempo" className="flex min-w-0 flex-1 flex-col">
         <span className="truncate text-[13.5px] font-semibold text-ink">{timer.task?.name}</span>

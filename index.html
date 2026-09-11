@@ -12,6 +12,18 @@
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <title>Vena OS</title>
+    <script>
+      // Apply the saved theme before the first paint (see src/lib/theme.ts).
+      (function () {
+        var dark = false;
+        try {
+          var p = localStorage.getItem('vena-os-theme');
+          dark = p === 'dark' || (p !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        } catch (e) {}
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#191918' : '#f9f9f7');
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

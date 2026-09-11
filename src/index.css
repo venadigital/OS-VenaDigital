@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Dark mode follows the resolved theme on <html data-theme="light|dark">. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 /* Neutral Notion/Apple direction: system font (SF Pro), warm grays, one accent. */
 @theme {
   --font-sans: -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
@@ -11,12 +14,19 @@
   --color-ink-3: #898781;
   --color-ink-4: #a9a7a1;
   --color-nav: #3d3c39;
+  /* Surfaces, from the page up: page → surface (cards) → overlay (menus, dialogs) → raised (selected segment). */
+  --color-page: #ffffff;
+  --color-surface: #ffffff;
+  --color-overlay: #ffffff;
+  --color-raised: #ffffff;
   --color-plane: #f9f9f7;
   --color-fill: #f2f1ed;
   --color-fill-2: #ebeae5;
   --color-line: #eae9e4;
   --color-line-2: #dedcd5;
   --color-rule: #f0efea;
+  --color-mute: #c3c2b7;
+  --color-bar: #d9d7d0;
   --color-good: #0ca30c;
   --color-warn: #fab219;
   --color-crit: #b42f2f;
@@ -25,15 +35,71 @@
 
 @theme inline {
   --color-accent: var(--accent);
-  --color-accent-soft: color-mix(in srgb, var(--accent) 10%, transparent);
-  --color-accent-strong: color-mix(in srgb, var(--accent) 85%, black);
+  --color-on-accent: var(--on-accent);
+  --color-accent-soft: color-mix(in srgb, var(--accent) var(--accent-soft-pct), transparent);
+  --color-accent-strong: color-mix(in srgb, var(--accent) 85%, var(--accent-shift));
 }
 
 :root {
-  --accent: #256abf;
+  /* Accent per theme: lib/accent.ts sets --accent-l / --accent-d from Ajustes. */
+  --accent: var(--accent-l, #256abf);
+  --on-accent: var(--on-accent-l, #ffffff);
+  --accent-soft-pct: 10%;
+  --accent-shift: black;
+  /* RGB channels for shadows: rgb(var(--shade) / 0.1). */
+  --shade: 31 30 28;
+  --backdrop: rgb(31 30 28 / 0.28);
+  --dots-bg: #fcfcfb;
+  --dots-dot: #d3d1ca;
+  --note-hacer: #fdf4d3;
+  --note-investigar: #eaf2fb;
+  --note-link: #ffffff;
+  --note-nota: #e9f5ee;
+  --note-inspiracion: #fbeef3;
+  --note-edge: rgb(31 30 28 / 0.05);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-top: env(safe-area-inset-top, 0px);
   color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --color-ink: #edece9;
+  --color-ink-2: #b8b6b0;
+  --color-ink-3: #8c8a84;
+  --color-ink-4: #67655f;
+  --color-nav: #d3d1cb;
+  --color-page: #191918;
+  --color-surface: #201f1d;
+  --color-overlay: #262523;
+  --color-raised: #3a3936;
+  --color-plane: #242321;
+  --color-fill: #2a2927;
+  --color-fill-2: #33322f;
+  --color-line: #2f2e2b;
+  --color-line-2: #3d3c38;
+  --color-rule: #292826;
+  --color-mute: #5a5853;
+  --color-bar: #3a3936;
+  --color-good: #34c759;
+  --color-warn: #f5b62a;
+  --color-crit: #ff6b61;
+  --color-crit-soft: #3b2120;
+
+  --accent: var(--accent-d, #4b8fe8);
+  --on-accent: var(--on-accent-d, #ffffff);
+  --accent-soft-pct: 16%;
+  --accent-shift: white;
+  --shade: 0 0 0;
+  --backdrop: rgb(0 0 0 / 0.55);
+  --dots-bg: #151514;
+  --dots-dot: #34332f;
+  --note-hacer: #37301c;
+  --note-investigar: #1d2a39;
+  --note-link: #201f1d;
+  --note-nota: #1b3027;
+  --note-inspiracion: #3a2230;
+  --note-edge: rgb(255 255 255 / 0.06);
+  color-scheme: dark;
 }
 
 html,
@@ -44,7 +110,7 @@ body,
 
 body {
   margin: 0;
-  background: #ffffff;
+  background: var(--color-page);
   color: var(--color-ink);
   font-family: var(--font-sans);
   font-size: 14px;
@@ -59,13 +125,18 @@ body {
 
 /* Dialogs use the native <dialog> element. */
 dialog::backdrop {
-  background: rgb(31 30 28 / 0.28);
+  background: var(--backdrop);
 }
 
 .dots-bg {
-  background-color: #fcfcfb;
-  background-image: radial-gradient(circle, #d3d1ca 1.1px, transparent 1.4px);
+  background-color: var(--dots-bg);
+  background-image: radial-gradient(circle, var(--dots-dot) 1.1px, transparent 1.4px);
   background-size: 20px 20px;
+}
+
+/* Board thumbnails are drawn light; in dark mode show them the way Excalidraw does. */
+[data-theme="dark"] .board-thumb {
+  filter: invert(93%) hue-rotate(180deg);
 }
 
 /* Horizontal chip rows scroll without a visible bar */

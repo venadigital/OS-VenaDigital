@@ -5,9 +5,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { registerSW } from 'virtual:pwa-register';
 import { ToastProvider } from '@/components/Toast';
 import { applyAccent, storedAccent } from '@/lib/accent';
+import { initTheme } from '@/lib/theme';
 import App from './App';
 import './index.css';
 
+initTheme();
 applyAccent(storedAccent());
 registerSW({ immediate: true });
 

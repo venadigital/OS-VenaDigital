@@ -69,7 +69,7 @@ export function TiempoPage() {
                 setAnchor(new Date());
               }}
             />
-            <div className="flex h-[34px] items-center gap-0.5 rounded-lg border border-line-2 bg-white px-1">
+            <div className="flex h-[34px] items-center gap-0.5 rounded-lg border border-line-2 bg-surface px-1">
               <IconButton label="Anterior" size={26} onClick={() => setAnchor((a) => shiftAnchor(mode, a, -1))}>
                 <ChevronLeft size={16} />
               </IconButton>
@@ -220,7 +220,7 @@ function TimerBar({ tasks, projects, onNewTask }: { tasks: Task[]; projects: Pro
 
   if (timer) {
     return (
-      <div className="flex flex-col gap-3 rounded-[14px] border border-line bg-white py-3.5 pr-4 pl-5 shadow-[0_1px_3px_rgba(31,30,28,0.05)] sm:flex-row sm:items-center sm:gap-4">
+      <div className="flex flex-col gap-3 rounded-[14px] border border-line bg-surface py-3.5 pr-4 pl-5 shadow-[0_1px_3px_rgb(var(--shade)/0.05)] sm:flex-row sm:items-center sm:gap-4">
         <div className="flex min-w-0 flex-1 items-center gap-4">
           <span className="h-[9px] w-[9px] shrink-0 rounded-full bg-good" />
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -245,7 +245,7 @@ function TimerBar({ tasks, projects, onNewTask }: { tasks: Task[]; projects: Pro
 
   const pickedTask = activeTasks.find((t) => t.id === picked);
   return (
-    <div className="flex flex-col gap-3 rounded-[14px] border border-line bg-white py-3.5 pr-4 pl-5 sm:flex-row sm:items-center sm:gap-4">
+    <div className="flex flex-col gap-3 rounded-[14px] border border-line bg-surface py-3.5 pr-4 pl-5 sm:flex-row sm:items-center sm:gap-4">
       <div className="flex min-w-0 flex-1 items-center gap-4">
         <span className="h-[9px] w-[9px] shrink-0 rounded-full bg-line-2" />
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -384,7 +384,7 @@ function EntriesCard({
                 {header && <div className="pt-3 pb-1 text-xs font-semibold text-ink-3 first-letter:uppercase">{header}</div>}
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 border-t border-rule py-2.5 first:border-t-0 md:grid-cols-[minmax(0,1fr)_150px_100px_64px]">
                   <div className="flex min-w-0 items-center gap-2.5">
-                    <Dot color={project?.color ?? '#c3c2b7'} />
+                    <Dot color={project?.color ?? 'var(--color-mute)'} />
                     <div className="flex min-w-0 flex-col">
                       <div className="flex items-center gap-2.5">
                         <span className="truncate text-[14px] text-ink">{task?.name ?? 'Tarea eliminada'}</span>
@@ -487,7 +487,7 @@ function ProjectsPanel({
       <button
         type="button"
         onClick={() => onNewTask()}
-        className="flex h-[38px] items-center gap-2 rounded-[10px] border border-line-2 bg-white px-3 text-left text-[13.5px] text-ink-4 hover:bg-plane"
+        className="flex h-[38px] items-center gap-2 rounded-[10px] border border-line-2 bg-surface px-3 text-left text-[13.5px] text-ink-4 hover:bg-plane"
       >
         <Plus size={16} className="text-ink-3" />
         Nueva tarea…

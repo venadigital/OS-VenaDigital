@@ -108,7 +108,7 @@ export function PricesDialog({ open, onClose, prices, onEdit }: { open: boolean;
     >
       <div className="-mx-1 max-h-[55vh] overflow-auto">
         <table className="w-full text-[13px]">
-          <thead className="sticky top-0 bg-white text-left text-xs text-ink-3">
+          <thead className="sticky top-0 bg-overlay text-left text-xs text-ink-3">
             <tr>
               <th className="px-1 py-2 font-medium">Modelo</th>
               <th className="px-1 py-2 text-right font-medium">Entrada</th>
@@ -312,7 +312,7 @@ export function CollectorDialog({ open, onClose }: { open: boolean; onClose: () 
         <div className="flex flex-col gap-2">
           <p className="text-[13px] font-medium text-ink">Copia este comando y pégalo en la Terminal, dentro de la carpeta del proyecto:</p>
           <div className="relative">
-            <pre className="overflow-x-auto rounded-[10px] bg-[#1f1e1c] p-3.5 pr-12 font-mono text-[12px] leading-5 break-all whitespace-pre-wrap text-[#f2f1ed]">{command}</pre>
+            <pre className="overflow-x-auto rounded-[10px] bg-[#1f1e1c] p-3.5 pr-12 dark:bg-black/40 dark:ring-1 dark:ring-line font-mono text-[12px] leading-5 break-all whitespace-pre-wrap text-[#f2f1ed]">{command}</pre>
             <button
               type="button"
               aria-label="Copiar"

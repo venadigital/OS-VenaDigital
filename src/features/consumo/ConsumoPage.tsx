@@ -90,7 +90,7 @@ export function ConsumoPage() {
         eyebrow={
           latest ? (
             <>
-              <Dot color={Date.now() - new Date(latest.last_seen_at).getTime() < 30 * 60_000 ? '#0ca30c' : '#fab219'} size={7} />
+              <Dot color={Date.now() - new Date(latest.last_seen_at).getTime() < 30 * 60_000 ? 'var(--color-good)' : 'var(--color-warn)'} size={7} />
               Sincronizado {syncAgo(latest.last_seen_at)}
             </>
           ) : (
@@ -123,7 +123,7 @@ export function ConsumoPage() {
                 setAnchor(new Date());
               }}
             />
-            <div className="flex h-[34px] items-center gap-0.5 rounded-lg border border-line-2 bg-white px-1">
+            <div className="flex h-[34px] items-center gap-0.5 rounded-lg border border-line-2 bg-surface px-1">
               <IconButton label="Anterior" size={26} onClick={() => setAnchor((a) => shiftAnchor(mode, a, -1))}>
                 <ChevronLeft size={16} />
               </IconButton>
@@ -293,8 +293,8 @@ function DailyChart({ summary, from, to, highlight, loading }: { summary: UsageS
           <svg viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full" onMouseLeave={() => setHover(null)} role="img" aria-label="Costo diario">
             {ticks.map((v) => (
               <g key={v}>
-                <line x1={x0} x2={W} y1={base - v * k} y2={base - v * k} stroke={v ? '#ecebe6' : '#c3c2b7'} strokeWidth={1} />
-                <text x={x0 - 10} y={base - v * k + 4} textAnchor="end" fontSize={11} fill="#898781" className="tnum">
+                <line x1={x0} x2={W} y1={base - v * k} y2={base - v * k} className={v ? 'stroke-line' : 'stroke-mute'} strokeWidth={1} />
+                <text x={x0 - 10} y={base - v * k + 4} textAnchor="end" fontSize={11} className="tnum fill-ink-3">
                   ${v}
                 </text>
               </g>
@@ -306,7 +306,7 @@ function DailyChart({ summary, from, to, highlight, loading }: { summary: UsageS
               const isToday = isSameDay(c.d, today);
               return (
                 <g key={c.d.toISOString()} onMouseEnter={() => setHover(i)}>
-                  <rect x={x0 + i * slot} y={8} width={slot} height={base - 8} fill={active === i ? '#f4f3ef' : 'transparent'} rx={4} />
+                  <rect x={x0 + i * slot} y={8} width={slot} height={base - 8} className={active === i ? 'fill-fill' : 'fill-transparent'} rx={4} />
                   {segs.map((s, j) => {
                     const h = Math.max(1, s.v * k - (j ? 2 : 0));
                     const yTop = y - h;
@@ -316,7 +316,7 @@ function DailyChart({ summary, from, to, highlight, loading }: { summary: UsageS
                     return <path key={j} d={d} fill={s.color} />;
                   })}
                   {(i % labelEvery === 0 || isToday) && (
-                    <text x={x + bw / 2} y={base + 20} textAnchor="middle" fontSize={11} fontWeight={isToday ? 600 : 400} fill={isToday ? '#52514e' : '#898781'}>
+                    <text x={x + bw / 2} y={base + 20} textAnchor="middle" fontSize={11} fontWeight={isToday ? 600 : 400} className={isToday ? 'fill-ink-2' : 'fill-ink-3'}>
                       {isToday ? 'Hoy' : columns.length > 10 ? format(c.d, 'd') : format(c.d, 'EEE d', { locale: es }).replace('.', '')}
                     </text>
                   )}
@@ -342,7 +342,7 @@ function Tooltip({ column, series, left, flip }: { column: { d: Date; values: nu
   const total = column.values.reduce((a, b) => a + b, 0);
   return (
     <div
-      className="pointer-events-none absolute top-3 flex w-56 flex-col gap-1.5 rounded-[10px] border border-line bg-white px-3 py-2.5 shadow-[0_8px_24px_rgba(31,30,28,0.10)]"
+      className="pointer-events-none absolute top-3 flex w-56 flex-col gap-1.5 rounded-[10px] border border-line bg-overlay px-3 py-2.5 shadow-[0_8px_24px_rgb(var(--shade)/0.10)]"
       style={flip ? { right: `${100 - left + 4}%` } : { left: `calc(${left}% + 8px)` }}
     >
       <div className="text-xs font-semibold text-ink first-letter:uppercase">{format(column.d, "EEEE d 'de' MMMM", { locale: es })}</div>
@@ -396,30 +396,29 @@ function ModelsCard({
         <p className="text-[13.5px] text-ink-3">Sin consumo en este periodo.</p>
       ) : (
         <div className="-mx-1 overflow-x-auto px-1">
-          <table className="w-full min-w-[560px] text-[13px]">
+          <table className="w-full text-[13px]">
             <thead>
               <tr className="border-b border-line text-left text-xs text-ink-3">
                 <th className="py-2 pr-3 font-medium">Modelo</th>
-                <th className="py-2 pr-3 font-medium">Fuente</th>
-                <th className="py-2 pr-3 text-right font-medium">Entrada</th>
-                <th className="py-2 pr-3 text-right font-medium">Salida</th>
-                <th className="py-2 pr-3 text-right font-medium">Caché</th>
+                <th className="hidden py-2 pr-3 text-right font-medium sm:table-cell">Entrada</th>
+                <th className="hidden py-2 pr-3 text-right font-medium sm:table-cell">Salida</th>
+                <th className="hidden py-2 pr-3 text-right font-medium sm:table-cell">Caché</th>
                 <th className="py-2 text-right font-medium">Costo</th>
               </tr>
             </thead>
             <tbody>
               {summary.byModel.map((m) => (
                 <tr key={`${m.source}:${m.model}`} className="border-b border-rule last:border-0">
-                  <td className="py-3 pr-3 font-mono text-[12.5px] text-ink">
-                    <button type="button" onClick={() => onEditPrice(m.model)} className="text-left hover:text-accent" title="Editar precio">
+                  <td className="w-full max-w-0 py-2.5 pr-3">
+                    <button type="button" onClick={() => onEditPrice(m.model)} className="block max-w-full truncate text-left font-mono text-[12.5px] text-ink hover:text-accent" title="Editar precio">
                       {m.model}
                     </button>
+                    <div className="text-xs text-ink-3">{m.source === 'codex' ? 'Codex' : 'Claude Code'}</div>
                   </td>
-                  <td className="py-3 pr-3 text-ink-2">{m.source === 'codex' ? 'Codex' : 'Claude Code'}</td>
-                  <td className="tnum py-3 pr-3 text-right text-ink-2">{tokens(m.input)}</td>
-                  <td className="tnum py-3 pr-3 text-right text-ink-2">{tokens(m.output)}</td>
-                  <td className="tnum py-3 pr-3 text-right text-ink-2">{tokens(m.cache)}</td>
-                  <td className="py-3 text-right">
+                  <td className="tnum hidden py-3 pr-3 text-right sm:table-cell whitespace-nowrap text-ink-2">{tokens(m.input)}</td>
+                  <td className="tnum hidden py-3 pr-3 text-right sm:table-cell whitespace-nowrap text-ink-2">{tokens(m.output)}</td>
+                  <td className="tnum hidden py-3 pr-3 text-right sm:table-cell whitespace-nowrap text-ink-2">{tokens(m.cache)}</td>
+                  <td className="py-3 text-right whitespace-nowrap">
                     {m.cost === null ? (
                       <button type="button" onClick={() => onEditPrice(m.model)} className="inline-flex items-center gap-1.5 font-medium text-accent">
                         <AlertTriangle size={14} className="text-warn" />
@@ -435,11 +434,10 @@ function ModelsCard({
             <tfoot>
               <tr className="border-t border-line font-semibold text-ink">
                 <td className="py-3 pr-3">Total</td>
-                <td />
-                <td className="tnum py-3 pr-3 text-right">{tokens(totals.input)}</td>
-                <td className="tnum py-3 pr-3 text-right">{tokens(totals.output)}</td>
-                <td className="tnum py-3 pr-3 text-right">{tokens(totals.cache)}</td>
-                <td className="tnum py-3 text-right">{usd(summary.cost)}</td>
+                <td className="tnum hidden py-3 pr-3 text-right sm:table-cell whitespace-nowrap">{tokens(totals.input)}</td>
+                <td className="tnum hidden py-3 pr-3 text-right sm:table-cell whitespace-nowrap">{tokens(totals.output)}</td>
+                <td className="tnum hidden py-3 pr-3 text-right sm:table-cell whitespace-nowrap">{tokens(totals.cache)}</td>
+                <td className="tnum py-3 text-right whitespace-nowrap">{usd(summary.cost)}</td>
               </tr>
             </tfoot>
           </table>
@@ -569,7 +567,7 @@ function CollectorCard({ onConnect }: { onConnect: () => void }) {
             </div>
             {m.current_account && (
               <div className="flex items-center gap-2 text-[12.5px] text-ink-2">
-                <Dot color="#c3c2b7" size={7} />
+                <Dot color="var(--color-mute)" size={7} />
                 <span className="truncate">Sesión activa en Claude Code: {m.current_account}</span>
               </div>
             )}
