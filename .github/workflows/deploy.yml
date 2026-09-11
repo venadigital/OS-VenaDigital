@@ -39,6 +39,8 @@ jobs:
 
       - name: Subir a Hostinger por FTP
         # Se salta hasta que configures los secretos FTP_* en GitHub.
+        # La cuenta FTP debe apuntar a la carpeta del subdominio: así se sube a su raíz
+        # y el deploy no puede tocar el resto del sitio.
         if: ${{ env.FTP_SERVER != '' }}
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
@@ -46,4 +48,4 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/
-          server-dir: ${{ secrets.FTP_SERVER_DIR || 'public_html/' }}
+          server-dir: ${{ secrets.FTP_SERVER_DIR || './' }}

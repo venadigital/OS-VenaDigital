@@ -54,13 +54,15 @@ npm run build      # genera dist/
 
 **Opción A: automática con GitHub Actions** (recomendada). Cada push a `main` corre las pruebas, hace el build y sube `dist/` por FTP.
 
-1. En Hostinger → **Archivos → Cuentas FTP**, copia el servidor, usuario y contraseña FTP.
-2. En GitHub → **Settings → Secrets and variables → Actions**, crea los secretos `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD` y, si la app no va en la raíz del dominio, `FTP_SERVER_DIR` (por defecto `public_html/`).
-3. Crea también las *variables* `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`, o sube `.env.production` al repositorio.
+1. En Hostinger → **Dominios → Subdominios**, crea el subdominio (por ejemplo `os`). Hostinger le da una carpeta, normalmente `public_html/os`.
+2. En **Archivos → Cuentas FTP**, crea una cuenta FTP nueva cuyo **directorio sea esa carpeta**. Así el deploy solo puede escribir ahí y nunca toca tu sitio principal.
+3. En GitHub → **Settings → Secrets and variables → Actions**, crea los secretos `FTP_SERVER` (el hostname o IP del FTP, sin `ftp://`), `FTP_USERNAME` y `FTP_PASSWORD` de esa cuenta. `FTP_SERVER_DIR` es opcional (por defecto `./`, la raíz de la cuenta FTP).
+4. Crea también las *variables* `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`, o sube `.env.production` al repositorio.
+5. En Supabase → **Authentication → URL Configuration**, pon la dirección final como *Site URL* y agrégala a *Redirect URLs*.
 
-**Opción B: manual.** Corre `npm run build` y sube el contenido de `dist/` a `public_html` con el Administrador de archivos. El `.htaccess` incluido hace que las rutas de la app funcionen y que las actualizaciones lleguen.
+**Opción B: manual.** Corre `npm run build` y sube el contenido de `dist/` a la carpeta del subdominio con el Administrador de archivos. El `.htaccess` incluido hace que las rutas de la app funcionen y que las actualizaciones lleguen.
 
-Activa el SSL gratuito del dominio en Hostinger: la PWA y el login necesitan HTTPS.
+Activa el SSL gratuito del subdominio en Hostinger: la PWA y el login necesitan HTTPS.
 
 ## 5. Colector de consumo IA (en tu Mac)
 

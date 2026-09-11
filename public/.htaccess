@@ -1,5 +1,8 @@
 # Vena OS en Hostinger (Apache / LiteSpeed)
 
+# Sirve la app aunque quede la página por defecto de Hostinger (default.php) en la carpeta.
+DirectoryIndex index.html
+
 # La app es una SPA: cualquier ruta que no sea un archivo real carga index.html.
 <IfModule mod_rewrite.c>
   RewriteEngine On
