@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Check, Copy, KeyRound, Trash2 } from 'lucide-react';
 import { Button, ColorSwatches, Dialog, Field, IconButton, Input, Select } from '@/components/ui';
 import { useToast } from '@/components/Toast';
-import { qk, useApiMutation, useCollectorTokens } from '@/data/hooks';
+import { qk, useAccounts, useApiMutation, useCollectorTokens } from '@/data/hooks';
 import type { AccountInput } from '@/data/api';
 import type { AiAccount, ModelPrice, ModelPriceInput, Provider } from '@/data/types';
 import { SERIES } from '@/lib/palette';
@@ -252,21 +252,27 @@ export function AccountDialog({
 export function CollectorDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const toast = useToast();
   const tokens = useCollectorTokens();
+  const claudeAccounts = (useAccounts().data ?? []).filter((a) => a.provider === 'anthropic' && a.email);
   const [label, setLabel] = useState('MacBook');
   const [token, setToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [history, setHistory] = useState('');
   useEffect(() => {
     if (open) {
       setToken(null);
       setCopied(false);
+      // Past Claude Code logs don't say which account was used: default to the main (most expensive) plan.
+      const main = [...claudeAccounts].sort((a, b) => b.monthly_price - a.monthly_price)[0];
+      setHistory(main?.email ?? '');
     }
+    // claudeAccounts only seeds the default when the dialog opens
   }, [open]);
 
   const create = useApiMutation((api, l: string) => api.createCollectorToken(l), [qk.collectorTokens]);
   const revoke = useApiMutation((api, id: string) => api.revokeCollectorToken(id), [qk.collectorTokens]);
 
   const command = token
-    ? `node collector/collector.mjs setup --url ${supabaseUrl || '<SUPABASE_URL>'} --key ${supabaseKey || '<LLAVE_PUBLICABLE>'} --token ${token}\nnode collector/collector.mjs install`
+    ? `node collector/collector.mjs setup --url ${supabaseUrl || '<SUPABASE_URL>'} --key ${supabaseKey || '<LLAVE_PUBLICABLE>'} --token ${token}${history ? ` --history-account ${history}` : ''} && node collector/collector.mjs install`
     : '';
 
   return (
@@ -276,6 +282,18 @@ export function CollectorDialog({ open, onClose }: { open: boolean; onClose: () 
         <code className="font-mono text-[12.5px]">~/.codex</code>), anota qué cuenta de Claude tiene la sesión activa y sube los totales cada 5 minutos. Solo
         sube conteos de tokens por día y modelo, nunca el contenido de tus conversaciones.
       </p>
+      {!token && claudeAccounts.length > 0 && (
+        <Field label="Tu uso de Claude Code anterior a hoy" hint="Los registros viejos no dicen con qué cuenta se hicieron. Desde hoy el colector lo detecta solo.">
+          <Select value={history} onChange={(e) => setHistory(e.target.value)}>
+            {claudeAccounts.map((a) => (
+              <option key={a.id} value={a.email!}>
+                Asignarlo a {a.plan || a.label} ({a.email})
+              </option>
+            ))}
+            <option value="">Dejarlo sin cuenta asignada</option>
+          </Select>
+        </Field>
+      )}
       {!token ? (
         <div className="flex items-end gap-2">
           <Field label="Nombre del equipo">
@@ -292,9 +310,9 @@ export function CollectorDialog({ open, onClose }: { open: boolean; onClose: () 
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          <p className="text-[13px] font-medium text-ink">En la carpeta del proyecto, corre en la Terminal:</p>
+          <p className="text-[13px] font-medium text-ink">Copia este comando y pégalo en la Terminal, dentro de la carpeta del proyecto:</p>
           <div className="relative">
-            <pre className="overflow-x-auto rounded-[10px] bg-[#1f1e1c] p-3.5 pr-12 font-mono text-[12px] leading-5 whitespace-pre text-[#f2f1ed]">{command}</pre>
+            <pre className="overflow-x-auto rounded-[10px] bg-[#1f1e1c] p-3.5 pr-12 font-mono text-[12px] leading-5 break-all whitespace-pre-wrap text-[#f2f1ed]">{command}</pre>
             <button
               type="button"
               aria-label="Copiar"
