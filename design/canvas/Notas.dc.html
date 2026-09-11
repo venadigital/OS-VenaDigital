@@ -1,0 +1,193 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  
+  <style>
+    html, body { margin: 0; background: #FFFFFF; }
+    body { font-family: -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; color: #1F1E1C; font-size: 14px; line-height: 1.43; -webkit-font-smoothing: antialiased; }
+    * { box-sizing: border-box; }
+    a { color: #256abf; text-decoration: none; }
+    a:hover { color: #1c5cab; }
+    h1, h2, h3, p { margin: 0; }
+    .tnum { font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+<div style="width: 1440px; min-height: 1060px; display: flex; background: #FFFFFF;">
+  <aside style="width: 240px; flex-shrink: 0; background: #F9F9F7; border-right: 1px solid #ECEBE6; display: flex; flex-direction: column; gap: 18px; padding: 12px 10px 14px;">
+    <div style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 8px;">
+      <img src="vena-isotipo.png" alt="Vena Digital" style="width: 24px; height: 24px; display: block;">
+      <div style="flex-grow: 1; font-size: 14px; font-weight: 600; color: #1F1E1C;">Vena OS</div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #898781;"><path d="m8 9.5 4-4 4 4"></path><path d="m8 14.5 4 4 4-4"></path></svg>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 2px;">
+      <div style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 8px; font-size: 14px; font-weight: 500; color: #3D3C39;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><circle cx="11" cy="11" r="6.5"></circle><path d="m20 20-4.2-4.2"></path></svg>
+        <span style="flex-grow: 1;">Buscar</span>
+        <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 11px; color: #898781;">⌘K</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 8px; font-size: 14px; font-weight: 500; color: #3D3C39;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><path d="M4 10.5 12 4l8 6.5"></path><path d="M6 9v10.5c0 .3.2.5.5.5H10v-5.5h4V20h3.5c.3 0 .5-.2.5-.5V9"></path></svg>
+        <span>Inicio</span>
+      </div><div style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 8px; font-size: 14px; font-weight: 500; color: #3D3C39;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><circle cx="12" cy="13.5" r="7.5"></circle><path d="M12 10v3.5l2.3 1.6"></path><path d="M9.5 3h5"></path><path d="m18.5 6.5 1.2-1.2"></path></svg>
+        <span>Tiempo</span>
+      </div><div style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 8px; font-size: 14px; font-weight: 500; color: #3D3C39;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><path d="M11 3.5c.5 4.2 2.3 6 6.5 6.5-4.2.5-6 2.3-6.5 6.5-.5-4.2-2.3-6-6.5-6.5 4.2-.5 6-2.3 6.5-6.5Z"></path><path d="M18.5 15c.2 1.6 1 2.3 2.5 2.5-1.5.2-2.3.9-2.5 2.5-.2-1.6-1-2.3-2.5-2.5 1.5-.2 2.3-.9 2.5-2.5Z"></path></svg>
+        <span>Consumo IA</span>
+      </div><div style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 8px; font-size: 14px; font-weight: 500; color: #3D3C39;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.5"></rect><circle cx="17" cy="7.25" r="3.75"></circle><path d="M12 13.5l4.5 7h-9Z"></path></svg>
+        <span>Tableros</span>
+      </div><div style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 8px; font-size: 14px; font-weight: 600; color: #1F1E1C; background: #EBEAE5;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #1F1E1C;"><path d="M5 4h14a1 1 0 0 1 1 1v9.5L14.5 20H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"></path><path d="M14.5 20v-4.5a1 1 0 0 1 1-1H20"></path></svg>
+        <span>Notas</span>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 2px;">
+      <div style="font-size: 12px; font-weight: 600; color: #898781; padding: 0 10px 6px;">Tableros recientes</div>
+      <div style="display: flex; align-items: center; gap: 10px; height: 30px; padding: 0 10px; border-radius: 8px; font-size: 13.5px; color: #52514E;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #898781;"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.5"></rect><circle cx="17" cy="7.25" r="3.75"></circle><path d="M12 13.5l4.5 7h-9Z"></path></svg>
+        <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Arquitectura OS Vena</span>
+      </div><div style="display: flex; align-items: center; gap: 10px; height: 30px; padding: 0 10px; border-radius: 8px; font-size: 13.5px; color: #52514E;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #898781;"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.5"></rect><circle cx="17" cy="7.25" r="3.75"></circle><path d="M12 13.5l4.5 7h-9Z"></path></svg>
+        <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Funnel Academia IA</span>
+      </div><div style="display: flex; align-items: center; gap: 10px; height: 30px; padding: 0 10px; border-radius: 8px; font-size: 13.5px; color: #52514E;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #898781;"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.5"></rect><circle cx="17" cy="7.25" r="3.75"></circle><path d="M12 13.5l4.5 7h-9Z"></path></svg>
+        <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Calendario de contenidos</span>
+      </div>
+    </div>
+    <div style="flex-grow: 1;"></div>
+    <div style="background: #FFFFFF; border: 1px solid #EAE9E4; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 1px 2px rgba(31, 30, 28, 0.04);">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #0CA30C; flex-shrink: 0;"></span><span>En curso</span></div>
+      <div style="display: flex; flex-direction: column; gap: 1px;">
+        <div style="font-size: 13px; font-weight: 600; color: #1F1E1C;">Diseño de pantallas</div>
+        <div style="font-size: 12px; color: #898781;">OS Vena Digital</div>
+      </div>
+      <div style="display: flex; align-items: center; justify-content: space-between;">
+        <span class="tnum" style="font-size: 20px; font-weight: 600; letter-spacing: -0.01em; color: #1F1E1C;">00:42:18</span>
+        <div style="width: 30px; height: 30px; border-radius: 50%; background: #FCEBEA; display: flex; align-items: center; justify-content: center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #B42F2F;"><rect x="6.5" y="6.5" width="11" height="11" rx="2.5" fill="currentColor" stroke="none"></rect></svg></div>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 2px;">
+      <div style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 8px; font-size: 14px; font-weight: 500; color: #3D3C39;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"></path><circle cx="15" cy="7" r="2"></circle><circle cx="9" cy="17" r="2"></circle></svg>
+        <span>Ajustes</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 8px;">
+        <div style="width: 24px; height: 24px; border-radius: 50%; background: #E3E1DA; display: flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 700; color: #52514E;">LS</div>
+        <div style="font-size: 13.5px; font-weight: 500; color: #3D3C39;">Laura Salazar</div>
+      </div>
+    </div>
+  </aside>
+  <main style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 28px; padding: 40px 64px 56px;">
+    
+    <header style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;">
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: #898781;">24 notas</div>
+      <h1 style="font-size: 32px; line-height: 38px; font-weight: 700; letter-spacing: -0.022em; color: #1F1E1C;">Notas</h1>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px;"><div style="display: flex; align-items: center; gap: 8px; width: 240px; height: 34px; padding: 0 10px; border-radius: 8px; background: #F2F1ED; color: #898781;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #898781;"><circle cx="11" cy="11" r="6.5"></circle><path d="m20 20-4.2-4.2"></path></svg><span style="font-size: 13.5px; color: #A9A7A1;">Buscar en notas</span></div><div style="display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px 0 12px; border-radius: 8px; background: {{accent}}; color: #FFFFFF; font-size: 13.5px; font-weight: 600; white-space: nowrap;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #FFFFFF;"><path d="M12 5v14M5 12h14"></path></svg><span>Nueva nota</span></div></div>
+  </header>
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;"><div style="display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 15px; background: #1F1E1C; color: #FFFFFF; font-size: 13px; font-weight: 600;"><span>Todas</span><span class="tnum" style="color: rgba(255, 255, 255, 0.65); font-weight: 500;">24</span></div><div style="display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 15px; background: #F2F1ED; color: #52514E; font-size: 13px; font-weight: 500;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #eda100; flex-shrink: 0;"></span><span>Por hacer</span><span class="tnum" style="color: #898781;">7</span></div><div style="display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 15px; background: #F2F1ED; color: #52514E; font-size: 13px; font-weight: 500;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #2a78d6; flex-shrink: 0;"></span><span>Por investigar</span><span class="tnum" style="color: #898781;">5</span></div><div style="display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 15px; background: #F2F1ED; color: #52514E; font-size: 13px; font-weight: 500;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #898781; flex-shrink: 0;"></span><span>Link</span><span class="tnum" style="color: #898781;">6</span></div><div style="display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 15px; background: #F2F1ED; color: #52514E; font-size: 13px; font-weight: 500;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #1baf7a; flex-shrink: 0;"></span><span>Nota</span><span class="tnum" style="color: #898781;">4</span></div><div style="display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 15px; background: #F2F1ED; color: #52514E; font-size: 13px; font-weight: 500;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #e87ba4; flex-shrink: 0;"></span><span>Inspiración</span><span class="tnum" style="color: #898781;">2</span></div></div>
+      <div style="display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 12px 0 16px; border-radius: 12px; background: #F9F9F7; border: 1px solid #EAE9E4;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #898781;"><path d="M12 5v14M5 12h14"></path></svg>
+      <div style="flex-grow: 1; font-size: 14.5px; color: #A9A7A1;">Escribe algo, pega un link o arrastra una imagen…</div>
+      <div style="display: flex; align-items: center; gap: 12px;"><div style="display: flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 8px; background: #FFFFFF; border: 1px solid #DEDCD5; font-size: 12.5px; font-weight: 500; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #1baf7a; flex-shrink: 0;"></span><span>Nota</span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #898781;"><path d="m6.5 9.5 5.5 5.5 5.5-5.5"></path></svg></div><div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #898781;">
+        <span style="display: flex; align-items: center; justify-content: center; width: 24px; height: 20px; border-radius: 5px; background: #FFFFFF; border: 1px solid #E3E1DA;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><path d="M19 5.5v5.5a3 3 0 0 1-3 3H6"></path><path d="m9.5 10.5-3.5 3.5 3.5 3.5"></path></svg></span>
+        <span>guardar</span>
+      </div></div>
+    </div>
+    </div>
+    <section style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #52514E;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #898781;"><path d="M12 16.5V21"></path><path d="M8.5 3.5h7l-1 5.5 3 3v1.5h-11V12l3-3Z"></path></svg><span>Fijadas</span></div>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; align-items: start;"><div style="background: #FDF4D3; border: 1px solid rgba(31, 30, 28, 0.05); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #eda100; flex-shrink: 0;"></span><span>Por hacer</span></div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #898781;"><path d="M12 16.5V21"></path><path d="M8.5 3.5h7l-1 5.5 3 3v1.5h-11V12l3-3Z"></path></svg>
+    </div><div style="font-size: 14px; line-height: 20px; color: #1F1E1C; text-wrap: pretty;">Grabar la clase 5 de Academia IA antes del martes.</div><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: #898781;"><span>Para el martes 15</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #A9A7A1;"><circle cx="12" cy="12" r="8"></circle></svg></div></div><div style="background: #EAF2FB; border: 1px solid rgba(31, 30, 28, 0.05); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #2a78d6; flex-shrink: 0;"></span><span>Por investigar</span></div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #898781;"><path d="M12 16.5V21"></path><path d="M8.5 3.5h7l-1 5.5 3 3v1.5h-11V12l3-3Z"></path></svg>
+    </div><div style="font-size: 14px; line-height: 20px; color: #1F1E1C; text-wrap: pretty;">¿Cuánto cuesta gpt-5.6-sol en la API? Lo necesito para Consumo IA.</div><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: #898781;"><span>Ayer</span></div></div><div style="background: #E9F5EE; border: 1px solid rgba(31, 30, 28, 0.05); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #1baf7a; flex-shrink: 0;"></span><span>Nota</span></div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #898781;"><path d="M12 16.5V21"></path><path d="M8.5 3.5h7l-1 5.5 3 3v1.5h-11V12l3-3Z"></path></svg>
+    </div><div style="font-size: 14px; line-height: 20px; color: #1F1E1C; text-wrap: pretty;">“Primero ordenas. Luego automatizas.” Frase para el carrusel del lunes.</div><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: #898781;"><span>9 sep</span></div></div></div>
+    </section>
+    <section style="display: flex; flex-direction: column; gap: 12px;">
+      <div style="font-size: 13px; font-weight: 600; color: #52514E;">Recientes</div>
+      <div style="display: flex; gap: 16px; align-items: flex-start;"><div style="flex-grow: 1; flex-basis: 0; min-width: 0; display: flex; flex-direction: column; gap: 16px;"><div style="background: #FFFFFF; border: 1px solid #EAE9E4; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #898781; flex-shrink: 0;"></span><span>Link</span></div>
+      
+    </div><div style="height: 88px; border-radius: 10px; background: #F4F3EF; padding: 12px 14px; display: flex; flex-direction: column; gap: 7px; overflow: hidden;">
+        <div style="display: flex; gap: 5px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #D9D7D0;"></span><span style="width: 6px; height: 6px; border-radius: 50%; background: #D9D7D0;"></span><span style="width: 6px; height: 6px; border-radius: 50%; background: #D9D7D0;"></span></div>
+        <div style="width: 62%; height: 9px; border-radius: 3px; background: #D9D7D0;"></div>
+        <div style="width: 88%; height: 5px; border-radius: 3px; background: #E4E2DC;"></div>
+        <div style="width: 76%; height: 5px; border-radius: 3px; background: #E4E2DC;"></div>
+        <div style="width: 54%; height: 5px; border-radius: 3px; background: #E4E2DC;"></div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #898781;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #898781;"><path d="M10 13.5a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1"></path><path d="M14 10.5a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1"></path></svg><span>supabase.com</span></div>
+        <div style="font-size: 14px; line-height: 19px; font-weight: 600; color: #1F1E1C;">Row Level Security</div>
+        <div style="font-size: 13px; line-height: 18px; color: #52514E;">Políticas para que cada fila solo la vea su dueña.</div>
+      </div><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: #898781;"><span>Ayer</span></div></div><div style="background: #FBEEF3; border: 1px solid rgba(31, 30, 28, 0.05); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #e87ba4; flex-shrink: 0;"></span><span>Inspiración</span></div>
+      
+    </div><div style="font-size: 21px; line-height: 26px; font-weight: 700; letter-spacing: -0.015em; color: #1F1E1C; text-wrap: balance;">Menos caos, más sistema.</div><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: #898781;"><span>4 sep</span></div></div></div><div style="flex-grow: 1; flex-basis: 0; min-width: 0; display: flex; flex-direction: column; gap: 16px;"><div style="background: #FDF4D3; border: 1px solid rgba(31, 30, 28, 0.05); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #eda100; flex-shrink: 0;"></span><span>Por hacer</span></div>
+      
+    </div><div style="font-size: 14px; line-height: 20px; color: #1F1E1C; text-wrap: pretty;">Enviar las facturas de agosto a los clientes.</div><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: #898781;"><span>Ayer</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #A9A7A1;"><circle cx="12" cy="12" r="8"></circle></svg></div></div><div style="background: #E9F5EE; border: 1px solid rgba(31, 30, 28, 0.05); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #1baf7a; flex-shrink: 0;"></span><span>Nota</span></div>
+      
+    </div><div style="font-size: 14px; line-height: 20px; color: #1F1E1C; text-wrap: pretty;">Episodio del podcast: cómo organizo mi semana con IA sin volverme loca.</div><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: #898781;"><span>7 sep</span></div></div><div style="background: #EAF2FB; border: 1px solid rgba(31, 30, 28, 0.05); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #2a78d6; flex-shrink: 0;"></span><span>Por investigar</span></div>
+      
+    </div><div style="font-size: 14px; line-height: 20px; color: #1F1E1C; text-wrap: pretty;">Push en PWA de iOS: ¿qué tan confiables son los avisos?</div><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: #898781;"><span>3 sep</span></div></div></div><div style="flex-grow: 1; flex-basis: 0; min-width: 0; display: flex; flex-direction: column; gap: 16px;"><div style="background: #FBEEF3; border: 1px solid rgba(31, 30, 28, 0.05); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #e87ba4; flex-shrink: 0;"></span><span>Inspiración</span></div>
+      
+    </div><div style="height: 96px; display: flex; gap: 6px; padding: 8px; border-radius: 10px; background: #FFFFFF;"><div style="flex-grow: 1; flex-basis: 0; height: 100%; border-radius: 8px; background: #F3D9B1;"></div><div style="flex-grow: 1; flex-basis: 0; height: 100%; border-radius: 8px; background: #E9A77C;"></div><div style="flex-grow: 1; flex-basis: 0; height: 100%; border-radius: 8px; background: #C8664B;"></div><div style="flex-grow: 1; flex-basis: 0; height: 100%; border-radius: 8px; background: #6E4B3A;"></div><div style="flex-grow: 1; flex-basis: 0; height: 100%; border-radius: 8px; background: #F6F1E7;"></div></div><div style="font-size: 14px; line-height: 20px; color: #1F1E1C;">Paleta cálida para la landing de Academia.</div><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: #898781;"><span>8 sep</span></div></div><div style="background: #FDF4D3; border: 1px solid rgba(31, 30, 28, 0.05); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #eda100; flex-shrink: 0;"></span><span>Por hacer</span></div>
+      
+    </div><div style="font-size: 14px; line-height: 20px; color: #1F1E1C; text-wrap: pretty;">Revisar métricas de Instagram de agosto.</div><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: #898781;"><span>5 sep</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #A9A7A1;"><circle cx="12" cy="12" r="8"></circle></svg></div></div></div><div style="flex-grow: 1; flex-basis: 0; min-width: 0; display: flex; flex-direction: column; gap: 16px;"><div style="background: #EAF2FB; border: 1px solid rgba(31, 30, 28, 0.05); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #2a78d6; flex-shrink: 0;"></span><span>Por investigar</span></div>
+      
+    </div><div style="font-size: 14px; line-height: 20px; color: #1F1E1C; text-wrap: pretty;">Excalidraw: ¿exportToBlob sirve para las miniaturas de los tableros?</div><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: #898781;"><span>8 sep</span></div></div><div style="background: #FFFFFF; border: 1px solid #EAE9E4; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #898781; flex-shrink: 0;"></span><span>Link</span></div>
+      
+    </div>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #898781;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #898781;"><path d="M10 13.5a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1"></path><path d="M14 10.5a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1"></path></svg><span>github.com</span></div>
+        <div style="font-size: 14px; line-height: 19px; font-weight: 600; color: #1F1E1C;">excalidraw/excalidraw</div>
+        <div style="font-size: 13px; line-height: 18px; color: #52514E;">Pizarra open source (MIT) para embeber en el módulo Tableros.</div>
+      </div><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: #898781;"><span>6 sep</span></div></div><div style="background: #FFFFFF; border: 1px solid #EAE9E4; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;"><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #898781; flex-shrink: 0;"></span><span>Link</span></div>
+      
+    </div>
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #898781;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #898781;"><path d="M10 13.5a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1"></path><path d="M14 10.5a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1"></path></svg><span>developer.apple.com</span></div>
+        <div style="font-size: 14px; line-height: 19px; font-weight: 600; color: #1F1E1C;">Human Interface Guidelines</div>
+        <div style="font-size: 13px; line-height: 18px; color: #52514E;">Referencia de estilo para el OS.</div>
+      </div><div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; color: #898781;"><span>2 sep</span></div></div></div></div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"accent":{"editor":"color","default":"#256abf","options":["#256abf","#1f1e1c","#c94a36","#1f7a55"]},"$preview":{"width":1440,"height":1060}}'>
+class Component extends DCLogic {
+  soft(hex, alpha) {
+    var m = /^#?([0-9a-f]{6})/i.exec(hex || '');
+    if (!m) return 'rgba(37, 106, 191, ' + alpha + ')';
+    var n = parseInt(m[1], 16);
+    return 'rgba(' + ((n >> 16) & 255) + ', ' + ((n >> 8) & 255) + ', ' + (n & 255) + ', ' + alpha + ')';
+  }
+  renderVals() {
+    var accent = this.props.accent ?? '#256abf';
+    return { accent: accent, accentSoft: this.soft(accent, 0.1), accentLine: this.soft(accent, 0.45) };
+  }
+}
+</script>
+</body>
+</html>

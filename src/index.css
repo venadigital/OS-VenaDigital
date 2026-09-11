@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+/* Neutral Notion/Apple direction: system font (SF Pro), warm grays, one accent. */
+@theme {
+  --font-sans: -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --font-hand: "Caveat", "Bradley Hand", "Comic Sans MS", cursive;
+
+  --color-ink: #1f1e1c;
+  --color-ink-2: #52514e;
+  --color-ink-3: #898781;
+  --color-ink-4: #a9a7a1;
+  --color-nav: #3d3c39;
+  --color-plane: #f9f9f7;
+  --color-fill: #f2f1ed;
+  --color-fill-2: #ebeae5;
+  --color-line: #eae9e4;
+  --color-line-2: #dedcd5;
+  --color-rule: #f0efea;
+  --color-good: #0ca30c;
+  --color-warn: #fab219;
+  --color-crit: #b42f2f;
+  --color-crit-soft: #fcebea;
+}
+
+@theme inline {
+  --color-accent: var(--accent);
+  --color-accent-soft: color-mix(in srgb, var(--accent) 10%, transparent);
+  --color-accent-strong: color-mix(in srgb, var(--accent) 85%, black);
+}
+
+:root {
+  --accent: #256abf;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #ffffff;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.43;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Dialogs use the native <dialog> element. */
+dialog::backdrop {
+  background: rgb(31 30 28 / 0.28);
+}
+
+.dots-bg {
+  background-color: #fcfcfb;
+  background-image: radial-gradient(circle, #d3d1ca 1.1px, transparent 1.4px);
+  background-size: 20px 20px;
+}
+
+/* Horizontal chip rows scroll without a visible bar */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Masonry wall for notes */
+.masonry {
+  column-gap: 16px;
+}
+.masonry > * {
+  break-inside: avoid;
+  margin-bottom: 16px;
+}
+
+/* Excalidraw fills its parent; keep our shell flush. */
+.excalidraw-host .excalidraw {
+  --color-primary: var(--accent);
+}
+
+@media (max-width: 767px) {
+  .masonry > * {
+    margin-bottom: 10px;
+  }
+  .masonry {
+    column-gap: 10px;
+  }
+}

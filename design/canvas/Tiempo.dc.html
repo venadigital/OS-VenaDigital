@@ -1,0 +1,288 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  
+  <style>
+    html, body { margin: 0; background: #FFFFFF; }
+    body { font-family: -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; color: #1F1E1C; font-size: 14px; line-height: 1.43; -webkit-font-smoothing: antialiased; }
+    * { box-sizing: border-box; }
+    a { color: #256abf; text-decoration: none; }
+    a:hover { color: #1c5cab; }
+    h1, h2, h3, p { margin: 0; }
+    .tnum { font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+<div style="width: 1440px; min-height: 1240px; display: flex; background: #FFFFFF;">
+  <aside style="width: 240px; flex-shrink: 0; background: #F9F9F7; border-right: 1px solid #ECEBE6; display: flex; flex-direction: column; gap: 18px; padding: 12px 10px 14px;">
+    <div style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 8px;">
+      <img src="vena-isotipo.png" alt="Vena Digital" style="width: 24px; height: 24px; display: block;">
+      <div style="flex-grow: 1; font-size: 14px; font-weight: 600; color: #1F1E1C;">Vena OS</div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #898781;"><path d="m8 9.5 4-4 4 4"></path><path d="m8 14.5 4 4 4-4"></path></svg>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 2px;">
+      <div style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 8px; font-size: 14px; font-weight: 500; color: #3D3C39;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><circle cx="11" cy="11" r="6.5"></circle><path d="m20 20-4.2-4.2"></path></svg>
+        <span style="flex-grow: 1;">Buscar</span>
+        <span style="font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 11px; color: #898781;">⌘K</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 8px; font-size: 14px; font-weight: 500; color: #3D3C39;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><path d="M4 10.5 12 4l8 6.5"></path><path d="M6 9v10.5c0 .3.2.5.5.5H10v-5.5h4V20h3.5c.3 0 .5-.2.5-.5V9"></path></svg>
+        <span>Inicio</span>
+      </div><div style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 8px; font-size: 14px; font-weight: 600; color: #1F1E1C; background: #EBEAE5;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #1F1E1C;"><circle cx="12" cy="13.5" r="7.5"></circle><path d="M12 10v3.5l2.3 1.6"></path><path d="M9.5 3h5"></path><path d="m18.5 6.5 1.2-1.2"></path></svg>
+        <span>Tiempo</span>
+      </div><div style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 8px; font-size: 14px; font-weight: 500; color: #3D3C39;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><path d="M11 3.5c.5 4.2 2.3 6 6.5 6.5-4.2.5-6 2.3-6.5 6.5-.5-4.2-2.3-6-6.5-6.5 4.2-.5 6-2.3 6.5-6.5Z"></path><path d="M18.5 15c.2 1.6 1 2.3 2.5 2.5-1.5.2-2.3.9-2.5 2.5-.2-1.6-1-2.3-2.5-2.5 1.5-.2 2.3-.9 2.5-2.5Z"></path></svg>
+        <span>Consumo IA</span>
+      </div><div style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 8px; font-size: 14px; font-weight: 500; color: #3D3C39;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.5"></rect><circle cx="17" cy="7.25" r="3.75"></circle><path d="M12 13.5l4.5 7h-9Z"></path></svg>
+        <span>Tableros</span>
+      </div><div style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 8px; font-size: 14px; font-weight: 500; color: #3D3C39;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><path d="M5 4h14a1 1 0 0 1 1 1v9.5L14.5 20H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"></path><path d="M14.5 20v-4.5a1 1 0 0 1 1-1H20"></path></svg>
+        <span>Notas</span>
+      </div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 2px;">
+      <div style="font-size: 12px; font-weight: 600; color: #898781; padding: 0 10px 6px;">Tableros recientes</div>
+      <div style="display: flex; align-items: center; gap: 10px; height: 30px; padding: 0 10px; border-radius: 8px; font-size: 13.5px; color: #52514E;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #898781;"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.5"></rect><circle cx="17" cy="7.25" r="3.75"></circle><path d="M12 13.5l4.5 7h-9Z"></path></svg>
+        <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Arquitectura OS Vena</span>
+      </div><div style="display: flex; align-items: center; gap: 10px; height: 30px; padding: 0 10px; border-radius: 8px; font-size: 13.5px; color: #52514E;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #898781;"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.5"></rect><circle cx="17" cy="7.25" r="3.75"></circle><path d="M12 13.5l4.5 7h-9Z"></path></svg>
+        <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Funnel Academia IA</span>
+      </div><div style="display: flex; align-items: center; gap: 10px; height: 30px; padding: 0 10px; border-radius: 8px; font-size: 13.5px; color: #52514E;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #898781;"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.5"></rect><circle cx="17" cy="7.25" r="3.75"></circle><path d="M12 13.5l4.5 7h-9Z"></path></svg>
+        <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Calendario de contenidos</span>
+      </div>
+    </div>
+    <div style="flex-grow: 1;"></div>
+    
+    <div style="display: flex; flex-direction: column; gap: 2px;">
+      <div style="display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 8px; font-size: 14px; font-weight: 500; color: #3D3C39;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"></path><circle cx="15" cy="7" r="2"></circle><circle cx="9" cy="17" r="2"></circle></svg>
+        <span>Ajustes</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 8px;">
+        <div style="width: 24px; height: 24px; border-radius: 50%; background: #E3E1DA; display: flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 700; color: #52514E;">LS</div>
+        <div style="font-size: 13.5px; font-weight: 500; color: #3D3C39;">Laura Salazar</div>
+      </div>
+    </div>
+  </aside>
+  <main style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 20px; padding: 40px 64px 56px;">
+    
+    <header style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;">
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: #898781;">Viernes, 11 de septiembre</div>
+      <h1 style="font-size: 32px; line-height: 38px; font-weight: 700; letter-spacing: -0.022em; color: #1F1E1C;">Tiempo</h1>
+    </div>
+    <div style="display: flex; align-items: center; gap: 10px;"><div style="display: flex; align-items: center; gap: 2px; padding: 2px; border-radius: 9px; background: #F2F1ED;"><div style="display: flex; align-items: center; justify-content: center; height: 26px; padding: 0 14px; border-radius: 7px; font-size: 13px; font-weight: 600; color: #1F1E1C; background: #FFFFFF; box-shadow: 0 1px 2px rgba(31, 30, 28, 0.10), 0 0 0 0.5px rgba(31, 30, 28, 0.08);">Día</div><div style="display: flex; align-items: center; justify-content: center; height: 26px; padding: 0 14px; border-radius: 7px; font-size: 13px; font-weight: 500; color: #52514E;">Semana</div><div style="display: flex; align-items: center; justify-content: center; height: 26px; padding: 0 14px; border-radius: 7px; font-size: 13px; font-weight: 500; color: #52514E;">Mes</div></div><div style="display: flex; align-items: center; gap: 2px; height: 34px; padding: 0 4px; border-radius: 8px; border: 1px solid #DEDCD5; background: #FFFFFF;">
+      <div style="width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; color: #52514E;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><path d="m14.5 6-6 6 6 6"></path></svg></div>
+      <div style="font-size: 13.5px; font-weight: 500; color: #1F1E1C; padding: 0 4px;">Hoy</div>
+      <div style="width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; color: #A9A7A1;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #A9A7A1;"><path d="m9.5 6 6 6-6 6"></path></svg></div>
+    </div><div style="display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 8px; background: #FFFFFF; border: 1px solid #DEDCD5; color: #1F1E1C; font-size: 13.5px; font-weight: 500; white-space: nowrap;"><span>Todos los proyectos</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #898781;"><path d="m6.5 9.5 5.5 5.5 5.5-5.5"></path></svg></div><div style="display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 8px; background: #FFFFFF; border: 1px solid #DEDCD5; color: #1F1E1C; font-size: 13.5px; font-weight: 500; white-space: nowrap;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><path d="M12 5v14M5 12h14"></path></svg><span>Nueva tarea</span></div></div>
+  </header>
+    <div style="display: flex; align-items: center; gap: 16px; padding: 14px 16px 14px 20px; border: 1px solid #EAE9E4; border-radius: 14px; background: #FFFFFF; box-shadow: 0 1px 3px rgba(31, 30, 28, 0.05);">
+      <span style="width: 9px; height: 9px; border-radius: 50%; background: #0CA30C; flex-shrink: 0;"></span>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 16px; font-weight: 600; color: #1F1E1C;"><span>Diseño de pantallas</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #898781;"><path d="m6.5 9.5 5.5 5.5 5.5-5.5"></path></svg></div>
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #898781;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #2a78d6; flex-shrink: 0;"></span><span>OS Vena Digital · en curso desde las 14:05</span></div>
+      </div>
+      <div class="tnum" style="font-size: 30px; font-weight: 600; letter-spacing: -0.02em; color: #1F1E1C;">00:42:18</div>
+      <div style="display: flex; align-items: center; justify-content: center; gap: 7px; height: 40px; padding: 0 16px; border-radius: 20px; background: #FCEBEA; color: #B42F2F; font-size: 14px; font-weight: 600;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #B42F2F;"><rect x="6.5" y="6.5" width="11" height="11" rx="2.5" fill="currentColor" stroke="none"></rect></svg><span>Detener</span></div>
+    </div>
+    <div style="background: #FFFFFF; border: 1px solid #EAE9E4; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 22px;">
+      <div style="font-size: 15px; font-weight: 600; color: #1F1E1C; letter-spacing: -0.005em;">Línea del día</div>
+      <div style="display: flex; align-items: center; gap: 14px;"><div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #2a78d6; flex-shrink: 0;"></span><span>OS Vena</span></div><div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #eb6834; flex-shrink: 0;"></span><span>Academia IA</span></div><div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #1baf7a; flex-shrink: 0;"></span><span>Contenidos</span></div><div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #eda100; flex-shrink: 0;"></span><span>Podcast</span></div><div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #e87ba4; flex-shrink: 0;"></span><span>Administración</span></div></div>
+    </div>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <div style="position: relative; height: 14px;">
+          <div style="position: absolute; left: 67.833%; transform: translateX(-50%); font-size: 11px; font-weight: 600; color: #1F1E1C;">Ahora</div>
+        </div>
+        <div style="position: relative; height: 42px;">
+          <div style="position: absolute; top: 0; bottom: 0; left: 0.000%; width: 1px; background: #F0EFEA;"></div><div style="position: absolute; top: 0; bottom: 0; left: 10.000%; width: 1px; background: #F0EFEA;"></div><div style="position: absolute; top: 0; bottom: 0; left: 20.000%; width: 1px; background: #F0EFEA;"></div><div style="position: absolute; top: 0; bottom: 0; left: 30.000%; width: 1px; background: #F0EFEA;"></div><div style="position: absolute; top: 0; bottom: 0; left: 40.000%; width: 1px; background: #F0EFEA;"></div><div style="position: absolute; top: 0; bottom: 0; left: 50.000%; width: 1px; background: #F0EFEA;"></div><div style="position: absolute; top: 0; bottom: 0; left: 60.000%; width: 1px; background: #F0EFEA;"></div><div style="position: absolute; top: 0; bottom: 0; left: 70.000%; width: 1px; background: #F0EFEA;"></div><div style="position: absolute; top: 0; bottom: 0; left: 80.000%; width: 1px; background: #F0EFEA;"></div><div style="position: absolute; top: 0; bottom: 0; left: 90.000%; width: 1px; background: #F0EFEA;"></div><div style="position: absolute; top: 0; bottom: 0; left: 100.000%; width: 1px; background: #F0EFEA;"></div>
+          <div style="position: absolute; top: 6px; height: 30px; left: 5.000%; width: calc(11.333% - 2px); background: #2a78d6; border-radius: 4px;"></div><div style="position: absolute; top: 6px; height: 30px; left: 17.500%; width: calc(12.500% - 2px); background: #eb6834; border-radius: 4px;"></div><div style="position: absolute; top: 6px; height: 30px; left: 31.667%; width: calc(4.167% - 2px); background: #eda100; border-radius: 4px;"></div><div style="position: absolute; top: 6px; height: 30px; left: 36.667%; width: calc(1.667% - 2px); background: #e87ba4; border-radius: 4px;"></div><div style="position: absolute; top: 6px; height: 30px; left: 40.000%; width: calc(9.167% - 2px); background: #1baf7a; border-radius: 4px;"></div><div style="position: absolute; top: 6px; height: 30px; left: 60.833%; width: calc(7.000% - 2px); background: #2a78d6; border-radius: 4px;"></div>
+          <div style="position: absolute; top: 0; bottom: 0; left: 67.833%; width: 2px; margin-left: -1px; background: #1F1E1C; border-radius: 1px;"></div>
+        </div>
+        <div style="position: relative; height: 16px;"><div class="tnum" style="position: absolute; top: 0; left: 0.000%; transform: translateX(0); font-size: 11px; color: #898781;">8:00</div><div class="tnum" style="position: absolute; top: 0; left: 10.000%; transform: translateX(-50%); font-size: 11px; color: #898781;">9:00</div><div class="tnum" style="position: absolute; top: 0; left: 20.000%; transform: translateX(-50%); font-size: 11px; color: #898781;">10:00</div><div class="tnum" style="position: absolute; top: 0; left: 30.000%; transform: translateX(-50%); font-size: 11px; color: #898781;">11:00</div><div class="tnum" style="position: absolute; top: 0; left: 40.000%; transform: translateX(-50%); font-size: 11px; color: #898781;">12:00</div><div class="tnum" style="position: absolute; top: 0; left: 50.000%; transform: translateX(-50%); font-size: 11px; color: #898781;">13:00</div><div class="tnum" style="position: absolute; top: 0; left: 60.000%; transform: translateX(-50%); font-size: 11px; color: #898781;">14:00</div><div class="tnum" style="position: absolute; top: 0; left: 70.000%; transform: translateX(-50%); font-size: 11px; color: #898781;">15:00</div><div class="tnum" style="position: absolute; top: 0; left: 80.000%; transform: translateX(-50%); font-size: 11px; color: #898781;">16:00</div><div class="tnum" style="position: absolute; top: 0; left: 90.000%; transform: translateX(-50%); font-size: 11px; color: #898781;">17:00</div><div class="tnum" style="position: absolute; top: 0; left: 100.000%; transform: translateX(-100%); font-size: 11px; color: #898781;">18:00</div></div>
+      </div></div>
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start;">
+      <div style="display: flex; flex-direction: column; gap: 20px;"><div style="background: #FFFFFF; border: 1px solid #EAE9E4; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;">
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <div style="font-size: 13px; font-weight: 500; color: #52514E;">Tiempo por proyecto · hoy</div>
+          <div style="font-size: 48px; line-height: 54px; font-weight: 600; letter-spacing: -0.03em; color: #1F1E1C;">4 h 35 min</div>
+        </div>
+        <div style="font-size: 13px; color: #898781; padding-bottom: 8px;">5 proyectos · 6 sesiones</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px;"><div style="display: grid; grid-template-columns: 210px minmax(0, 1fr) 140px; align-items: center; gap: 16px; height: 44px;">
+          <div style="display: flex; align-items: center; gap: 10px; min-width: 0;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #2a78d6; flex-shrink: 0;"></span><div style="display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 500; color: #1F1E1C;">OS Vena Digital</span><span style="font-size: 12px; color: #898781;">2 tareas hoy</span></div></div>
+          <div style="height: 14px;"><div style="height: 14px; width: 100.00%; background: #2a78d6; border-radius: 0 4px 4px 0;"></div></div>
+          <div style="display: flex; justify-content: flex-end; align-items: baseline; gap: 8px; font-size: 13.5px;"><span class="tnum" style="font-weight: 600; color: #1F1E1C;">1 h 50 min</span><span class="tnum" style="width: 34px; text-align: right; color: #898781;">40 %</span></div>
+        </div><div style="display: grid; grid-template-columns: 210px minmax(0, 1fr) 140px; align-items: center; gap: 16px; height: 44px;">
+          <div style="display: flex; align-items: center; gap: 10px; min-width: 0;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #eb6834; flex-shrink: 0;"></span><div style="display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 500; color: #1F1E1C;">Academia IA</span><span style="font-size: 12px; color: #898781;">1 tarea hoy</span></div></div>
+          <div style="height: 14px;"><div style="height: 14px; width: 68.18%; background: #eb6834; border-radius: 0 4px 4px 0;"></div></div>
+          <div style="display: flex; justify-content: flex-end; align-items: baseline; gap: 8px; font-size: 13.5px;"><span class="tnum" style="font-weight: 600; color: #1F1E1C;">1 h 15 min</span><span class="tnum" style="width: 34px; text-align: right; color: #898781;">27 %</span></div>
+        </div><div style="display: grid; grid-template-columns: 210px minmax(0, 1fr) 140px; align-items: center; gap: 16px; height: 44px;">
+          <div style="display: flex; align-items: center; gap: 10px; min-width: 0;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #1baf7a; flex-shrink: 0;"></span><div style="display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 500; color: #1F1E1C;">Contenidos</span><span style="font-size: 12px; color: #898781;">1 tarea hoy</span></div></div>
+          <div style="height: 14px;"><div style="height: 14px; width: 50.00%; background: #1baf7a; border-radius: 0 4px 4px 0;"></div></div>
+          <div style="display: flex; justify-content: flex-end; align-items: baseline; gap: 8px; font-size: 13.5px;"><span class="tnum" style="font-weight: 600; color: #1F1E1C;">55 min</span><span class="tnum" style="width: 34px; text-align: right; color: #898781;">20 %</span></div>
+        </div><div style="display: grid; grid-template-columns: 210px minmax(0, 1fr) 140px; align-items: center; gap: 16px; height: 44px;">
+          <div style="display: flex; align-items: center; gap: 10px; min-width: 0;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #eda100; flex-shrink: 0;"></span><div style="display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 500; color: #1F1E1C;">Podcast</span><span style="font-size: 12px; color: #898781;">1 tarea hoy</span></div></div>
+          <div style="height: 14px;"><div style="height: 14px; width: 22.73%; background: #eda100; border-radius: 0 4px 4px 0;"></div></div>
+          <div style="display: flex; justify-content: flex-end; align-items: baseline; gap: 8px; font-size: 13.5px;"><span class="tnum" style="font-weight: 600; color: #1F1E1C;">25 min</span><span class="tnum" style="width: 34px; text-align: right; color: #898781;">9 %</span></div>
+        </div><div style="display: grid; grid-template-columns: 210px minmax(0, 1fr) 140px; align-items: center; gap: 16px; height: 44px;">
+          <div style="display: flex; align-items: center; gap: 10px; min-width: 0;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #e87ba4; flex-shrink: 0;"></span><div style="display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 500; color: #1F1E1C;">Administración</span><span style="font-size: 12px; color: #898781;">1 tarea hoy</span></div></div>
+          <div style="height: 14px;"><div style="height: 14px; width: 9.09%; background: #e87ba4; border-radius: 0 4px 4px 0;"></div></div>
+          <div style="display: flex; justify-content: flex-end; align-items: baseline; gap: 8px; font-size: 13.5px;"><span class="tnum" style="font-weight: 600; color: #1F1E1C;">10 min</span><span class="tnum" style="width: 34px; text-align: right; color: #898781;">4 %</span></div>
+        </div></div></div><div style="background: #FFFFFF; border: 1px solid #EAE9E4; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 22px;">
+      <div style="font-size: 15px; font-weight: 600; color: #1F1E1C; letter-spacing: -0.005em;">Registros</div>
+      <div style="font-size: 13px; color: #898781;">6 sesiones hoy</div>
+    </div>
+      <div style="display: flex; flex-direction: column;">
+        <div style="display: grid; grid-template-columns: minmax(0, 1fr) 150px 100px 28px; gap: 16px; padding-bottom: 8px; border-bottom: 1px solid #EAE9E4; font-size: 12px; font-weight: 500; color: #898781;">
+          <span>Tarea</span><span>Horario</span><span style="text-align: right;">Duración</span><span></span>
+        </div>
+        <div style="display: grid; grid-template-columns: minmax(0, 1fr) 150px 100px 28px; align-items: center; gap: 16px; height: 52px;">
+          <div style="display: flex; align-items: center; gap: 10px; min-width: 0;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #2a78d6; flex-shrink: 0;"></span><div style="display: flex; flex-direction: column; min-width: 0;"><div style="display: flex; align-items: center; gap: 10px;"><span style="font-size: 14px; color: #1F1E1C;">Diseño de pantallas</span><div style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #0CA30C; flex-shrink: 0;"></span><span>En curso</span></div></div><span style="font-size: 12px; color: #898781;">OS Vena Digital</span></div></div>
+          <div class="tnum" style="font-size: 13.5px; color: #52514E;">14:05 – ahora</div>
+          <div class="tnum" style="font-size: 13.5px; font-weight: 600; color: #1F1E1C; text-align: right;">42 min</div>
+          <div style="width: 28px; height: 28px; border-radius: 50%; background: #FCEBEA; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #B42F2F;"><rect x="6.5" y="6.5" width="11" height="11" rx="2.5" fill="currentColor" stroke="none"></rect></svg></div>
+        </div><div style="display: grid; grid-template-columns: minmax(0, 1fr) 150px 100px 28px; align-items: center; gap: 16px; height: 52px; border-top: 1px solid #F0EFEA;">
+          <div style="display: flex; align-items: center; gap: 10px; min-width: 0;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #1baf7a; flex-shrink: 0;"></span><div style="display: flex; flex-direction: column; min-width: 0;"><div style="display: flex; align-items: center; gap: 10px;"><span style="font-size: 14px; color: #1F1E1C;">Carrusel Instagram</span></div><span style="font-size: 12px; color: #898781;">Contenidos</span></div></div>
+          <div class="tnum" style="font-size: 13.5px; color: #52514E;">12:00 – 12:55</div>
+          <div class="tnum" style="font-size: 13.5px; font-weight: 600; color: #1F1E1C; text-align: right;">55 min</div>
+          <div style="width: 28px; height: 28px; border-radius: 50%; background: #F2F1ED; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><path d="M8.5 6.2v11.6c0 .8.9 1.3 1.6.9l9.3-5.8c.6-.4.6-1.3 0-1.7l-9.3-5.8c-.7-.4-1.6.1-1.6.8Z" fill="currentColor" stroke="none"></path></svg></div>
+        </div><div style="display: grid; grid-template-columns: minmax(0, 1fr) 150px 100px 28px; align-items: center; gap: 16px; height: 52px; border-top: 1px solid #F0EFEA;">
+          <div style="display: flex; align-items: center; gap: 10px; min-width: 0;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #e87ba4; flex-shrink: 0;"></span><div style="display: flex; flex-direction: column; min-width: 0;"><div style="display: flex; align-items: center; gap: 10px;"><span style="font-size: 14px; color: #1F1E1C;">Facturación clientes</span></div><span style="font-size: 12px; color: #898781;">Administración</span></div></div>
+          <div class="tnum" style="font-size: 13.5px; color: #52514E;">11:40 – 11:50</div>
+          <div class="tnum" style="font-size: 13.5px; font-weight: 600; color: #1F1E1C; text-align: right;">10 min</div>
+          <div style="width: 28px; height: 28px; border-radius: 50%; background: #F2F1ED; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><path d="M8.5 6.2v11.6c0 .8.9 1.3 1.6.9l9.3-5.8c.6-.4.6-1.3 0-1.7l-9.3-5.8c-.7-.4-1.6.1-1.6.8Z" fill="currentColor" stroke="none"></path></svg></div>
+        </div><div style="display: grid; grid-template-columns: minmax(0, 1fr) 150px 100px 28px; align-items: center; gap: 16px; height: 52px; border-top: 1px solid #F0EFEA;">
+          <div style="display: flex; align-items: center; gap: 10px; min-width: 0;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #eda100; flex-shrink: 0;"></span><div style="display: flex; flex-direction: column; min-width: 0;"><div style="display: flex; align-items: center; gap: 10px;"><span style="font-size: 14px; color: #1F1E1C;">Edición episodio 12</span></div><span style="font-size: 12px; color: #898781;">Podcast</span></div></div>
+          <div class="tnum" style="font-size: 13.5px; color: #52514E;">11:10 – 11:35</div>
+          <div class="tnum" style="font-size: 13.5px; font-weight: 600; color: #1F1E1C; text-align: right;">25 min</div>
+          <div style="width: 28px; height: 28px; border-radius: 50%; background: #F2F1ED; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><path d="M8.5 6.2v11.6c0 .8.9 1.3 1.6.9l9.3-5.8c.6-.4.6-1.3 0-1.7l-9.3-5.8c-.7-.4-1.6.1-1.6.8Z" fill="currentColor" stroke="none"></path></svg></div>
+        </div><div style="display: grid; grid-template-columns: minmax(0, 1fr) 150px 100px 28px; align-items: center; gap: 16px; height: 52px; border-top: 1px solid #F0EFEA;">
+          <div style="display: flex; align-items: center; gap: 10px; min-width: 0;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #eb6834; flex-shrink: 0;"></span><div style="display: flex; flex-direction: column; min-width: 0;"><div style="display: flex; align-items: center; gap: 10px;"><span style="font-size: 14px; color: #1F1E1C;">Clase 4 · grabación</span></div><span style="font-size: 12px; color: #898781;">Academia IA</span></div></div>
+          <div class="tnum" style="font-size: 13.5px; color: #52514E;">09:45 – 11:00</div>
+          <div class="tnum" style="font-size: 13.5px; font-weight: 600; color: #1F1E1C; text-align: right;">1 h 15 min</div>
+          <div style="width: 28px; height: 28px; border-radius: 50%; background: #F2F1ED; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><path d="M8.5 6.2v11.6c0 .8.9 1.3 1.6.9l9.3-5.8c.6-.4.6-1.3 0-1.7l-9.3-5.8c-.7-.4-1.6.1-1.6.8Z" fill="currentColor" stroke="none"></path></svg></div>
+        </div><div style="display: grid; grid-template-columns: minmax(0, 1fr) 150px 100px 28px; align-items: center; gap: 16px; height: 52px; border-top: 1px solid #F0EFEA;">
+          <div style="display: flex; align-items: center; gap: 10px; min-width: 0;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #2a78d6; flex-shrink: 0;"></span><div style="display: flex; flex-direction: column; min-width: 0;"><div style="display: flex; align-items: center; gap: 10px;"><span style="font-size: 14px; color: #1F1E1C;">Colector de consumo IA</span></div><span style="font-size: 12px; color: #898781;">OS Vena Digital</span></div></div>
+          <div class="tnum" style="font-size: 13.5px; color: #52514E;">08:30 – 09:38</div>
+          <div class="tnum" style="font-size: 13.5px; font-weight: 600; color: #1F1E1C; text-align: right;">1 h 8 min</div>
+          <div style="width: 28px; height: 28px; border-radius: 50%; background: #F2F1ED; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><path d="M8.5 6.2v11.6c0 .8.9 1.3 1.6.9l9.3-5.8c.6-.4.6-1.3 0-1.7l-9.3-5.8c-.7-.4-1.6.1-1.6.8Z" fill="currentColor" stroke="none"></path></svg></div>
+        </div>
+      </div></div></div>
+      <div style="background: #FFFFFF; border: 1px solid #EAE9E4; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 22px;">
+      <div style="font-size: 15px; font-weight: 600; color: #1F1E1C; letter-spacing: -0.005em;">Proyectos y tareas</div>
+      <div style="display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 500; color: {{accent}};"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: {{accent}};"><path d="M12 5v14M5 12h14"></path></svg><span>Proyecto</span></div>
+    </div>
+      <div style="display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 6px 0 12px; border-radius: 10px; border: 1px solid #DEDCD5; background: #FFFFFF;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #898781;"><path d="M12 5v14M5 12h14"></path></svg><span style="flex-grow: 1; font-size: 13.5px; color: #A9A7A1;">Nueva tarea…</span>
+        <div style="display: flex; align-items: center; gap: 5px; height: 26px; padding: 0 8px; border-radius: 6px; background: #F2F1ED; font-size: 12px; font-weight: 500; color: #52514E;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #2a78d6; flex-shrink: 0;"></span><span>OS Vena</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #898781;"><path d="m6.5 9.5 5.5 5.5 5.5-5.5"></path></svg></div>
+      </div>
+      <div style="display: flex; flex-direction: column; margin-top: -6px;"><div style="display: flex; flex-direction: column; padding: 10px 0 2px;">
+        <div style="display: flex; align-items: center; gap: 8px; height: 24px;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #2a78d6; flex-shrink: 0;"></span><span style="flex-grow: 1; font-size: 13px; font-weight: 600; color: #1F1E1C;">OS Vena Digital</span><span class="tnum" style="font-size: 12px; color: #898781;">1 h 50 min</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; height: 46px; padding-left: 18px;">
+          <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column;">
+            <div style="font-size: 13.5px; font-weight: 500; color: #1F1E1C;">Diseño de pantallas</div>
+            <div class="tnum" style="font-size: 12px; color: #52514E;">En curso · 42 min</div>
+          </div>
+          <div style="width: 30px; height: 30px; border-radius: 50%; background: #FCEBEA; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #B42F2F;"><rect x="6.5" y="6.5" width="11" height="11" rx="2.5" fill="currentColor" stroke="none"></rect></svg></div>
+        </div><div style="display: flex; align-items: center; gap: 10px; height: 46px; padding-left: 18px;">
+          <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column;">
+            <div style="font-size: 13.5px; font-weight: 500; color: #1F1E1C;">Colector de consumo IA</div>
+            <div class="tnum" style="font-size: 12px; color: #898781;">Hoy 1 h 8 min</div>
+          </div>
+          <div style="width: 30px; height: 30px; border-radius: 50%; background: #F2F1ED; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><path d="M8.5 6.2v11.6c0 .8.9 1.3 1.6.9l9.3-5.8c.6-.4.6-1.3 0-1.7l-9.3-5.8c-.7-.4-1.6.1-1.6.8Z" fill="currentColor" stroke="none"></path></svg></div>
+        </div>
+      </div><div style="display: flex; flex-direction: column; padding: 10px 0 2px; border-top: 1px solid #F0EFEA;">
+        <div style="display: flex; align-items: center; gap: 8px; height: 24px;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #eb6834; flex-shrink: 0;"></span><span style="flex-grow: 1; font-size: 13px; font-weight: 600; color: #1F1E1C;">Academia IA</span><span class="tnum" style="font-size: 12px; color: #898781;">1 h 15 min</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; height: 46px; padding-left: 18px;">
+          <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column;">
+            <div style="font-size: 13.5px; font-weight: 500; color: #1F1E1C;">Clase 4 · grabación</div>
+            <div class="tnum" style="font-size: 12px; color: #898781;">Hoy 1 h 15 min</div>
+          </div>
+          <div style="width: 30px; height: 30px; border-radius: 50%; background: #F2F1ED; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><path d="M8.5 6.2v11.6c0 .8.9 1.3 1.6.9l9.3-5.8c.6-.4.6-1.3 0-1.7l-9.3-5.8c-.7-.4-1.6.1-1.6.8Z" fill="currentColor" stroke="none"></path></svg></div>
+        </div><div style="display: flex; align-items: center; gap: 10px; height: 46px; padding-left: 18px;">
+          <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column;">
+            <div style="font-size: 13.5px; font-weight: 500; color: #1F1E1C;">Clase 5 · guion</div>
+            <div class="tnum" style="font-size: 12px; color: #898781;">Sin registros hoy</div>
+          </div>
+          <div style="width: 30px; height: 30px; border-radius: 50%; background: #F2F1ED; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><path d="M8.5 6.2v11.6c0 .8.9 1.3 1.6.9l9.3-5.8c.6-.4.6-1.3 0-1.7l-9.3-5.8c-.7-.4-1.6.1-1.6.8Z" fill="currentColor" stroke="none"></path></svg></div>
+        </div>
+      </div><div style="display: flex; flex-direction: column; padding: 10px 0 2px; border-top: 1px solid #F0EFEA;">
+        <div style="display: flex; align-items: center; gap: 8px; height: 24px;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #1baf7a; flex-shrink: 0;"></span><span style="flex-grow: 1; font-size: 13px; font-weight: 600; color: #1F1E1C;">Contenidos</span><span class="tnum" style="font-size: 12px; color: #898781;">55 min</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; height: 46px; padding-left: 18px;">
+          <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column;">
+            <div style="font-size: 13.5px; font-weight: 500; color: #1F1E1C;">Carrusel Instagram</div>
+            <div class="tnum" style="font-size: 12px; color: #898781;">Hoy 55 min</div>
+          </div>
+          <div style="width: 30px; height: 30px; border-radius: 50%; background: #F2F1ED; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><path d="M8.5 6.2v11.6c0 .8.9 1.3 1.6.9l9.3-5.8c.6-.4.6-1.3 0-1.7l-9.3-5.8c-.7-.4-1.6.1-1.6.8Z" fill="currentColor" stroke="none"></path></svg></div>
+        </div><div style="display: flex; align-items: center; gap: 10px; height: 46px; padding-left: 18px;">
+          <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column;">
+            <div style="font-size: 13.5px; font-weight: 500; color: #1F1E1C;">Newsletter</div>
+            <div class="tnum" style="font-size: 12px; color: #898781;">Sin registros hoy</div>
+          </div>
+          <div style="width: 30px; height: 30px; border-radius: 50%; background: #F2F1ED; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><path d="M8.5 6.2v11.6c0 .8.9 1.3 1.6.9l9.3-5.8c.6-.4.6-1.3 0-1.7l-9.3-5.8c-.7-.4-1.6.1-1.6.8Z" fill="currentColor" stroke="none"></path></svg></div>
+        </div>
+      </div><div style="display: flex; flex-direction: column; padding: 10px 0 2px; border-top: 1px solid #F0EFEA;">
+        <div style="display: flex; align-items: center; gap: 8px; height: 24px;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #eda100; flex-shrink: 0;"></span><span style="flex-grow: 1; font-size: 13px; font-weight: 600; color: #1F1E1C;">Podcast</span><span class="tnum" style="font-size: 12px; color: #898781;">25 min</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; height: 46px; padding-left: 18px;">
+          <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column;">
+            <div style="font-size: 13.5px; font-weight: 500; color: #1F1E1C;">Edición episodio 12</div>
+            <div class="tnum" style="font-size: 12px; color: #898781;">Hoy 25 min</div>
+          </div>
+          <div style="width: 30px; height: 30px; border-radius: 50%; background: #F2F1ED; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><path d="M8.5 6.2v11.6c0 .8.9 1.3 1.6.9l9.3-5.8c.6-.4.6-1.3 0-1.7l-9.3-5.8c-.7-.4-1.6.1-1.6.8Z" fill="currentColor" stroke="none"></path></svg></div>
+        </div>
+      </div><div style="display: flex; flex-direction: column; padding: 10px 0 2px; border-top: 1px solid #F0EFEA;">
+        <div style="display: flex; align-items: center; gap: 8px; height: 24px;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #e87ba4; flex-shrink: 0;"></span><span style="flex-grow: 1; font-size: 13px; font-weight: 600; color: #1F1E1C;">Administración</span><span class="tnum" style="font-size: 12px; color: #898781;">10 min</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; height: 46px; padding-left: 18px;">
+          <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column;">
+            <div style="font-size: 13.5px; font-weight: 500; color: #1F1E1C;">Facturación clientes</div>
+            <div class="tnum" style="font-size: 12px; color: #898781;">Hoy 10 min</div>
+          </div>
+          <div style="width: 30px; height: 30px; border-radius: 50%; background: #F2F1ED; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #52514E;"><path d="M8.5 6.2v11.6c0 .8.9 1.3 1.6.9l9.3-5.8c.6-.4.6-1.3 0-1.7l-9.3-5.8c-.7-.4-1.6.1-1.6.8Z" fill="currentColor" stroke="none"></path></svg></div>
+        </div>
+      </div></div>
+      <div style="font-size: 12.5px; color: #898781; line-height: 17px;">Al iniciar otra tarea, la que está en curso se detiene sola.</div></div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"accent":{"editor":"color","default":"#256abf","options":["#256abf","#1f1e1c","#c94a36","#1f7a55"]},"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  soft(hex, alpha) {
+    var m = /^#?([0-9a-f]{6})/i.exec(hex || '');
+    if (!m) return 'rgba(37, 106, 191, ' + alpha + ')';
+    var n = parseInt(m[1], 16);
+    return 'rgba(' + ((n >> 16) & 255) + ', ' + ((n >> 8) & 255) + ', ' + (n & 255) + ', ' + alpha + ')';
+  }
+  renderVals() {
+    var accent = this.props.accent ?? '#256abf';
+    return { accent: accent, accentSoft: this.soft(accent, 0.1), accentLine: this.soft(accent, 0.45) };
+  }
+}
+</script>
+</body>
+</html>

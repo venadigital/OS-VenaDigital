@@ -1,0 +1,4 @@
+# Archivos con hash en el nombre: se pueden guardar en caché para siempre.
+<IfModule mod_headers.c>
+  Header set Cache-Control "public, max-age=31536000, immutable"
+</IfModule>

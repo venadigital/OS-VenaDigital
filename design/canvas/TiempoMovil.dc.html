@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  
+  <style>
+    html, body { margin: 0; background: #F9F9F7; }
+    body { font-family: -apple-system, BlinkMacSystemFont, system-ui, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; color: #1F1E1C; font-size: 14px; line-height: 1.43; -webkit-font-smoothing: antialiased; }
+    * { box-sizing: border-box; }
+    a { color: #256abf; text-decoration: none; }
+    a:hover { color: #1c5cab; }
+    h1, h2, h3, p { margin: 0; }
+    .tnum { font-variant-numeric: tabular-nums; }
+  </style>
+</helmet>
+<div style="width: 390px; height: 844px; display: flex; flex-direction: column; background: #F9F9F7; overflow: hidden; position: relative;">
+  <div style="height: 54px; flex-shrink: 0;"></div>
+  <div style="flex-grow: 1; min-height: 0; display: flex; flex-direction: column; gap: 12px; padding: 4px 16px 16px; overflow: hidden;">
+    
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 0 2px 4px;">
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        
+        <h1 style="font-size: 34px; line-height: 40px; font-weight: 700; letter-spacing: -0.02em; color: #1F1E1C;">Tiempo</h1>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; padding-bottom: 4px;"><div style="width: 44px; height: 44px; border-radius: 50%; background: {{accent}}; display: flex; align-items: center; justify-content: center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #FFFFFF;"><path d="M12 5v14M5 12h14"></path></svg></div></div>
+    </div>
+    <div style="background: #FFFFFF; border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 10px; align-items: center; box-shadow: 0 1px 2px rgba(31, 30, 28, 0.04); border: 1px solid #EAE9E4;">
+      <div style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 20px; background: #F2F1ED;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #0CA30C; flex-shrink: 0;"></span><span style="font-size: 14px; font-weight: 600; color: #1F1E1C;">Diseño de pantallas</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #898781;"><path d="m6.5 9.5 5.5 5.5 5.5-5.5"></path></svg></div>
+      <div class="tnum" style="font-size: 60px; line-height: 64px; font-weight: 300; letter-spacing: -0.02em; color: #1F1E1C;">00:42:18</div>
+      <div style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #898781; margin-top: -4px;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #2a78d6; flex-shrink: 0;"></span><span>OS Vena Digital · desde las 14:05</span></div>
+      <div style="display: flex; width: 100%; margin-top: 4px;"><div style="display: flex; align-items: center; justify-content: center; gap: 7px; height: 46px; padding: 0 16px; border-radius: 23px; background: #FCEBEA; color: #B42F2F; font-size: 14px; font-weight: 600; flex-grow: 1;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #B42F2F;"><rect x="6.5" y="6.5" width="11" height="11" rx="2.5" fill="currentColor" stroke="none"></rect></svg><span>Detener</span></div></div></div>
+    <div style="display: flex; align-items: center; gap: 2px; padding: 2px; border-radius: 9px; background: #F2F1ED; width: 100%;"><div style="display: flex; align-items: center; justify-content: center; height: 40px; padding: 0 14px; border-radius: 7px; font-size: 13px; font-weight: 500; color: #52514E; flex-grow: 1;">Día</div><div style="display: flex; align-items: center; justify-content: center; height: 40px; padding: 0 14px; border-radius: 7px; font-size: 13px; font-weight: 600; color: #1F1E1C; background: #FFFFFF; box-shadow: 0 1px 2px rgba(31, 30, 28, 0.10), 0 0 0 0.5px rgba(31, 30, 28, 0.08); flex-grow: 1;">Semana</div><div style="display: flex; align-items: center; justify-content: center; height: 40px; padding: 0 14px; border-radius: 7px; font-size: 13px; font-weight: 500; color: #52514E; flex-grow: 1;">Mes</div></div>
+    <div style="background: #FFFFFF; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 1px 2px rgba(31, 30, 28, 0.04); border: 1px solid #EAE9E4;">
+      <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 8px;">
+        <div style="display: flex; flex-direction: column; gap: 1px;">
+          <div style="font-size: 13px; font-weight: 500; color: #52514E;">Esta semana</div>
+          <div style="font-size: 24px; line-height: 30px; font-weight: 600; letter-spacing: -0.02em; color: #1F1E1C;">29 h 50 min</div>
+        </div>
+        <div style="font-size: 12.5px; color: #898781; padding-bottom: 4px;">7 – 13 sep</div>
+      </div>
+      <svg width="326" height="142" viewBox="0 0 326 142" style="display: block;"><line x1="0" x2="326" y1="116" y2="116" stroke="#C3C2B7" stroke-width="1"></line><rect x="12.3" y="92.6" width="22" height="23.4" fill="#2a78d6"></rect><rect x="12.3" y="69.2" width="22" height="21.4" fill="#eb6834"></rect><rect x="12.3" y="51.6" width="22" height="15.6" fill="#1baf7a"></rect><rect x="12.3" y="41.8" width="22" height="7.8" fill="#eda100"></rect><path d="M12.3 39.8 V39.8 Q12.3 35.9 16.19697933227345 35.9 H30.403020667726548 Q34.3 35.9 34.3 39.8 V39.8 Z" fill="#e87ba4"></path><text x="23.3" y="134" text-anchor="middle" font-size="11" font-weight="400" fill="#898781">Lun</text><rect x="58.9" y="98.6" width="22" height="17.4" fill="#2a78d6"></rect><rect x="58.9" y="78.3" width="22" height="18.3" fill="#eb6834"></rect><rect x="58.9" y="59.9" width="22" height="16.4" fill="#1baf7a"></rect><rect x="58.9" y="52.1" width="22" height="5.8" fill="#eda100"></rect><path d="M58.9 50.1 V46.4 Q58.9 42.4 62.9 42.4 H76.9 Q80.9 42.4 80.9 46.4 V50.1 Z" fill="#e87ba4"></path><text x="69.9" y="134" text-anchor="middle" font-size="11" font-weight="400" fill="#898781">Mar</text><rect x="105.4" y="90.3" width="22" height="25.7" fill="#2a78d6"></rect><rect x="105.4" y="68.5" width="22" height="19.8" fill="#eb6834"></rect><rect x="105.4" y="47.8" width="22" height="18.8" fill="#1baf7a"></rect><rect x="105.4" y="33.9" width="22" height="11.9" fill="#eda100"></rect><path d="M105.4 31.9 V28.0 Q105.4 24.0 109.4 24.0 H123.4 Q127.4 24.0 127.4 28.0 V31.9 Z" fill="#e87ba4"></path><text x="116.4" y="134" text-anchor="middle" font-size="11" font-weight="400" fill="#898781">Mié</text><rect x="152" y="98.4" width="22" height="17.6" fill="#2a78d6"></rect><rect x="152" y="76.9" width="22" height="19.5" fill="#eb6834"></rect><rect x="152" y="59.2" width="22" height="15.6" fill="#1baf7a"></rect><rect x="152" y="45.5" width="22" height="11.7" fill="#eda100"></rect><path d="M152 43.5 V37.7 Q152 33.7 156 33.7 H170 Q174 33.7 174 37.7 V43.5 Z" fill="#e87ba4"></path><text x="163.0" y="134" text-anchor="middle" font-size="11" font-weight="400" fill="#898781">Jue</text><rect x="198.6" y="95.4" width="22" height="20.6" fill="#2a78d6"></rect><rect x="198.6" y="79.3" width="22" height="14.1" fill="#eb6834"></rect><rect x="198.6" y="67.0" width="22" height="10.3" fill="#1baf7a"></rect><rect x="198.6" y="60.3" width="22" height="4.7" fill="#eda100"></rect><path d="M198.6 58.3 V58.3 Q198.6 56.5 200.47379679144385 56.5 H218.72620320855614 Q220.6 56.5 220.6 58.3 V58.3 Z" fill="#e87ba4"></path><text x="209.6" y="49.5" text-anchor="middle" font-size="11" font-weight="600" fill="#52514E" style="font-variant-numeric: tabular-nums;">4 h 35</text><text x="209.6" y="134" text-anchor="middle" font-size="11" font-weight="600" fill="#1F1E1C">Vie</text><text x="256.1" y="134" text-anchor="middle" font-size="11" font-weight="400" fill="#A9A7A1">Sáb</text><text x="302.7" y="134" text-anchor="middle" font-size="11" font-weight="400" fill="#A9A7A1">Dom</text></svg>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px 14px;"><div style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #2a78d6; flex-shrink: 0;"></span><span>OS Vena</span><span class="tnum" style="color: #1F1E1C; font-weight: 600;">9 h</span></div><div style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #eb6834; flex-shrink: 0;"></span><span>Academia IA</span><span class="tnum" style="color: #1F1E1C; font-weight: 600;">8 h</span></div><div style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #1baf7a; flex-shrink: 0;"></span><span>Contenidos</span><span class="tnum" style="color: #1F1E1C; font-weight: 600;">6 h 35</span></div><div style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #eda100; flex-shrink: 0;"></span><span>Podcast</span><span class="tnum" style="color: #1F1E1C; font-weight: 600;">3 h 35</span></div><div style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #52514E;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #e87ba4; flex-shrink: 0;"></span><span>Administración</span><span class="tnum" style="color: #1F1E1C; font-weight: 600;">2 h 40</span></div></div></div>
+  </div>
+  
+  <nav style="height: 83px; flex-shrink: 0; display: flex; align-items: flex-start; padding: 0 8px; background: #FFFFFF; border-top: 1px solid #EAE9E4;"><div style="flex-grow: 1; flex-basis: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; padding-top: 7px; color: #8C8A84;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #8C8A84;"><path d="M4 10.5 12 4l8 6.5"></path><path d="M6 9v10.5c0 .3.2.5.5.5H10v-5.5h4V20h3.5c.3 0 .5-.2.5-.5V9"></path></svg>
+        <span style="font-size: 10px; font-weight: 500;">Inicio</span>
+      </div><div style="flex-grow: 1; flex-basis: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; padding-top: 7px; color: {{accent}};">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: {{accent}};"><circle cx="12" cy="13.5" r="7.5"></circle><path d="M12 10v3.5l2.3 1.6"></path><path d="M9.5 3h5"></path><path d="m18.5 6.5 1.2-1.2"></path></svg>
+        <span style="font-size: 10px; font-weight: 600;">Tiempo</span>
+      </div><div style="flex-grow: 1; flex-basis: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; padding-top: 7px; color: #8C8A84;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #8C8A84;"><path d="M11 3.5c.5 4.2 2.3 6 6.5 6.5-4.2.5-6 2.3-6.5 6.5-.5-4.2-2.3-6-6.5-6.5 4.2-.5 6-2.3 6.5-6.5Z"></path><path d="M18.5 15c.2 1.6 1 2.3 2.5 2.5-1.5.2-2.3.9-2.5 2.5-.2-1.6-1-2.3-2.5-2.5 1.5-.2 2.3-.9 2.5-2.5Z"></path></svg>
+        <span style="font-size: 10px; font-weight: 500;">Consumo IA</span>
+      </div><div style="flex-grow: 1; flex-basis: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; padding-top: 7px; color: #8C8A84;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #8C8A84;"><rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.5"></rect><circle cx="17" cy="7.25" r="3.75"></circle><path d="M12 13.5l4.5 7h-9Z"></path></svg>
+        <span style="font-size: 10px; font-weight: 500;">Tableros</span>
+      </div><div style="flex-grow: 1; flex-basis: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; padding-top: 7px; color: #8C8A84;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="display: block; flex-shrink: 0; color: #8C8A84;"><path d="M5 4h14a1 1 0 0 1 1 1v9.5L14.5 20H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"></path><path d="M14.5 20v-4.5a1 1 0 0 1 1-1H20"></path></svg>
+        <span style="font-size: 10px; font-weight: 500;">Notas</span>
+      </div></nav>
+</div>
+</x-dc>
+<script data-dc-script data-props='{"accent":{"editor":"color","default":"#256abf","options":["#256abf","#1f1e1c","#c94a36","#1f7a55"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  soft(hex, alpha) {
+    var m = /^#?([0-9a-f]{6})/i.exec(hex || '');
+    if (!m) return 'rgba(37, 106, 191, ' + alpha + ')';
+    var n = parseInt(m[1], 16);
+    return 'rgba(' + ((n >> 16) & 255) + ', ' + ((n >> 8) & 255) + ', ' + (n & 255) + ', ' + alpha + ')';
+  }
+  renderVals() {
+    var accent = this.props.accent ?? '#256abf';
+    return { accent: accent, accentSoft: this.soft(accent, 0.1), accentLine: this.soft(accent, 0.45) };
+  }
+}
+</script>
+</body>
+</html>

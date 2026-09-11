@@ -1,0 +1,49 @@
+name: Probar y publicar en Hostinger
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      FTP_SERVER: ${{ secrets.FTP_SERVER }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Pruebas (base de datos y colector)
+        run: npm test
+
+      - name: Build
+        # Usa las variables del repositorio si existen; si no, .env.production.
+        run: |
+          if [ -n "$SUPABASE_URL" ]; then export VITE_SUPABASE_URL="$SUPABASE_URL"; fi
+          if [ -n "$SUPABASE_KEY" ]; then export VITE_SUPABASE_PUBLISHABLE_KEY="$SUPABASE_KEY"; fi
+          npm run build
+        env:
+          SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+
+      - name: Subir a Hostinger por FTP
+        # Se salta hasta que configures los secretos FTP_* en GitHub.
+        if: ${{ env.FTP_SERVER != '' }}
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./dist/
+          server-dir: ${{ secrets.FTP_SERVER_DIR || 'public_html/' }}

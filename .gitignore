@@ -1,0 +1,14 @@
+node_modules
+dist
+dev-dist
+coverage
+*.log
+.DS_Store
+
+# Llaves locales (la llave publicable va en .env.production, que sí se sube)
+.env
+.env.local
+.env.*.local
+
+# Salidas temporales del diseño
+design/.preview

@@ -1,0 +1,116 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "title": "Inicio",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 840
+    },
+    {
+      "file": "Tiempo.dc.html",
+      "title": "Tiempo",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 1240
+    },
+    {
+      "file": "ConsumoIA.dc.html",
+      "title": "Consumo IA",
+      "x": 3120,
+      "y": 0,
+      "w": 1440,
+      "h": 1400
+    },
+    {
+      "file": "Tableros.dc.html",
+      "title": "Tableros",
+      "x": 0,
+      "y": 1680,
+      "w": 1440,
+      "h": 800
+    },
+    {
+      "file": "TableroAbierto.dc.html",
+      "title": "Tablero abierto",
+      "x": 1560,
+      "y": 1680,
+      "w": 1440,
+      "h": 900
+    },
+    {
+      "file": "Notas.dc.html",
+      "title": "Notas",
+      "x": 3120,
+      "y": 1680,
+      "w": 1440,
+      "h": 1060
+    },
+    {
+      "file": "InicioMovil.dc.html",
+      "title": "Inicio · móvil",
+      "x": 0,
+      "y": 3040,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "TiempoMovil.dc.html",
+      "title": "Tiempo · móvil",
+      "x": 470,
+      "y": 3040,
+      "w": 390,
+      "h": 844
+    },
+    {
+      "file": "NotasMovil.dc.html",
+      "title": "Notas · móvil",
+      "x": 940,
+      "y": 3040,
+      "w": 390,
+      "h": 844
+    }
+  ],
+  "annotations": [
+    {
+      "id": "direccion",
+      "x": 0,
+      "y": 960,
+      "w": 600,
+      "text": "Dirección visual: neutra, entre Notion y Apple. Fuente del sistema (SF Pro), grises cálidos y un solo color de acento. Vena Digital aparece solo en el logo.\nEl chip «accent» encima de cada pantalla prueba otros acentos: azul, grafito, coral o verde.\nTodos los datos son de ejemplo."
+    },
+    {
+      "id": "tiempo",
+      "x": 1560,
+      "y": 1330,
+      "w": 600,
+      "text": "Tiempo: las tareas viven dentro de proyectos y el dashboard suma el tiempo por proyecto (con filtro por proyecto). Un solo cronómetro activo a la vez: si inicias otra tarea, la que estaba en curso se detiene sola. El timer vive en la base de datos: lo arrancas en el Mac y lo detienes en el celular."
+    },
+    {
+      "id": "consumo",
+      "x": 4640,
+      "y": 0,
+      "w": 380,
+      "text": "Consumo IA: Claude Code y Codex con tokens exactos. Un colector local en tu Mac lee los logs y sube los totales a Supabase.\nTres cuentas: Claude Max 5x (personal), Claude Pro (Vena Digital) y ChatGPT Plus. Cada una se compara con lo que pagas por ella. El colector asigna el consumo de Claude Code a la cuenta que tiene la sesión activa.\nLos precios son editables. Un modelo sin precio queda marcado y no suma; nunca aparece como $0."
+    },
+    {
+      "id": "tablero",
+      "x": 1560,
+      "y": 2670,
+      "w": 620,
+      "text": "Tablero abierto: el lienzo y las herramientas de dibujo serán el componente Excalidraw embebido (open source, con sus funciones gratuitas). Lo que se diseña aquí es todo lo que lo rodea: la galería de tableros, el nombre, el guardado automático y exportar."
+    },
+    {
+      "id": "movil",
+      "x": 1420,
+      "y": 3040,
+      "w": 420,
+      "text": "Móvil: una barra inferior con los 5 módulos. En las pantallas que no muestran el timer (como Notas), el timer activo flota sobre la barra como un mini reproductor, para que lo detengas sin cambiar de módulo."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}
