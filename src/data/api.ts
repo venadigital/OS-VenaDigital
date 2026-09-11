@@ -6,6 +6,7 @@ import type {
   BoardSummary,
   CollectorStatus,
   CollectorToken,
+  UsageSession,
   LinkPreview,
   ModelPrice,
   ModelPriceInput,
@@ -24,8 +25,8 @@ export interface Api {
 
   // Tiempo
   listProjects(): Promise<Project[]>;
-  createProject(input: { name: string; color: string }): Promise<Project>;
-  updateProject(id: string, patch: Partial<Pick<Project, 'name' | 'color' | 'archived' | 'sort'>>): Promise<void>;
+  createProject(input: { name: string; color: string; folder?: string | null }): Promise<Project>;
+  updateProject(id: string, patch: Partial<Pick<Project, 'name' | 'color' | 'archived' | 'sort' | 'folder'>>): Promise<void>;
   deleteProject(id: string): Promise<void>;
   listTasks(): Promise<Task[]>;
   createTask(input: { project_id: string; name: string }): Promise<Task>;
@@ -60,6 +61,8 @@ export interface Api {
   // Consumo IA
   /** Rows with fromDay <= day < toDay (yyyy-mm-dd). */
   listUsage(fromDay: string, toDay: string): Promise<UsageRow[]>;
+  /** Sessions active in [from, to). */
+  listSessions(from: Date, to: Date): Promise<UsageSession[]>;
   listPrices(): Promise<ModelPrice[]>;
   upsertPrice(input: ModelPriceInput): Promise<void>;
   seedPrices(inputs: ModelPriceInput[]): Promise<void>;

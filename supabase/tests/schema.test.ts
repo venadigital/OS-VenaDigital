@@ -153,6 +153,37 @@ describe('consumo IA ingest', () => {
     expect(status.rows).toEqual([{ machine: 'MacBook', current_account: 'personal@example.com' }]);
   });
 
+  it('stores sessions per folder and keeps them idempotent', async () => {
+    const session = (overrides: Record<string, unknown> = {}) => ({
+      source: 'claude_code',
+      session_id: 'sess-os-1',
+      project: 'OS Vena Digital',
+      account: 'personal@example.com',
+      started_at: '2026-09-11T11:46:00Z',
+      ended_at: '2026-09-11T14:26:00Z',
+      models: { 'claude-opus-5': { input: 10, output: 20, cache_read: 1000, cache_write: 5, cache_write_1h: 0, messages: 3 } },
+      ...overrides,
+    });
+    await as(null, 'anon', () =>
+      db.query(`select public.ingest_usage($1, '[]'::jsonb, '{}'::jsonb, $2::jsonb)`, [token, JSON.stringify([session()])]),
+    );
+    await as(null, 'anon', () =>
+      db.query(`select public.ingest_usage($1, '[]'::jsonb, '{}'::jsonb, $2::jsonb)`, [
+        token,
+        JSON.stringify([session({ started_at: '2026-09-11T12:00:00Z', ended_at: '2026-09-11T15:00:00Z' })]),
+      ]),
+    );
+    const rows = await as(USER_A, 'authenticated', () =>
+      db.query<{ project: string; started_at: Date; ended_at: Date }>(`select project, started_at, ended_at from public.usage_sessions`),
+    );
+    expect(rows.rows).toHaveLength(1);
+    expect(rows.rows[0].project).toBe('OS Vena Digital');
+    expect(new Date(rows.rows[0].started_at).toISOString()).toBe('2026-09-11T11:46:00.000Z');
+    expect(new Date(rows.rows[0].ended_at).toISOString()).toBe('2026-09-11T15:00:00.000Z');
+    const other = await as(USER_B, 'authenticated', () => db.query(`select * from public.usage_sessions`));
+    expect(other.rows).toHaveLength(0);
+  });
+
   it('rejects unknown or revoked tokens and keeps usage private', async () => {
     await expect(
       as(null, 'anon', () => db.query(`select public.ingest_usage($1, '[]'::jsonb)`, ['x'.repeat(40)])),

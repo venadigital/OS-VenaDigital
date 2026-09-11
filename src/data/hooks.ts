@@ -16,6 +16,7 @@ export const qk = {
   boards: ['boards'] as const,
   board: (id: string) => ['board', id] as const,
   usage: (from: string, to: string) => ['usage', from, to] as const,
+  sessions: (from: Date, to: Date) => ['sessions', from.getTime(), to.getTime()] as const,
   prices: ['prices'] as const,
   accounts: ['accounts'] as const,
   collectorStatus: ['collector-status'] as const,
@@ -76,6 +77,10 @@ export const useUsage = (from: Date, to: Date) => {
   const f = dayKey(from);
   const t = dayKey(to);
   return useQuery({ queryKey: qk.usage(f, t), queryFn: () => api.listUsage(f, t) });
+};
+export const useSessions = (from: Date, to: Date) => {
+  const api = useApi();
+  return useQuery({ queryKey: qk.sessions(from, to), queryFn: () => api.listSessions(from, to) });
 };
 export const usePrices = () => {
   const api = useApi();

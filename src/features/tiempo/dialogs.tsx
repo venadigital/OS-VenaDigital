@@ -1,21 +1,27 @@
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { Button, ColorSwatches, Dialog, Field, Input, Select } from '@/components/ui';
-import { qk, useApiMutation } from '@/data/hooks';
+import { qk, useApiMutation, useSessions } from '@/data/hooks';
 import type { Project, Task, TimeEntry } from '@/data/types';
 import { nextColor, SERIES } from '@/lib/palette';
+
+const FOLDER_WINDOW = { from: new Date(Date.now() - 180 * 86_400_000), to: new Date(Date.now() + 86_400_000) };
 
 export function ProjectDialog({ open, onClose, project, projects }: { open: boolean; onClose: () => void; project?: Project; projects: Project[] }) {
   const [name, setName] = useState('');
   const [color, setColor] = useState(SERIES[0]);
+  const [folder, setFolder] = useState('');
+  const sessions = useSessions(FOLDER_WINDOW.from, FOLDER_WINDOW.to);
+  const folders = [...new Set((sessions.data ?? []).map((s) => s.project).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
   useEffect(() => {
     if (!open) return;
     setName(project?.name ?? '');
     setColor(project?.color ?? nextColor(projects.map((p) => p.color)));
+    setFolder(project?.folder ?? '');
   }, [open, project, projects]);
 
   const save = useApiMutation(
-    async (api, v: { name: string; color: string }) => {
+    async (api, v: { name: string; color: string; folder: string | null }) => {
       if (project) await api.updateProject(project.id, v);
       else await api.createProject(v);
     },
@@ -33,7 +39,7 @@ export function ProjectDialog({ open, onClose, project, projects }: { open: bool
           <Button
             variant="primary"
             disabled={!name.trim() || save.isPending}
-            onClick={() => save.mutate({ name: name.trim(), color }, { onSuccess: onClose })}
+            onClick={() => save.mutate({ name: name.trim(), color, folder: folder || null }, { onSuccess: onClose })}
           >
             Guardar
           </Button>
@@ -45,6 +51,16 @@ export function ProjectDialog({ open, onClose, project, projects }: { open: bool
       </Field>
       <Field label="Color">
         <ColorSwatches colors={SERIES} value={color} onChange={setColor} />
+      </Field>
+      <Field label="Carpeta de trabajo (Consumo IA)" hint="Une las horas de este proyecto con lo que gastaste en IA trabajando en esa carpeta.">
+        <Select value={folder} onChange={(e) => setFolder(e.target.value)}>
+          <option value="">Automática (carpeta con el mismo nombre)</option>
+          {[...new Set([...folders, ...(folder ? [folder] : [])])].map((f) => (
+            <option key={f} value={f}>
+              {f}
+            </option>
+          ))}
+        </Select>
       </Field>
     </Dialog>
   );

@@ -4,9 +4,10 @@ import { es } from 'date-fns/locale';
 import { ChevronDown, ChevronLeft, ChevronRight, Pencil, Play, Plus, Square, Timer, Trash2 } from 'lucide-react';
 import { Page, PageHeader } from '@/components/Shell';
 import { Button, Card, CardHead, cx, Dot, Empty, IconButton, Label, LiveDot, Menu, Segmented, Select, Skeleton } from '@/components/ui';
-import { qk, useApiMutation, useEntries, useNow, useStartTimer, useStopTimer } from '@/data/hooks';
+import { qk, useApiMutation, useEntries, useNow, usePrices, useSessions, useStartTimer, useStopTimer } from '@/data/hooks';
 import type { Project, Task, TimeEntry } from '@/data/types';
-import { clock, dur, hhmm, longDate } from '@/lib/format';
+import { clock, dur, hhmm, longDate, usd } from '@/lib/format';
+import { projectForFolder, sessionCost } from '@/lib/pricing';
 import { isCurrent, RANGE_LABELS, rangeFor, rangeLabel, shiftAnchor, type RangeMode } from '@/lib/time';
 import { DayTimeline, ProjectLegend, StackedColumns } from './charts';
 import { EntryDialog, ProjectDialog, TaskDialog } from './dialogs';
@@ -36,6 +37,18 @@ export function TiempoPage() {
     () => totalsByProject(visibleEntries, from, to, now, data.taskById, data.projectById),
     [visibleEntries, from, to, now, data.taskById, data.projectById],
   );
+
+  // AI spent in the work folder linked to each project (Consumo IA sessions).
+  const sessionsQ = useSessions(from, to);
+  const pricesQ = usePrices();
+  const aiByProject = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const s of sessionsQ.data ?? []) {
+      const p = projectForFolder(s.project, data.projects);
+      if (p) m.set(p.id, (m.get(p.id) ?? 0) + sessionCost(s, pricesQ.data ?? []).cost);
+    }
+    return m;
+  }, [sessionsQ.data, pricesQ.data, data.projects]);
 
   const current = isCurrent(mode, anchor, now);
   const eyebrow = mode === 'day' ? longDate(anchor) : rangeLabel(mode, anchor, now);
@@ -131,7 +144,7 @@ export function TiempoPage() {
 
           <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
             <div className="flex min-w-0 flex-col gap-5">
-              <ProjectBars total={totals.total} byProject={totals.byProject} label={`Tiempo por proyecto · ${rangeLabel(mode, anchor, now).toLowerCase()}`} sessions={visibleEntries.length} />
+              <ProjectBars total={totals.total} byProject={totals.byProject} aiByProject={aiByProject} label={`Tiempo por proyecto · ${rangeLabel(mode, anchor, now).toLowerCase()}`} sessions={visibleEntries.length} />
               <EntriesCard
                 entries={visibleEntries}
                 mode={mode}
@@ -259,11 +272,13 @@ function TimerBar({ tasks, projects, onNewTask }: { tasks: Task[]; projects: Pro
 function ProjectBars({
   total,
   byProject,
+  aiByProject,
   label,
   sessions,
 }: {
   total: number;
   byProject: { project: Project; minutes: number; tasks: Map<string, number> }[];
+  aiByProject: Map<string, number>;
   label: string;
   sessions: number;
 }) {
@@ -291,6 +306,7 @@ function ProjectBars({
                   <span className="truncate text-[14px] font-medium text-ink">{project.name}</span>
                   <span className="text-xs text-ink-3">
                     {tasks.size} {tasks.size === 1 ? 'tarea' : 'tareas'}
+                    {(aiByProject.get(project.id) ?? 0) > 0 && ` · IA ${usd(aiByProject.get(project.id)!)}`}
                   </span>
                 </div>
               </div>

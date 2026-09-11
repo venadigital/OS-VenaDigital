@@ -1,5 +1,6 @@
 // Token → USD at API prices. Prices are editable rows; cost is computed on read.
-import type { AiAccount, ModelPrice, ModelPriceInput, UsageRow } from '@/data/types';
+import type { AiAccount, ModelPrice, ModelPriceInput, Project, UsageRow, UsageSession } from '@/data/types';
+import { norm } from './text';
 
 type Rates = Omit<ModelPriceInput, 'model'>;
 
@@ -192,4 +193,38 @@ export function summarizeUsage(rows: UsageRow[], prices: ModelPrice[], accounts:
     byAccount: [...byAccount.values()].sort((a, b) => b.cost - a.cost),
     byDay,
   };
+}
+
+/** API-price cost of one session (Claude Code / Codex conversation). */
+export function sessionCost(s: UsageSession, prices: ModelPrice[]): { cost: number; tokens: number; unpriced: boolean } {
+  let cost = 0;
+  let tokens = 0;
+  let unpriced = false;
+  for (const [model, c] of Object.entries(s.models ?? {})) {
+    const t = (c.input ?? 0) + (c.output ?? 0) + (c.cache_read ?? 0) + (c.cache_write ?? 0) + (c.cache_write_1h ?? 0);
+    tokens += t;
+    const p = findPrice(model, prices);
+    if (!p) {
+      if (t > 0) unpriced = true;
+      continue;
+    }
+    cost +=
+      ((c.input ?? 0) * p.input +
+        (c.output ?? 0) * p.output +
+        (c.cache_read ?? 0) * p.cache_read +
+        (c.cache_write ?? 0) * p.cache_write +
+        (c.cache_write_1h ?? 0) * p.cache_write_1h) /
+      1e6;
+  }
+  return { cost, tokens, unpriced };
+}
+
+/** Tiempo project linked to a work folder: explicit link first, then same name. */
+export function projectForFolder(folder: string, projects: Project[]): Project | undefined {
+  if (!folder) return undefined;
+  return projects.find((p) => p.folder === folder) ?? projects.find((p) => !p.folder && norm(p.name) === norm(folder));
+}
+
+export function sessionAccountKey(s: Pick<UsageSession, 'source' | 'account'>, accounts: AiAccount[]): string {
+  return accountKey({ source: s.source, account: s.account } as UsageRow, accounts);
 }

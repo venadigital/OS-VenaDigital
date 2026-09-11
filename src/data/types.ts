@@ -6,6 +6,8 @@ export type Project = {
   color: string;
   archived: boolean;
   sort: number;
+  /** Work folder linked to this project (Consumo IA sessions). */
+  folder?: string | null;
   created_at: string;
 };
 
@@ -105,6 +107,25 @@ export type UsageRow = {
   cache_write_tokens: number;
   cache_write_1h_tokens: number;
   messages: number;
+};
+
+export type TokenCounts = {
+  input: number;
+  output: number;
+  cache_read: number;
+  cache_write: number;
+  cache_write_1h: number;
+  messages: number;
+};
+
+export type UsageSession = {
+  source: UsageSource;
+  session_id: string;
+  project: string; // folder name
+  account: string;
+  started_at: string;
+  ended_at: string;
+  models: Record<string, TokenCounts>;
 };
 
 export type CollectorStatus = {

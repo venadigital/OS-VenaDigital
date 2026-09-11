@@ -2,7 +2,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, appendFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { accountAt, dirtyRows, emptyState, localDay, recordAccount, scan } from './collector.mjs';
+import { accountAt, dirtyRows, dirtySessions, emptyState, loadState, localDay, recordAccount, scan } from './collector.mjs';
 
 const claudeRow = (id, ts, usage, extra = {}) =>
   JSON.stringify({ type: 'assistant', timestamp: ts, requestId: `req_${id}`, message: { id: `msg_${id}`, model: 'claude-opus-5', usage }, ...extra });
@@ -85,6 +85,51 @@ describe('collector', () => {
     const rows = dirtyRows(state);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ source: 'codex', account: 'chatgpt', model: 'gpt-5.3-codex', input_tokens: 500, cache_read_tokens: 2000, output_tokens: 120 });
+  });
+
+  it('groups usage by session and project folder', () => {
+    const { root, claudeDir, codexDir } = fixture();
+    const usage = { input_tokens: 10, output_tokens: 5, cache_read_input_tokens: 100 };
+    writeFileSync(
+      join(claudeDir, 'sesion.jsonl'),
+      [
+        claudeRow('s1', '2026-09-11T11:46:00.000Z', usage, { sessionId: 'abc', cwd: '/Users/x/Documents/Áreas/OS Vena Digital/design' }),
+        claudeRow('s2', '2026-09-11T14:26:00.000Z', usage, { sessionId: 'abc', cwd: '/Users/x/Documents/Áreas/OS Vena Digital' }),
+        claudeRow('s2', '2026-09-11T14:26:01.000Z', usage, { sessionId: 'abc', cwd: '/Users/x/Documents/Áreas/OS Vena Digital' }),
+      ].join('\n') + '\n',
+    );
+    writeFileSync(
+      join(codexDir, 'sessions', '2026', '09', '11', 'rollout-b.jsonl'),
+      [
+        JSON.stringify({ type: 'session_meta', payload: { id: 'cx-1', cwd: '/Users/x/Documents/Áreas/Academia IA' } }),
+        JSON.stringify({ type: 'turn_context', payload: { model: 'gpt-5.5' } }),
+        JSON.stringify({ type: 'event_msg', timestamp: '2026-09-11T16:00:00.000Z', payload: { type: 'token_count', info: { total_token_usage: { input_tokens: 300, cached_input_tokens: 200, output_tokens: 40 } } } }),
+      ].join('\n') + '\n',
+    );
+    const state = emptyState();
+    scan(state, { claudeDir: join(root, 'claude', 'projects'), codexDir });
+    const sessions = dirtySessions(state).sort((a, b) => a.source.localeCompare(b.source));
+    expect(sessions).toHaveLength(2);
+    expect(sessions[0]).toMatchObject({
+      source: 'claude_code',
+      session_id: 'abc',
+      project: 'OS Vena Digital',
+      started_at: '2026-09-11T11:46:00.000Z',
+      ended_at: '2026-09-11T14:26:00.000Z',
+      models: { 'claude-opus-5': { input: 20, output: 10, cache_read: 200, messages: 2 } },
+    });
+    expect(sessions[1]).toMatchObject({ source: 'codex', session_id: 'cx-1', project: 'Academia IA', models: { 'gpt-5.5': { input: 100, cache_read: 200, output: 40 } } });
+  });
+
+  it('keeps the account history when upgrading an old state file', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'vena-state-'));
+    const path = join(dir, 'state.json');
+    writeFileSync(path, JSON.stringify({ version: 1, timeline: [{ at: '2026-09-11T10:00:00.000Z', account: 'a@x.com' }], historyAccount: 'a@x.com', totals: { x: {} } }));
+    const s = loadState(path);
+    expect(s.version).toBe(2);
+    expect(s.timeline).toHaveLength(1);
+    expect(s.historyAccount).toBe('a@x.com');
+    expect(s.totals).toEqual({});
   });
 
   it('uses the local calendar day', () => {

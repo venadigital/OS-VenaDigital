@@ -16,12 +16,12 @@
 
 import { closeSync, copyFileSync, existsSync, mkdirSync, openSync, readFileSync, readSync, readdirSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { homedir, hostname } from 'node:os';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-export const VERSION = '1.0.0';
+export const VERSION = '1.1.0';
 const HOME = homedir();
 const BASE_DIR = process.env.VENA_OS_DIR || join(HOME, '.os-vena');
 const LABEL = 'com.venadigital.os-collector';
@@ -106,13 +106,34 @@ export function readNewLines(path, offset, onLine) {
 }
 
 // ---------------------------------------------------------------- state
+const STATE_VERSION = 2;
+
 export function emptyState() {
-  return { version: 1, files: {}, seen: {}, codex: {}, totals: {}, dirty: {}, timeline: [], lastSync: null, historyAccount: null };
+  return {
+    version: STATE_VERSION,
+    files: {},
+    seen: {},
+    codex: {},
+    totals: {},
+    dirty: {},
+    sessions: {},
+    sessionsDirty: {},
+    timeline: [],
+    lastSync: null,
+    historyAccount: null,
+  };
 }
 
 export function loadState(path) {
   const s = readJson(path, null);
-  return s && s.version === 1 ? { ...emptyState(), ...s } : emptyState();
+  if (s && s.version === STATE_VERSION) return { ...emptyState(), ...s };
+  // Older state: rescan everything (to build sessions) but keep the account history.
+  const fresh = emptyState();
+  if (s) {
+    fresh.timeline = Array.isArray(s.timeline) ? s.timeline : [];
+    fresh.historyAccount = s.historyAccount ?? null;
+  }
+  return fresh;
 }
 
 const key = (day, source, account, model) => [day, source, account, model].join('|');
@@ -121,6 +142,25 @@ function addTotals(state, k, delta) {
   const t = (state.totals[k] ??= { input: 0, output: 0, cache_read: 0, cache_write: 0, cache_write_1h: 0, messages: 0 });
   for (const f of Object.keys(delta)) t[f] += delta[f];
   state.dirty[k] = 1;
+}
+
+/** Folder name of a working directory ("/…/OS Vena Digital" → "OS Vena Digital"). */
+export function folderOf(cwd) {
+  return typeof cwd === 'string' && cwd ? basename(cwd.replace(/[\\/]+$/, '')) : '';
+}
+
+/** Adds token deltas to a session (one Claude Code / Codex conversation). */
+function addSession(state, sk, { source, id, cwd, account, ts, model, delta }) {
+  const sess = (state.sessions[sk] ??= { source, session_id: id, cwd: '', account, started_at: ts, ended_at: ts, models: {} });
+  // Sessions can cd into subfolders: the shortest path seen is the project root.
+  if (cwd && (!sess.cwd || cwd.length < sess.cwd.length)) sess.cwd = cwd;
+  if (ts < sess.started_at) sess.started_at = ts;
+  if (ts > sess.ended_at) sess.ended_at = ts;
+  if (model && delta) {
+    const m = (sess.models[model] ??= { input: 0, output: 0, cache_read: 0, cache_write: 0, cache_write_1h: 0, messages: 0 });
+    for (const f of Object.keys(delta)) m[f] += delta[f];
+  }
+  state.sessionsDirty[sk] = 1;
 }
 
 // ---------------------------------------------------------------- accounts
@@ -193,19 +233,24 @@ export function ingestClaudeLine(state, line) {
   const id = shortHash(`${msg.id ?? row.uuid}:${row.requestId ?? ''}`);
   const prev = state.seen[id];
   if (prev === 1) return; // old message already counted (marker pruned to save space)
-  const k = prev?.k ?? key(day, 'claude_code', accountAt(state, row.timestamp), msg.model);
+  const account = accountAt(state, row.timestamp);
+  const k = prev?.k ?? key(day, 'claude_code', account, msg.model);
+  const sid = typeof row.sessionId === 'string' && row.sessionId ? row.sessionId : 'sin-sesion';
+  const sk = prev?.s ?? `claude_code:${sid}`;
   const old = Array.isArray(prev?.u) ? prev.u : [0, 0, 0, 0, 0];
   const delta = snap.map((v, i) => Math.max(0, v - old[i]));
   if (prev && delta.every((d) => d === 0)) return;
-  addTotals(state, k, {
+  const counts = {
     input: delta[0],
     output: delta[1],
     cache_read: delta[2],
     cache_write: delta[3],
     cache_write_1h: delta[4],
     messages: prev ? 0 : 1,
-  });
-  state.seen[id] = { k, u: snap.map((v, i) => Math.max(v, old[i])), d: day };
+  };
+  addTotals(state, k, counts);
+  addSession(state, sk, { source: 'claude_code', id: sid, cwd: row.cwd, account, ts: row.timestamp, model: msg.model, delta: counts });
+  state.seen[id] = { k, s: sk, u: snap.map((v, i) => Math.max(v, old[i])), d: day };
 }
 
 // ---------------------------------------------------------------- Codex
@@ -220,6 +265,10 @@ export function ingestCodexLine(state, line, file, account) {
   const f = (state.files[file] ??= { offset: 0 });
   if (row.type === 'session_meta' && typeof p.id === 'string') {
     f.session = p.id;
+    if (typeof p.cwd === 'string') {
+      f.cwd = p.cwd;
+      (state.codex[p.id] ??= {}).cwd = p.cwd;
+    }
     return;
   }
   if (row.type === 'turn_context' && typeof p.model === 'string') {
@@ -250,14 +299,16 @@ export function ingestCodexLine(state, line, file, account) {
   s.max = { in: Math.max(cur.in, last.in), cached: Math.max(cur.cached, last.cached), out: Math.max(cur.out, last.out), cw: Math.max(cur.cw, last.cw) };
   if (!d.in && !d.cached && !d.out && !d.cw) return;
   const model = f.model ?? s.model ?? 'codex-unknown';
-  addTotals(state, key(day, 'codex', account, model), {
+  const counts = {
     input: Math.max(0, d.in - d.cached), // input_tokens already includes the cached part
     output: d.out, // includes reasoning tokens
     cache_read: d.cached,
     cache_write: d.cw,
     cache_write_1h: 0,
     messages: 1,
-  });
+  };
+  addTotals(state, key(day, 'codex', account, model), counts);
+  addSession(state, `codex:${sid}`, { source: 'codex', id: sid, cwd: f.cwd ?? s.cwd, account, ts: row.timestamp, model, delta: counts });
 }
 
 // ---------------------------------------------------------------- scan
@@ -307,16 +358,35 @@ export function dirtyRows(state) {
     });
 }
 
+export function dirtySessions(state) {
+  return Object.keys(state.sessionsDirty)
+    .map((k) => state.sessions[k])
+    .filter(Boolean)
+    .map((x) => ({
+      source: x.source,
+      session_id: String(x.session_id).slice(0, 100),
+      project: folderOf(x.cwd),
+      account: x.account,
+      started_at: x.started_at,
+      ended_at: x.ended_at,
+      models: x.models,
+    }));
+}
+
 // ---------------------------------------------------------------- upload
-async function upload(config, rows, status) {
+async function upload(config, rows, sessions, status) {
   const url = `${config.url.replace(/\/$/, '')}/rest/v1/rpc/ingest_usage`;
   const headers = { 'Content-Type': 'application/json', apikey: config.key };
   if (config.key.startsWith('eyJ')) headers.Authorization = `Bearer ${config.key}`;
-  for (let i = 0; i < Math.max(rows.length, 1); i += UPLOAD_BATCH) {
+  const calls = [];
+  for (let i = 0; i < rows.length; i += UPLOAD_BATCH) calls.push({ p_rows: rows.slice(i, i + UPLOAD_BATCH), p_sessions: [] });
+  for (let i = 0; i < sessions.length; i += 500) calls.push({ p_rows: [], p_sessions: sessions.slice(i, i + 500) });
+  if (!calls.length) calls.push({ p_rows: [], p_sessions: [] }); // heartbeat
+  for (const c of calls) {
     const res = await fetch(url, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ p_token: config.token, p_rows: rows.slice(i, i + UPLOAD_BATCH), p_status: status }),
+      body: JSON.stringify({ p_token: config.token, ...c, p_status: status }),
       signal: AbortSignal.timeout(30_000),
     });
     if (!res.ok) throw new Error(`Supabase respondió ${res.status}: ${(await res.text()).slice(0, 300)}`);
@@ -344,16 +414,18 @@ export async function syncOnce({ dryRun = false, statePath = paths().state, conf
   const t0 = Date.now();
   const counts = scan(state);
   const rows = dirtyRows(state);
+  const sessions = dirtySessions(state);
   if (dryRun) {
-    return { rows, counts, ms: Date.now() - t0, state };
+    return { rows, sessions, counts, ms: Date.now() - t0, state };
   }
   if (!config?.url || !config?.key || !config?.token) throw new Error('Falta configurar: corre "node collector.mjs setup --url ... --key ... --token ..."');
   const status = { machine: config.machine || machineName(), current_account: currentClaudeAccount(), version: VERSION };
-  await upload(config, rows, status);
+  await upload(config, rows, sessions, status);
   state.dirty = {};
+  state.sessionsDirty = {};
   state.lastSync = new Date().toISOString();
   writeJsonAtomic(statePath, state);
-  return { rows, counts, ms: Date.now() - t0, state };
+  return { rows, sessions, counts, ms: Date.now() - t0, state };
 }
 
 function parseArgs(argv) {
@@ -428,7 +500,7 @@ async function main() {
 
   if (cmd === 'sync') {
     const r = await syncOnce({ dryRun: Boolean(args['dry-run']) });
-    console.log(`${args['dry-run'] ? '[prueba] ' : ''}${r.rows.length} filas ${args['dry-run'] ? 'por subir' : 'subidas'} · ${r.counts.claudeFiles} archivos de Claude Code · ${r.counts.codexFiles} de Codex · ${r.ms} ms`);
+    console.log(`${args['dry-run'] ? '[prueba] ' : ''}${r.rows.length} filas y ${r.sessions.length} sesiones ${args['dry-run'] ? 'por subir' : 'subidas'} · ${r.counts.claudeFiles} archivos de Claude Code · ${r.counts.codexFiles} de Codex · ${r.ms} ms`);
     for (const line of summarize(r.rows).slice(0, 25)) console.log(line);
     return;
   }
@@ -450,7 +522,7 @@ async function main() {
         if (changed || Date.now() - lastSync > SYNC_EVERY_MS) {
           const r = await syncOnce();
           lastSync = Date.now();
-          if (r.rows.length) log(`subidas ${r.rows.length} filas en ${r.ms} ms`);
+          if (r.rows.length || r.sessions.length) log(`subidas ${r.rows.length} filas y ${r.sessions.length} sesiones en ${r.ms} ms`);
         }
       } catch (err) {
         log('error:', err instanceof Error ? err.message : err);
@@ -474,12 +546,33 @@ async function main() {
     mkdirSync(dirname(plistPath), { recursive: true });
     writeFileSync(plistPath, plist(process.execPath, script, p.log));
     const uid = process.getuid?.() ?? 501;
+    const loaded = () => {
+      try {
+        execFileSync('launchctl', ['print', `gui/${uid}/${LABEL}`], { stdio: 'ignore' });
+        return true;
+      } catch {
+        return false;
+      }
+    };
     try {
       execFileSync('launchctl', ['bootout', `gui/${uid}/${LABEL}`], { stdio: 'ignore' });
     } catch {
       // not loaded yet
     }
-    execFileSync('launchctl', ['bootstrap', `gui/${uid}`, plistPath]);
+    // bootout is asynchronous: wait for the old service to go away before loading the new one.
+    for (let i = 0; i < 50 && loaded(); i++) execFileSync('sleep', ['0.1']);
+    let lastErr;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      try {
+        execFileSync('launchctl', ['bootstrap', `gui/${uid}`, plistPath], { stdio: 'pipe' });
+        lastErr = null;
+        break;
+      } catch (err) {
+        lastErr = err;
+        execFileSync('sleep', ['0.5']);
+      }
+    }
+    if (lastErr && !loaded()) throw lastErr;
     console.log(`Servicio instalado: sincroniza cada 5 minutos y detecta cambios de cuenta de Claude cada 30 s.\nRegistro: ${p.log}`);
     return;
   }

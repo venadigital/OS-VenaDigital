@@ -13,6 +13,7 @@ import type {
   Task,
   TimeEntry,
   UsageRow,
+  UsageSession,
 } from './types';
 
 function check<T>(res: { data: T | null; error: { message: string } | null }): T {
@@ -161,6 +162,16 @@ export function createSupabaseApi(sb: SupabaseClient): Api {
           messages: num(r.messages),
         }),
       );
+    },
+    async listSessions(from, to) {
+      const res = await sb
+        .from('usage_sessions')
+        .select('source, session_id, project, account, started_at, ended_at, models')
+        .lt('started_at', to.toISOString())
+        .gte('ended_at', from.toISOString())
+        .order('started_at', { ascending: false })
+        .limit(3000);
+      return check(res) as UsageSession[];
     },
     async listPrices() {
       const rows = check(await sb.from('model_prices').select('*').order('model')) as Record<string, unknown>[];

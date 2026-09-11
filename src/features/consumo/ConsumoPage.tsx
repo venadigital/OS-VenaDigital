@@ -4,12 +4,14 @@ import { es } from 'date-fns/locale';
 import { AlertTriangle, ChevronLeft, ChevronRight, Laptop, Plus, RefreshCw, Sparkles } from 'lucide-react';
 import { Page, PageHeader } from '@/components/Shell';
 import { Button, Card, CardHead, cx, Dot, Empty, IconButton, Label, LiveDot, Pill, Segmented, Select, Skeleton } from '@/components/ui';
-import { useCollectorStatus, useAccounts, usePrices, useUsage } from '@/data/hooks';
+import { useCollectorStatus, useAccounts, useEntries, usePrices, useSessions, useUsage } from '@/data/hooks';
 import type { AiAccount, ModelPrice } from '@/data/types';
-import { accountKey, findPrice, summarizeUsage, type AccountSummary, type UsageSummary } from '@/lib/pricing';
+import { accountKey, findPrice, sessionAccountKey, summarizeUsage, type AccountSummary, type UsageSummary } from '@/lib/pricing';
 import { price as priceText, ratio, relativeDay, tokens, usd } from '@/lib/format';
 import { dayKey, daysIn, isCurrent, RANGE_LABELS, rangeFor, rangeLabel, shiftAnchor, type RangeMode } from '@/lib/time';
 import { AccountDialog, CollectorDialog, PriceDialog, PricesDialog } from './dialogs';
+import { ProjectsCard, SessionsCard, useSessionRows } from './breakdown';
+import { totalsByProject, useTimeData } from '@/features/tiempo/model';
 
 export function ConsumoPage() {
   const [mode, setMode] = useState<RangeMode>('month');
@@ -19,6 +21,7 @@ export function ConsumoPage() {
   const [pricesOpen, setPricesOpen] = useState(false);
   const [accountEdit, setAccountEdit] = useState<{ account?: AiAccount; draft?: Partial<AiAccount> } | null>(null);
   const [collectorOpen, setCollectorOpen] = useState(false);
+  const [breakdown, setBreakdown] = useState<'model' | 'project' | 'session'>('model');
 
   const { from, to } = useMemo(() => rangeFor(mode, anchor), [mode, anchor]);
   // The chart always shows days: a day is read inside its week.
@@ -55,6 +58,31 @@ export function ConsumoPage() {
   const loading = usageQ.isLoading || prices.isLoading || accountsQ.isLoading;
   const now = new Date();
   const detected = everyAccount.filter((a) => !a.account && a.email !== 'unknown');
+
+  // Sessions (per work folder) and the hours logged in Tiempo for linked projects.
+  const sessionsQ = useSessions(from, to);
+  const sessions = useMemo(
+    () => (accountFilter === 'all' ? sessionsQ.data ?? [] : (sessionsQ.data ?? []).filter((x) => sessionAccountKey(x, accounts) === accountFilter)),
+    [sessionsQ.data, accountFilter, accounts],
+  );
+  const sessionRows = useSessionRows(sessions, priceList);
+  const time = useTimeData();
+  const entries = useEntries(from, to);
+  const minutesByProject = useMemo(
+    () => new Map(totalsByProject(entries.data ?? [], from, to, new Date(), time.taskById, time.projectById).byProject.map((b) => [b.project.id, b.minutes])),
+    [entries.data, from, to, time.taskById, time.projectById],
+  );
+  const tabs = (
+    <Segmented
+      options={[
+        { value: 'model', label: 'Modelo' },
+        { value: 'project', label: 'Proyecto' },
+        { value: 'session', label: 'Sesión' },
+      ]}
+      value={breakdown}
+      onChange={setBreakdown}
+    />
+  );
 
   return (
     <Page>
@@ -151,12 +179,19 @@ export function ConsumoPage() {
       )}
 
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <ModelsCard
-          summary={summary}
-          prices={priceList}
-          onEditPrice={(model) => setPriceEdit({ model, price: findPrice(model, priceList) })}
-          onOpenPrices={() => setPricesOpen(true)}
-        />
+        {breakdown === 'model' ? (
+          <ModelsCard
+            tabs={tabs}
+            summary={summary}
+            prices={priceList}
+            onEditPrice={(model) => setPriceEdit({ model, price: findPrice(model, priceList) })}
+            onOpenPrices={() => setPricesOpen(true)}
+          />
+        ) : breakdown === 'project' ? (
+          <ProjectsCard tabs={tabs} rows={sessionRows} projects={time.projects} minutesByProject={minutesByProject} />
+        ) : (
+          <SessionsCard tabs={tabs} rows={sessionRows} />
+        )}
         <div className="flex flex-col gap-5">
           <AccountsCard
             accounts={accounts}
@@ -338,11 +373,13 @@ function niceStep(max: number) {
 }
 
 function ModelsCard({
+  tabs,
   summary,
   prices,
   onEditPrice,
   onOpenPrices,
 }: {
+  tabs: React.ReactNode;
   summary: UsageSummary;
   prices: ModelPrice[];
   onEditPrice: (model: string) => void;
@@ -354,14 +391,7 @@ function ModelsCard({
   );
   return (
     <Card className="min-w-0">
-      <CardHead
-        title="Por modelo"
-        right={
-          <button type="button" onClick={onOpenPrices} className="flex items-center gap-0.5 text-[13px] font-medium text-accent">
-            Tabla de precios <ChevronRight size={14} />
-          </button>
-        }
-      />
+      <CardHead title="Por modelo" right={tabs} />
       {summary.byModel.length === 0 ? (
         <p className="text-[13.5px] text-ink-3">Sin consumo en este periodo.</p>
       ) : (
@@ -421,6 +451,9 @@ function ModelsCard({
         </p>
       )}
       {prices.length === 0 && <p className="text-[12.5px] text-ink-3">Cargando la tabla de precios de referencia…</p>}
+      <button type="button" onClick={onOpenPrices} className="flex items-center gap-0.5 self-start text-[13px] font-medium text-accent">
+        Tabla de precios <ChevronRight size={14} />
+      </button>
     </Card>
   );
 }

@@ -14,6 +14,7 @@ import type {
   Task,
   TimeEntry,
   UsageRow,
+  UsageSession,
 } from './types';
 import { DEFAULT_PRICES } from '@/lib/pricing';
 import { SERIES } from '@/lib/palette';
@@ -34,6 +35,7 @@ type Store = {
   accounts: AiAccount[];
   prices: ModelPrice[];
   usage: UsageRow[];
+  sessions: UsageSession[];
   status: CollectorStatus[];
   tokens: CollectorToken[];
 };
@@ -183,6 +185,47 @@ function seed(now: Date): Store {
     if (wd === 3) usage.push(row(day, 'codex', 'demo-chatgpt', 'codex-auto-review', f, [30_000, 5_000, 200_000, 0]));
   }
 
+  // Sessions per work folder (Claude Code / Codex conversations).
+  const sessions: UsageSession[] = [];
+  const folders = ['OS Vena Digital', 'Academia IA', 'Contenidos Vena Digital', 'Podcast'];
+  const counts = (f: number, base: [number, number, number, number]) => ({
+    input: Math.round(base[0] * f),
+    output: Math.round(base[1] * f),
+    cache_read: Math.round(base[2] * f),
+    cache_write: Math.round(base[3] * f),
+    cache_write_1h: 0,
+    messages: Math.round(50 * f),
+  });
+  for (let d = subDays(startOfMonth(now), 7); d <= now; d = addDays(d, 1)) {
+    if (isWeekend(d)) continue;
+    const n = 1 + (d.getDate() % 3);
+    for (let j = 0; j < n; j++) {
+      const start = setMinutes(setHours(d, 8 + j * 3), 15);
+      const minutes = 40 + ((d.getDate() * 13 + j * 29) % 110);
+      if (addMinutes(start, minutes) > now) continue;
+      const codex = (d.getDate() + j) % 4 === 0;
+      const f = minutes / 60;
+      sessions.push({
+        source: codex ? 'codex' : 'claude_code',
+        session_id: uid(),
+        project: folders[(d.getDate() + j) % folders.length],
+        account: codex ? 'demo-chatgpt' : 'personal@ejemplo.com',
+        started_at: iso(start),
+        ended_at: iso(addMinutes(start, minutes)),
+        models: codex ? { 'gpt-5.3-codex': counts(f, [300_000, 60_000, 3_000_000, 0]) } : { 'claude-opus-5': counts(f, [40_000, 80_000, 9_000_000, 500_000]) },
+      });
+    }
+  }
+  sessions.push({
+    source: 'claude_code',
+    session_id: uid(),
+    project: 'OS Vena Digital',
+    account: 'personal@ejemplo.com',
+    started_at: iso(subMinutes(now, 160)),
+    ended_at: iso(subMinutes(now, 2)),
+    models: { 'claude-opus-5': counts(2.6, [40_000, 80_000, 9_000_000, 500_000]) },
+  });
+
   return {
     projects,
     tasks,
@@ -192,6 +235,7 @@ function seed(now: Date): Store {
     accounts,
     prices,
     usage,
+    sessions,
     status: [{ machine: 'MacBook Pro', last_seen_at: iso(subMinutes(now, 3)), current_account: 'personal@ejemplo.com', version: '1.0.0' }],
     tokens: [{ id: uid(), label: 'MacBook Pro', created_at: created, last_used_at: iso(subMinutes(now, 3)), revoked_at: null }],
   };
@@ -369,6 +413,10 @@ export function createDemoApi(): Api {
 
     // ---------- Consumo IA ----------
     listUsage: async (fromDay, toDay) => later(clone(s.usage.filter((r) => r.day >= fromDay && r.day < toDay))),
+    listSessions: async (from, to) =>
+      later(
+        clone(s.sessions.filter((x) => new Date(x.started_at) < to && new Date(x.ended_at) >= from)).sort((a, b) => b.started_at.localeCompare(a.started_at)),
+      ),
     listPrices: async () => later(clone(s.prices).sort((a, b) => a.model.localeCompare(b.model))),
     async upsertPrice(input) {
       const existing = s.prices.find((p) => p.model === input.model);
