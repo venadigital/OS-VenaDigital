@@ -37,6 +37,17 @@ jobs:
           SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           SUPABASE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
 
+      - name: Preparar servidor FTP
+        # Acepta el valor tal como lo copia Hostinger ("ftp://IP", con espacios o puerto).
+        if: ${{ env.FTP_SERVER != '' }}
+        run: |
+          raw="$(printf '%s' "$FTP_SERVER" | tr -d '[:space:]')"
+          host="$(printf '%s' "$raw" | grep -oE '([0-9]{1,3}\.){3}[0-9]{1,3}' | head -n1 || true)"
+          if [ -z "$host" ]; then host="$(printf '%s' "$raw" | sed -E 's#^.*://##; s#/.*$##; s#:[0-9]+$##')"; fi
+          if [ -z "$host" ]; then echo "::error::FTP_SERVER está vacío o no tiene un servidor válido"; exit 1; fi
+          echo "::add-mask::$host"
+          echo "FTP_HOST=$host" >> "$GITHUB_ENV"
+
       - name: Subir a Hostinger por FTP
         # Se salta hasta que configures los secretos FTP_* en GitHub.
         # La cuenta FTP debe apuntar a la carpeta del subdominio: así se sube a su raíz
@@ -44,7 +55,7 @@ jobs:
         if: ${{ env.FTP_SERVER != '' }}
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server: ${{ secrets.FTP_SERVER }}
+          server: ${{ env.FTP_HOST }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./dist/
