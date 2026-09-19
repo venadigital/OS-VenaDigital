@@ -21,15 +21,15 @@ type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'subtle';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: 'bg-accent text-on-accent hover:bg-accent-strong',
+  primary: 'os-button-primary',
   secondary: 'bg-surface text-ink border border-line-2 hover:bg-plane',
   ghost: 'text-ink-2 hover:bg-fill',
   danger: 'bg-crit-soft text-crit hover:brightness-[0.97]',
   subtle: 'bg-fill text-ink-2 hover:bg-fill-2',
 };
 const SIZES: Record<ButtonSize, string> = {
-  sm: 'h-8 px-3 text-[13px] gap-1.5 rounded-lg',
-  md: 'h-[34px] px-3.5 text-[13.5px] gap-1.5 rounded-lg',
+  sm: 'h-9 px-3.5 text-[14px] gap-1.5 rounded-full',
+  md: 'h-10 px-4 text-[14px] gap-2 rounded-full',
   lg: 'h-11 px-5 text-[15px] gap-2 rounded-full',
 };
 
@@ -42,7 +42,7 @@ export const Button = forwardRef<
       ref={ref}
       type={type}
       className={cx(
-        'inline-flex shrink-0 items-center justify-center font-medium whitespace-nowrap transition-colors select-none disabled:pointer-events-none disabled:opacity-40',
+        'os-button inline-flex shrink-0 items-center justify-center font-medium whitespace-nowrap transition-colors select-none disabled:pointer-events-none disabled:opacity-40',
         variant === 'primary' && 'font-semibold',
         VARIANTS[variant],
         SIZES[size],
@@ -87,20 +87,20 @@ export function IconButton({
 }
 
 export function Card({ className, children, as: Tag = 'div' }: { className?: string; children: ReactNode; as?: 'div' | 'section' }) {
-  return <Tag className={cx('flex flex-col gap-4 rounded-[14px] border border-line bg-surface p-5', className)}>{children}</Tag>;
+  return <Tag className={cx('os-card flex flex-col gap-4 rounded-[18px] border border-line bg-surface p-5', className)}>{children}</Tag>;
 }
 
 export function CardHead({ title, right, className }: { title: ReactNode; right?: ReactNode; className?: string }) {
   return (
-    <div className={cx('flex min-h-[22px] items-center justify-between gap-3', className)}>
-      <h2 className="text-[15px] font-semibold tracking-[-0.005em] text-ink">{title}</h2>
+    <div className={cx('card-head flex min-h-[22px] items-center justify-between gap-3', className)}>
+      <h2 className="text-[16px] font-medium tracking-[-0.005em] text-ink">{title}</h2>
       {right}
     </div>
   );
 }
 
 export function Label({ children }: { children: ReactNode }) {
-  return <div className="text-[13px] font-medium text-ink-2">{children}</div>;
+  return <div className="text-[14px] font-medium text-ink-2">{children}</div>;
 }
 
 export function Dot({ color, size = 8, className }: { color: string; size?: number; className?: string }) {
@@ -109,7 +109,7 @@ export function Dot({ color, size = 8, className }: { color: string; size?: numb
 
 export function LiveDot({ label = 'En curso', hideLabel }: { label?: string; hideLabel?: boolean }) {
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-2" title={hideLabel ? label : undefined}>
+    <span className="live-status inline-flex items-center gap-1.5 text-xs font-medium text-ink-2" title={hideLabel ? label : undefined}>
       <span className="relative inline-flex h-[7px] w-[7px]">
         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-good opacity-40" />
         <span className="relative inline-flex h-[7px] w-[7px] rounded-full bg-good" />
@@ -121,7 +121,7 @@ export function LiveDot({ label = 'En curso', hideLabel }: { label?: string; hid
 
 export function Pill({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <span className={cx('inline-flex h-[22px] shrink-0 items-center rounded-md bg-accent-soft px-2 text-[12.5px] font-semibold whitespace-nowrap text-accent', className)}>
+    <span className={cx('os-pill inline-flex shrink-0 items-center whitespace-nowrap', className)}>
       {children}
     </span>
   );
@@ -141,7 +141,7 @@ export function Segmented<T extends string>({
   size?: 'md' | 'lg';
 }) {
   return (
-    <div role="tablist" className={cx('flex items-center gap-0.5 rounded-[9px] bg-fill p-0.5', full && 'w-full')}>
+    <div role="tablist" className={cx('os-segmented flex items-center gap-0.5 rounded-full bg-fill p-1', full && 'w-full')}>
       {options.map((o) => {
         const on = o.value === value;
         return (
@@ -152,10 +152,10 @@ export function Segmented<T extends string>({
             aria-selected={on}
             onClick={() => onChange(o.value)}
             className={cx(
-              'flex items-center justify-center rounded-[7px] px-3.5 text-[13px] transition-colors',
-              size === 'lg' ? 'h-10' : 'h-[26px]',
+              'flex items-center justify-center rounded-full px-4 text-[14px] transition-colors',
+              size === 'lg' ? 'h-10' : 'h-8',
               full && 'flex-1',
-              on ? 'bg-raised font-semibold text-ink shadow-[0_1px_2px_rgb(var(--shade)/0.10),0_0_0_0.5px_rgb(var(--shade)/0.08)]' : 'font-medium text-ink-2 hover:text-ink',
+              on ? 'selected-segment bg-raised font-medium text-ink' : 'font-medium text-ink-2 hover:text-ink',
             )}
           >
             {o.label}
@@ -167,7 +167,7 @@ export function Segmented<T extends string>({
 }
 
 const fieldBase =
-  'w-full rounded-[10px] border border-line-2 bg-surface px-3 text-[14px] text-ink placeholder:text-ink-4 outline-none transition-shadow focus:border-accent focus:ring-4 focus:ring-accent-soft';
+  'os-field w-full rounded-[12px] border border-line-2 bg-surface px-3 text-[14px] text-ink placeholder:text-ink-4 outline-none transition-shadow focus:border-accent focus:ring-4 focus:ring-accent-soft';
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(function Input({ className, ...rest }, ref) {
   return <input ref={ref} className={cx(fieldBase, 'h-10', className)} {...rest} />;
@@ -219,7 +219,10 @@ export function Dialog({
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
-    if (open && !d.open) d.showModal();
+    if (open && !d.open) {
+      d.showModal();
+      d.querySelector<HTMLElement>('input:not([disabled]):not([type="checkbox"]):not([type="hidden"]), textarea:not([disabled])')?.focus();
+    }
     if (!open && d.open) d.close();
   }, [open]);
   return (
@@ -233,7 +236,8 @@ export function Dialog({
       onClick={(e) => {
         if (e.target === ref.current) onClose();
       }}
-      className="m-auto max-h-[calc(100dvh-32px)] w-[calc(100vw-24px)] rounded-2xl border border-line bg-overlay p-0 text-ink shadow-[0_24px_64px_rgb(var(--shade)/0.18)]"
+      aria-label={title}
+      className="os-dialog m-auto max-h-[calc(100dvh-32px)] w-[calc(100vw-24px)] rounded-2xl border border-line bg-overlay p-0 text-ink shadow-[0_24px_64px_rgb(var(--shade)/0.18)]"
       style={{ maxWidth: width }}
     >
       {open && (

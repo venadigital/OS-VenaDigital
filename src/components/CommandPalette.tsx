@@ -4,7 +4,7 @@ import { CornerDownLeft, Moon, NotebookPen, Play, Search, Settings2, Shapes, Sun
 import { useBoards, useNotes, useStartTimer } from '@/data/hooks';
 import { useTimeData } from '@/features/tiempo/model';
 import { NAV } from './Shell';
-import { cx, Dot } from './ui';
+import { cx, Dialog, Dot } from './ui';
 import { norm } from '@/lib/text';
 import { toggleTheme, useTheme } from '@/lib/theme';
 
@@ -56,6 +56,7 @@ export function CommandPalette() {
       ...NAV.map((n) => ({ id: `nav:${n.to}`, group: 'Ir a', label: n.label, icon: <n.icon size={16} />, run: go(n.to) })),
       { id: 'nav:ajustes', group: 'Ir a', label: 'Ajustes', icon: <Settings2 size={16} />, run: go('/ajustes') },
       { id: 'act:note', group: 'Crear', label: 'Nueva nota', icon: <NotebookPen size={16} />, run: go('/notas?nueva=1') },
+      { id: 'act:task', group: 'Crear', label: 'Nueva tarea', icon: <Play size={16} />, run: go('/tiempo?nueva=1') },
       { id: 'act:board', group: 'Crear', label: 'Nuevo tablero', icon: <Shapes size={16} />, run: go('/tableros?nuevo=1') },
       theme === 'dark'
         ? { id: 'act:theme', group: 'Apariencia', label: 'Usar modo claro', icon: <Sun size={16} />, run: toggleTheme }
@@ -106,9 +107,9 @@ export function CommandPalette() {
 
   let lastGroup = '';
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center bg-[var(--backdrop)] px-3 pt-[12vh]" onMouseDown={() => setOpen(false)}>
+    <Dialog open={open} onClose={() => setOpen(false)} title="Buscar en tu OS" width={620}>
       <div
-        className="flex max-h-[70vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-line bg-overlay shadow-[0_24px_64px_rgb(var(--shade)/0.22)]"
+        className="command-panel flex w-full flex-col overflow-hidden"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2.5 border-b border-rule px-4">
@@ -132,6 +133,7 @@ export function CommandPalette() {
               }
               if (e.key === 'Enter' && items[active]) run(items[active]);
             }}
+            aria-label="Buscar en tu OS"
             placeholder="Busca notas, tableros, tareas o ve a un módulo…"
             className="h-13 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-4"
           />
@@ -165,6 +167,6 @@ export function CommandPalette() {
           })}
         </div>
       </div>
-    </div>
+    </Dialog>
   );
 }

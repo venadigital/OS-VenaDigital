@@ -19,10 +19,11 @@ export function AjustesPage() {
   const [collectorOpen, setCollectorOpen] = useState(false);
 
   return (
-    <Page className="max-w-[860px]">
-      <PageHeader title="Ajustes" />
+    <Page>
+      <PageHeader eyebrow="Tu espacio de trabajo" title="Ajustes" />
 
-      <Card>
+      <div className="settings-grid">
+      <Card className="settings-account">
         <CardHead title="Cuenta" />
         <div className="flex flex-col gap-1 text-[14px]">
           <span className="font-medium text-ink">{user.name}</span>
@@ -36,6 +37,8 @@ export function AjustesPage() {
 
       <Card>
         <CardHead title="Apariencia" />
+        <p className="text-sm text-ink-3">El tema y el color se guardan en este navegador. Los favoritos y la vista de tableros se recuerdan aquí para tu cuenta.</p>
+        <div className="appearance-samples" aria-hidden="true"><div className="appearance-mini light-mini"><span /><div><i /><i /><i /></div><small>Claro</small></div><div className="appearance-mini dark-mini"><span /><div><i /><i /><i /></div><small>Oscuro</small></div></div>
         <div className="flex flex-col gap-2">
           <span className="text-[13px] font-medium text-ink-2">Tema</span>
           <div className="self-start">
@@ -99,6 +102,7 @@ export function AjustesPage() {
       </Card>
 
       <ExportCard />
+      </div>
 
       <CollectorDialog open={collectorOpen} onClose={() => setCollectorOpen(false)} />
     </Page>

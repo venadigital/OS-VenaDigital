@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 
 type Ctx = {
   api: Api;
-  user: { email: string; name: string };
+  user: { id: string; email: string; name: string };
   signOut: () => Promise<void>;
 };
 
@@ -38,7 +38,7 @@ function nameFromEmail(email: string) {
 
 export function DemoProvider({ children }: { children: ReactNode }) {
   const value = useMemo<Ctx>(
-    () => ({ api: createDemoApi(), user: { email: 'demo@vena.os', name: 'Laura' }, signOut: async () => leaveDemo() }),
+    () => ({ api: createDemoApi(), user: { id: 'demo', email: 'demo@vena.os', name: 'Laura' }, signOut: async () => leaveDemo() }),
     [],
   );
   return <ApiContext.Provider value={value}>{children}</ApiContext.Provider>;
@@ -50,12 +50,12 @@ export function SupabaseProvider({ session, children }: { session: Session; chil
   const value = useMemo<Ctx>(
     () => ({
       api: createSupabaseApi(supabase!),
-      user: { email, name: displayName },
+      user: { id: session.user.id, email, name: displayName },
       signOut: async () => {
         await supabase!.auth.signOut();
       },
     }),
-    [email, displayName],
+    [session.user.id, email, displayName],
   );
   return <ApiContext.Provider value={value}>{children}</ApiContext.Provider>;
 }

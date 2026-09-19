@@ -37,7 +37,7 @@ export function useQuickCapture() {
   const toast = useToast();
   return async (text: string, type?: NoteType) => {
     const value = text.trim();
-    if (!value) return;
+    if (!value) return false;
     try {
       if (isUrl(value)) {
         await api.createNote({ type: 'link', body: '', ...(await linkFields(api, value)) });
@@ -46,8 +46,10 @@ export function useQuickCapture() {
       }
       await qc.invalidateQueries({ queryKey: qk.notes });
       toast('Guardado en Notas');
+      return true;
     } catch (err) {
       toast(`No se pudo guardar: ${err instanceof Error ? err.message : String(err)}`, 'error');
+      return false;
     }
   };
 }

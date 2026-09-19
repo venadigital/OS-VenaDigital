@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { norm } from '@/lib/text';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ChevronDown, ChevronLeft, ChevronRight, Pencil, Play, Plus, Square, Timer, Trash2 } from 'lucide-react';
@@ -14,13 +16,17 @@ import { EntryDialog, ProjectDialog, TaskDialog } from './dialogs';
 import { totalsByProject, useOpenProjects, useRunningTimer, useTimeData } from './model';
 
 export function TiempoPage() {
+  const [params, setParams] = useSearchParams();
   const [mode, setMode] = useState<RangeMode>('day');
   const [anchor, setAnchor] = useState(() => new Date());
   const [projectFilter, setProjectFilter] = useState('all');
-  const [taskDialog, setTaskDialog] = useState<{ open: boolean; task?: Task; projectId?: string }>({ open: false });
+  const [taskDialog, setTaskDialog] = useState<{ open: boolean; task?: Task; projectId?: string }>(() => ({ open: params.has('nueva') }));
   const [projectDialog, setProjectDialog] = useState<{ open: boolean; project?: Project }>({ open: false });
   const [editing, setEditing] = useState<TimeEntry | null>(null);
   const openProjects = useOpenProjects();
+  useEffect(() => {
+    if(params.has('nueva')) {setTaskDialog({open:true}); setParams({}, {replace:true});}
+  }, [params, setParams]);
 
   const { from, to } = useMemo(() => rangeFor(mode, anchor), [mode, anchor]);
   const data = useTimeData();
@@ -82,7 +88,7 @@ export function TiempoPage() {
               </IconButton>
             </div>
             <div className="w-[190px]">
-              <Select value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)} className="h-[34px] rounded-lg text-[13.5px]">
+              <Select aria-label="Filtrar por proyecto" value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)} className="h-[34px] rounded-lg text-[13.5px]">
                 <option value="all">Todos los proyectos</option>
                 {data.projects.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -91,7 +97,7 @@ export function TiempoPage() {
                 ))}
               </Select>
             </div>
-            <Button icon={<Plus size={16} />} onClick={() => setTaskDialog({ open: true })}>
+            <Button variant="primary" icon={<Plus size={16} />} onClick={() => setTaskDialog({ open: true })}>
               Nueva tarea
             </Button>
           </>
@@ -114,7 +120,20 @@ export function TiempoPage() {
         <>
           <TimerBar tasks={data.tasks} projects={data.projects} onNewTask={() => setTaskDialog({ open: true })} />
 
-          <Card>
+          <div className="time-work-area">
+            <ProjectsPanel
+              projects={data.projects}
+              tasks={data.tasks}
+              todayTotals={totals}
+              open={openProjects.open}
+              onToggle={openProjects.toggle}
+              onNewProject={() => setProjectDialog({ open: true })}
+              onEditProject={(p) => setProjectDialog({ open: true, project: p })}
+              onNewTask={(projectId) => setTaskDialog({ open: true, projectId })}
+              onEditTask={(t) => setTaskDialog({ open: true, task: t })}
+              rangeText={mode === 'day' && current ? 'Hoy' : rangeLabel(mode, anchor, now)}
+            />
+          <Card className="time-timeline">
             {mode === 'day' ? (
               <>
                 <CardHead title="Línea del día" right={<ProjectLegend items={totals.byProject.map((t) => ({ project: t.project, minutes: t.minutes }))} />} />
@@ -143,8 +162,8 @@ export function TiempoPage() {
             )}
           </Card>
 
-          <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
-            <div className="flex min-w-0 flex-col gap-5">
+          <div className="time-overview grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+            <div className="time-reports flex min-w-0 flex-col gap-5">
               <ProjectBars total={totals.total} byProject={totals.byProject} aiByProject={aiByProject} label={`Tiempo por proyecto · ${rangeLabel(mode, anchor, now).toLowerCase()}`} sessions={visibleEntries.length} />
               <EntriesCard
                 entries={visibleEntries}
@@ -158,18 +177,8 @@ export function TiempoPage() {
                 loading={entriesQ.isLoading}
               />
             </div>
-            <ProjectsPanel
-              projects={data.projects}
-              tasks={data.tasks}
-              todayTotals={totals}
-              open={openProjects.open}
-              onToggle={openProjects.toggle}
-              onNewProject={() => setProjectDialog({ open: true })}
-              onEditProject={(p) => setProjectDialog({ open: true, project: p })}
-              onNewTask={(projectId) => setTaskDialog({ open: true, projectId })}
-              onEditTask={(t) => setTaskDialog({ open: true, task: t })}
-              rangeText={mode === 'day' && current ? 'Hoy' : rangeLabel(mode, anchor, now)}
-            />
+
+          </div>
           </div>
         </>
       )}
@@ -179,7 +188,7 @@ export function TiempoPage() {
         task={taskDialog.task}
         defaultProjectId={taskDialog.projectId}
         projects={data.projects}
-        onClose={() => setTaskDialog({ open: false })}
+        onClose={() => {setTaskDialog({ open: false }); if(params.has('nueva')) setParams({}, {replace:true});}}
         onCreated={(t) => openProjects.expand(t.project_id)}
       />
       <ProjectDialog open={projectDialog.open} project={projectDialog.project} projects={data.projects} onClose={() => setProjectDialog({ open: false })} />
@@ -224,7 +233,7 @@ function TimerBar({ tasks, projects, onNewTask }: { tasks: Task[]; projects: Pro
 
   if (timer) {
     return (
-      <div className="flex flex-col gap-3 rounded-[14px] border border-line bg-surface py-3.5 pr-4 pl-5 shadow-[0_1px_3px_rgb(var(--shade)/0.05)] sm:flex-row sm:items-center sm:gap-4">
+      <div className="timer-bar flex flex-col gap-3 rounded-[14px] border border-line bg-surface py-3.5 pr-4 pl-5 shadow-[0_1px_3px_rgb(var(--shade)/0.05)] sm:flex-row sm:items-center sm:gap-4">
         <div className="flex min-w-0 flex-1 items-center gap-4">
           <span className="h-[9px] w-[9px] shrink-0 rounded-full bg-good" />
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -249,7 +258,7 @@ function TimerBar({ tasks, projects, onNewTask }: { tasks: Task[]; projects: Pro
 
   const pickedTask = activeTasks.find((t) => t.id === picked);
   return (
-    <div className="flex flex-col gap-3 rounded-[14px] border border-line bg-surface py-3.5 pr-4 pl-5 sm:flex-row sm:items-center sm:gap-4">
+    <div className="timer-bar flex flex-col gap-3 rounded-[14px] border border-line bg-surface py-3.5 pr-4 pl-5 sm:flex-row sm:items-center sm:gap-4">
       <div className="flex min-w-0 flex-1 items-center gap-4">
         <span className="h-[9px] w-[9px] shrink-0 rounded-full bg-line-2" />
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -303,7 +312,7 @@ function ProjectBars({
       ) : (
         <div className="flex flex-col gap-0.5">
           {byProject.map(({ project, minutes, tasks }) => (
-            <div key={project.id} className="grid h-11 grid-cols-[minmax(0,160px)_minmax(0,1fr)_auto] items-center gap-4 md:grid-cols-[210px_minmax(0,1fr)_140px]">
+            <div key={project.id} className="grid h-11 project-bar-row grid-cols-[minmax(0,160px)_minmax(0,1fr)_auto] items-center gap-4 md:grid-cols-[180px_minmax(0,1fr)_130px]">
               <div className="flex min-w-0 items-center gap-2.5">
                 <Dot color={project.color} />
                 <div className="flex min-w-0 flex-col">
@@ -367,7 +376,7 @@ function EntriesCard({
         <p className="text-[13.5px] text-ink-3">Aún no hay registros en este periodo.</p>
       ) : (
         <div className="flex flex-col">
-          <div className="hidden grid-cols-[minmax(0,1fr)_150px_100px_64px] gap-4 border-b border-line pb-2 text-xs font-medium text-ink-3 md:grid">
+          <div className="hidden grid-cols-[minmax(0,1fr)_115px_75px_64px] gap-4 border-b border-line pb-2 text-xs font-medium text-ink-3 md:grid">
             <span>Tarea</span>
             <span>Horario</span>
             <span className="text-right">Duración</span>
@@ -386,7 +395,7 @@ function EntriesCard({
             return (
               <div key={e.id}>
                 {header && <div className="pt-3 pb-1 text-xs font-semibold text-ink-3 first-letter:uppercase">{header}</div>}
-                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 border-t border-rule py-2.5 first:border-t-0 md:grid-cols-[minmax(0,1fr)_150px_100px_64px]">
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 border-t border-rule py-2.5 first:border-t-0 md:grid-cols-[minmax(0,1fr)_115px_75px_64px]">
                   <div className="flex min-w-0 items-center gap-2.5">
                     <Dot color={project?.color ?? 'var(--color-mute)'} />
                     <div className="flex min-w-0 flex-col">
@@ -472,17 +481,19 @@ function ProjectsPanel({
   const start = useStartTimer();
   const stop = useStopTimer();
   const [showArchived, setShowArchived] = useState(false);
+  const [query, setQuery] = useState('');
+  const match = (value: string) => norm(value).includes(norm(query.trim()));
   const archiveProject = useApiMutation((api, v: { id: string; archived: boolean }) => api.updateProject(v.id, { archived: v.archived }), [qk.projects]);
   const deleteProject = useApiMutation((api, id: string) => api.deleteProject(id), [qk.projects, qk.tasks, qk.running, ['entries']]);
   const archiveTask = useApiMutation((api, v: { id: string; archived: boolean }) => api.updateTask(v.id, { archived: v.archived }), [qk.tasks]);
   const deleteTask = useApiMutation((api, id: string) => api.deleteTask(id), [qk.tasks, qk.running, ['entries']]);
 
   const minutesFor = (p: Project) => todayTotals.byProject.find((b) => b.project.id === p.id);
-  const visible = projects.filter((p) => showArchived || !p.archived);
+  const visible = projects.filter((p) => (showArchived || !p.archived) && (!query.trim() || match(p.name) || tasks.some(t => t.project_id === p.id && (showArchived || !t.archived) && match(t.name))));
   const archivedCount = projects.filter((p) => p.archived).length;
 
   return (
-    <Card className="lg:sticky lg:top-6">
+    <Card className="time-project-panel xl:sticky xl:top-6">
       <CardHead
         title="Proyectos y tareas"
         right={
@@ -492,6 +503,7 @@ function ProjectsPanel({
           </button>
         }
       />
+      <input className="ux-select" aria-label="Buscar proyectos o tareas" placeholder="Buscar proyecto o tarea…" value={query} onChange={e => setQuery(e.target.value)} />
       <button
         type="button"
         onClick={() => onNewTask()}
@@ -503,8 +515,8 @@ function ProjectsPanel({
       <div className="-mt-1.5 flex flex-col">
         {visible.map((p, gi) => {
           const pm = minutesFor(p);
-          const ts = tasks.filter((t) => t.project_id === p.id && (showArchived || !t.archived));
-          const isOpen = open.has(p.id);
+          const ts = tasks.filter((t) => t.project_id === p.id && (showArchived || !t.archived) && (!query.trim() || match(p.name) || match(t.name)));
+          const isOpen = Boolean(query.trim()) || open.has(p.id);
           return (
             <div key={p.id} className={cx('flex flex-col', isOpen && 'pb-1', gi > 0 && 'border-t border-rule')}>
               <div className="flex items-center gap-1">
@@ -588,6 +600,7 @@ function ProjectsPanel({
           );
         })}
       </div>
+      {visible.length === 0 && <p className="text-sm text-ink-3">No hay coincidencias. Prueba con otro nombre.</p>}
       <div className="flex items-center justify-between gap-2 text-[12.5px] leading-[17px] text-ink-3">
         <span>Al iniciar otra tarea, la que está en curso se detiene sola.</span>
         {archivedCount > 0 && (
@@ -599,4 +612,3 @@ function ProjectsPanel({
     </Card>
   );
 }
-

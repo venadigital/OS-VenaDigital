@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { format, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { AlertTriangle, ChevronLeft, ChevronRight, Laptop, Plus, RefreshCw, Sparkles } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, ChevronRight, CreditCard, Laptop, Layers, Plus, RefreshCw, Sparkles, Zap } from 'lucide-react';
 import { Page, PageHeader } from '@/components/Shell';
 import { Button, Card, CardHead, cx, Dot, Empty, IconButton, Label, LiveDot, Pill, Segmented, Select, Skeleton } from '@/components/ui';
 import { useCollectorStatus, useAccounts, useEntries, usePrices, useSessions, useUsage } from '@/data/hooks';
@@ -101,7 +101,7 @@ export function ConsumoPage() {
         right={
           <>
             <div className="w-[190px]">
-              <Select value={accountFilter} onChange={(e) => setAccountFilter(e.target.value)} className="h-[34px] rounded-lg text-[13.5px]">
+              <Select aria-label="Filtrar por cuenta" value={accountFilter} onChange={(e) => setAccountFilter(e.target.value)} className="h-[34px] rounded-lg text-[13.5px]">
                 <option value="all">Todas las cuentas</option>
                 {accounts.map((a) => (
                   <option key={a.id} value={a.id}>
@@ -138,7 +138,8 @@ export function ConsumoPage() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+      {!loading && summary.unpriced.length > 0 && <div className="insight-notice" role="status"><AlertTriangle size={19}/><div><strong>El valor estimado está incompleto</strong><p>{summary.unpriced.length} {summary.unpriced.length === 1 ? 'modelo todavía no tiene precio' : 'modelos todavía no tienen precio'}. Su consumo no se incluye en el total ni en el rendimiento.</p></div><Button onClick={() => setPriceEdit({model: summary.unpriced[0]})}>Completar precio</Button></div>}
+      <div className="ai-tiles grid grid-cols-2 gap-3 xl:grid-cols-4 md:gap-4">
         <Tile label="Valor a precio API" hero value={loading ? null : usd(summary.cost)}>
           {rangeLabel(mode, anchor, now)}
           {summary.unpriced.length > 0 && ` · ${summary.unpriced.length} ${summary.unpriced.length === 1 ? 'modelo' : 'modelos'} sin precio`}
@@ -178,7 +179,7 @@ export function ConsumoPage() {
         <DailyChart summary={chartSummary} from={chartRange.from} to={chartRange.to} highlight={mode === 'day' ? anchor : undefined} loading={loading} />
       )}
 
-      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <div className="consumo-details grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_350px]">
         {breakdown === 'model' ? (
           <ModelsCard
             tabs={tabs}
@@ -229,16 +230,13 @@ function syncAgo(iso: string) {
 
 function Tile({ label, value, hero, children }: { label: string; value: React.ReactNode | null; hero?: boolean; children?: React.ReactNode }) {
   return (
-    <Card className={cx('gap-1.5 p-4 md:p-5', hero && 'col-span-2 md:col-span-1')}>
-      <Label>{label}</Label>
+    <Card className={cx('ai-tile', hero && 'ai-tile-hero')}>
+      <span className="metric-label"><span className="icon-tile">{hero ? <Sparkles size={17} /> : label === 'Suscripciones' ? <CreditCard size={17} /> : label === 'Rendimiento' ? <Zap size={17} /> : <Layers size={17} />}</span><Label>{label}</Label></span>
       {value === null ? (
         <Skeleton className="h-10 w-32" />
       ) : (
         <div
-          className={cx(
-            'font-semibold text-ink',
-            hero ? 'text-[40px] leading-[48px] tracking-[-0.03em] md:text-[48px] md:leading-[54px]' : 'mt-auto text-[26px] leading-8 tracking-[-0.02em] md:text-[30px] md:leading-9',
-          )}
+          className="ai-tile-value text-ink"
         >
           {value}
         </div>
@@ -294,7 +292,7 @@ function DailyChart({ summary, from, to, highlight, loading }: { summary: UsageS
             {ticks.map((v) => (
               <g key={v}>
                 <line x1={x0} x2={W} y1={base - v * k} y2={base - v * k} className={v ? 'stroke-line' : 'stroke-mute'} strokeWidth={1} />
-                <text x={x0 - 10} y={base - v * k + 4} textAnchor="end" fontSize={11} className="tnum fill-ink-3">
+                <text x={x0 - 10} y={base - v * k + 4} textAnchor="end" fontSize={12} className="tnum fill-ink-3">
                   ${v}
                 </text>
               </g>
@@ -316,7 +314,7 @@ function DailyChart({ summary, from, to, highlight, loading }: { summary: UsageS
                     return <path key={j} d={d} fill={s.color} />;
                   })}
                   {(i % labelEvery === 0 || isToday) && (
-                    <text x={x + bw / 2} y={base + 20} textAnchor="middle" fontSize={11} fontWeight={isToday ? 600 : 400} className={isToday ? 'fill-ink-2' : 'fill-ink-3'}>
+                    <text x={x + bw / 2} y={base + 20} textAnchor="middle" fontSize={12} fontWeight={isToday ? 600 : 400} className={isToday ? 'fill-ink-2' : 'fill-ink-3'}>
                       {isToday ? 'Hoy' : columns.length > 10 ? format(c.d, 'd') : format(c.d, 'EEE d', { locale: es }).replace('.', '')}
                     </text>
                   )}

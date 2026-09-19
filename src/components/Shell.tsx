@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { ChevronsUpDown, Home, Moon, NotebookPen, Search, Settings2, Shapes, Sparkles, Square, Sun, Timer } from 'lucide-react';
+import { Home, Moon, NotebookPen, Search, Settings2, Shapes, Sparkles, Square, Sun, Timer } from 'lucide-react';
 import { useAccount } from '@/data/ApiContext';
 import { useBoards, useTimerSync } from '@/data/hooks';
 import { useRunningTimer } from '@/features/tiempo/model';
@@ -29,10 +29,12 @@ export function Shell() {
   }, [loc.pathname]);
 
   return (
-    <div className="flex min-h-dvh bg-page">
+    <div className="os-shell flex min-h-dvh bg-page">
+      <a href="#main-content" className="skip-link">Ir al contenido</a>
       <Sidebar showTimer={!timerShownInPage} />
-      <main className="min-w-0 flex-1 pb-[calc(96px+var(--safe-bottom))] md:pb-0">
+      <main id="main-content" className="min-w-0 flex-1 pb-[calc(96px+var(--safe-bottom))] md:pb-0">
         <DemoBanner />
+        <div className="mobile-tools md:hidden"><Link to="/" className="flex items-center gap-2 font-semibold"><img src="/vena-isotipo.png" alt="" width={25} height={25}/>Vena OS</Link><div className="flex items-center gap-2"><button type="button" onClick={openPalette} className="mobile-search"><Search size={16}/> Buscar</button><Link to="/ajustes" aria-label="Ajustes"><Settings2 size={19}/></Link></div></div>
         <Outlet />
       </main>
       <MobileNav showTimer={!timerShownInPage} />
@@ -59,14 +61,13 @@ function Sidebar({ showTimer }: { showTimer: boolean }) {
   const boards = useBoards();
   const recent = (boards.data ?? []).slice(0, 3);
   return (
-    <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-[18px] border-r border-line bg-plane px-2.5 pt-3 pb-3.5 md:flex">
-      <Link to="/" className="flex h-9 items-center gap-2.5 rounded-lg px-2 hover:bg-fill">
+    <aside className="os-sidebar sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-[18px] border-r border-line bg-plane px-2.5 pt-3 pb-3.5 md:flex">
+      <Link to="/" className="os-brand flex h-9 items-center gap-2.5 rounded-lg px-2 hover:bg-fill">
         <img src="/vena-isotipo.png" alt="" className="h-6 w-6" />
         <span className="flex-1 text-sm font-semibold text-ink">Vena OS</span>
-        <ChevronsUpDown size={14} className="text-ink-3" />
       </Link>
-      <nav className="flex flex-col gap-0.5">
-        <button type="button" onClick={openPalette} className="flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-sm font-medium text-nav hover:bg-fill">
+      <nav aria-label="Navegación principal" className="os-primary-nav flex flex-col gap-0.5">
+        <button type="button" onClick={openPalette} className="os-search flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-sm font-medium text-nav hover:bg-fill">
           <Search size={18} className="text-ink-2" />
           <span className="flex-1 text-left">Buscar</span>
           <span className="font-mono text-[11px] text-ink-3">⌘K</span>
@@ -79,9 +80,9 @@ function Sidebar({ showTimer }: { showTimer: boolean }) {
       </nav>
       {recent.length > 0 && (
         <div className="flex flex-col gap-0.5">
-          <div className="px-2.5 pb-1.5 text-xs font-semibold text-ink-3">Tableros recientes</div>
+          <div className="sidebar-section-label">Tableros recientes</div>
           {recent.map((b) => (
-            <Link key={b.id} to={`/tableros/${b.id}`} className="flex h-[30px] items-center gap-2.5 rounded-lg px-2.5 text-[13.5px] text-ink-2 hover:bg-fill">
+            <Link key={b.id} to={`/tableros/${b.id}`} className="os-recent-link flex h-[30px] items-center gap-2.5 rounded-lg px-2.5 text-[13.5px] text-ink-2 hover:bg-fill">
               <Shapes size={16} className="shrink-0 text-ink-3" />
               <span className="truncate">{b.name}</span>
             </Link>
@@ -94,7 +95,7 @@ function Sidebar({ showTimer }: { showTimer: boolean }) {
         <SideLink to="/ajustes" icon={<Settings2 size={18} strokeWidth={1.75} />}>
           Ajustes
         </SideLink>
-        <div className="flex h-9 items-center gap-2.5 pr-0.5 pl-2">
+        <div className="os-profile flex h-9 items-center gap-2.5 pr-0.5 pl-2">
           <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-fill-2 text-[10.5px] font-bold text-ink-2">
             {user.name.slice(0, 2).toUpperCase()}
           </span>
@@ -124,7 +125,7 @@ function SideLink({ to, icon, children }: { to: string; icon: ReactNode; childre
       end={to === '/'}
       className={({ isActive }) =>
         cx(
-          'flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-sm',
+          'os-nav-link flex h-8 items-center gap-2.5 rounded-lg px-2.5 text-sm',
           isActive ? 'bg-fill-2 font-semibold text-ink [&_svg]:text-ink' : 'font-medium text-nav hover:bg-fill [&_svg]:text-ink-2',
         )
       }
@@ -140,7 +141,7 @@ function SidebarTimer() {
   const stop = useStopTimer();
   if (!timer) return null;
   return (
-    <div className="flex flex-col gap-1.5 rounded-xl border border-line bg-surface p-3 shadow-[0_1px_2px_rgb(var(--shade)/0.04)]">
+    <div className="sidebar-timer flex flex-col gap-1.5 rounded-xl border border-line bg-surface p-3 shadow-[0_1px_2px_rgb(var(--shade)/0.04)]">
       <LiveDot />
       <Link to="/tiempo" className="flex flex-col">
         <span className="truncate text-[13px] font-semibold text-ink">{timer.task?.name ?? 'Tarea'}</span>
@@ -166,7 +167,7 @@ function MobileNav({ showTimer }: { showTimer: boolean }) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 md:hidden">
       {showTimer && <MiniTimer />}
-      <nav className="flex border-t border-line bg-page px-2" style={{ paddingBottom: 'var(--safe-bottom)' }}>
+      <nav aria-label="Navegación móvil" className="os-mobile-nav flex border-t border-line bg-page px-2" style={{ paddingBottom: 'var(--safe-bottom)' }}>
         {NAV.map((n) => (
           <NavLink
             key={n.to}
@@ -210,8 +211,9 @@ function MiniTimer() {
 }
 
 export function Page({ children, className }: { children: ReactNode; className?: string }) {
+  const { pathname } = useLocation();
   return (
-    <div className={cx('mx-auto flex w-full max-w-[1200px] flex-col gap-6 px-4 pt-[calc(16px+var(--safe-top))] pb-10 md:gap-7 md:px-16 md:pt-10', className)}>
+    <div className={cx('os-page mx-auto flex w-full flex-col', `page--${pathname.split('/')[1] || 'home'}`, className)}>
       {children}
     </div>
   );
@@ -219,12 +221,12 @@ export function Page({ children, className }: { children: ReactNode; className?:
 
 export function PageHeader({ eyebrow, title, right }: { eyebrow?: ReactNode; title: ReactNode; right?: ReactNode }) {
   return (
-    <header className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between md:gap-6">
+    <header className="page-header">
       <div className="flex flex-col gap-1">
-        {eyebrow && <div className="flex items-center gap-1.5 text-[13px] font-medium text-ink-3">{eyebrow}</div>}
-        <h1 className="text-[30px] leading-[36px] font-bold tracking-[-0.022em] text-ink md:text-[32px] md:leading-[38px]">{title}</h1>
+        {eyebrow && <div className="page-eyebrow">{eyebrow}</div>}
+        <h1 className="page-title">{title}</h1>
       </div>
-      {right && <div className="flex flex-wrap items-center gap-2.5">{right}</div>}
+      {right && <div className="page-actions">{right}</div>}
     </header>
   );
 }

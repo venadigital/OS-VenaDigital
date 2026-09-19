@@ -8,6 +8,7 @@ import { applyAccent, storedAccent } from '@/lib/accent';
 import { initTheme } from '@/lib/theme';
 import App from './App';
 import './index.css';
+import './stay.css';
 
 initTheme();
 applyAccent(storedAccent());

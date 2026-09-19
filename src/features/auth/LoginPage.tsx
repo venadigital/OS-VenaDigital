@@ -4,7 +4,7 @@ import { Button, Field, Input } from '@/components/ui';
 
 function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-plane px-4 py-10">
+    <div className="auth-layout flex min-h-dvh items-center justify-center bg-plane px-4 py-10">
       <div className="flex w-full max-w-sm flex-col gap-6">
         <div className="flex flex-col items-center gap-3 text-center">
           <img src="/vena-isotipo.png" alt="" className="h-14 w-14" />

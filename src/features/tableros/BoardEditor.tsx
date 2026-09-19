@@ -260,7 +260,7 @@ function Editor({ id, name: initialName, scene }: { id: string; name: string; sc
   return (
     <div className="flex h-dvh flex-col bg-page">
       <header
-        className="flex shrink-0 items-center justify-between gap-3 border-b border-line bg-page px-3 md:px-4"
+        className="board-editor-header flex shrink-0 items-center justify-between gap-3 border-b border-line bg-page px-3 md:px-4"
         style={{ paddingTop: 'var(--safe-top)', minHeight: 'calc(52px + var(--safe-top))' }}
       >
         <div className="flex min-w-0 items-center gap-2 md:gap-3">

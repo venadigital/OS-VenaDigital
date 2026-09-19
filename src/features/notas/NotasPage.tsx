@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { CornerDownLeft, ImagePlus, NotebookPen, Pin, Plus, Search, X } from 'lucide-react';
 import { Page, PageHeader } from '@/components/Shell';
-import { Button, cx, Dialog, Dot, Empty, Field, Input, Skeleton, Textarea } from '@/components/ui';
+import { Button, cx, Dialog, Dot, Empty, Field, Input, Segmented, Skeleton, Textarea } from '@/components/ui';
 import { norm } from '@/lib/text';
 import { useApi } from '@/data/ApiContext';
 import { qk, useApiMutation, useNoteImages, useNotes } from '@/data/hooks';
@@ -16,7 +16,8 @@ type Filter = 'all' | NoteType;
 
 export function NotasPage() {
   const notesQ = useNotes();
-  const [filter, setFilter] = useState<Filter>('all');
+  const [filter, setFilter] = useState<Filter>(() => new URLSearchParams(window.location.search).get('pendientes') ? 'hacer' : 'all');
+  const [status, setStatus] = useState<'all' | 'pending' | 'done'>(() => new URLSearchParams(window.location.search).get('pendientes') ? 'pending' : 'all');
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<Note | 'new' | null>(null);
   const [params, setParams] = useSearchParams();
@@ -46,9 +47,10 @@ export function NotasPage() {
     return notes.filter(
       (n) =>
         (filter === 'all' || n.type === filter) &&
+        (status === 'all' || (n.type === 'hacer' && n.done === (status === 'done'))) &&
         (!q || [n.body, n.link_title, n.link_description, n.url, n.link_site].some((s) => s && norm(s).includes(q))),
     );
-  }, [notes, filter, query]);
+  }, [notes, filter, query, status]);
 
   const pinned = visible.filter((n) => n.pinned);
   const rest = visible.filter((n) => !n.pinned);
@@ -77,6 +79,7 @@ export function NotasPage() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Buscar en notas"
+                aria-label="Buscar en notas"
                 className="min-w-0 flex-1 bg-transparent text-[13.5px] text-ink outline-none placeholder:text-ink-4"
               />
               {query && (
@@ -93,13 +96,18 @@ export function NotasPage() {
       />
 
       <div className="flex flex-col gap-4">
+        <CaptureBar defaultType={filter === 'all' ? 'nota' : filter} />
         <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
-          <Chip on={filter === 'all'} onClick={() => setFilter('all')} label="Todas" count={counts.all} />
+          <Chip on={filter === 'all'} onClick={() => { setFilter('all'); setStatus('all'); }} label="Todas" count={counts.all} />
           {NOTE_TYPES.map((t) => (
-            <Chip key={t.value} on={filter === t.value} onClick={() => setFilter(t.value)} label={t.label} count={counts[t.value] ?? 0} dot={t.dot} />
+            <Chip key={t.value} on={filter === t.value} onClick={() => {setFilter(t.value); if(t.value !== 'hacer') setStatus('all');}} label={t.label} count={counts[t.value] ?? 0} dot={t.dot} />
           ))}
         </div>
-        <CaptureBar defaultType={filter === 'all' ? 'nota' : filter} />
+        <div className="collection-toolbar notes-status">
+          <Segmented value={status} onChange={value => {setStatus(value); if(value !== 'all') setFilter('hacer');}} options={[{value: 'all', label: 'Todo'}, {value: 'pending', label: 'Pendientes'}, {value: 'done', label: 'Hechas'}]} />
+          <span role="status" className="result-count">{visible.length} de {notes.length} notas</span>
+          {(query || filter !== 'all' || status !== 'all') && <Button variant="ghost" onClick={() => {setQuery(''); setFilter('all'); setStatus('all');}}>Limpiar filtros</Button>}
+        </div>
       </div>
 
       {notesQ.isLoading ? (
@@ -122,7 +130,7 @@ export function NotasPage() {
                 <Pin size={14} className="text-ink-3" />
                 Fijadas
               </h2>
-              <div className="masonry columns-2 md:columns-3 xl:columns-4">
+              <div className="masonry columns-1 sm:columns-2 lg:columns-3 2xl:columns-4">
                 {pinned.map((n) => (
                   <NoteCard key={n.id} note={n} imageUrl={n.image_path ? images[n.image_path] : undefined} {...actions} />
                 ))}
@@ -132,7 +140,7 @@ export function NotasPage() {
           {rest.length > 0 && (
             <section className="flex flex-col gap-3">
               {pinned.length > 0 && <h2 className="text-[13px] font-semibold text-ink-2">Recientes</h2>}
-              <div className="masonry columns-2 md:columns-3 xl:columns-4">
+              <div className="masonry columns-1 sm:columns-2 lg:columns-3 2xl:columns-4">
                 {rest.map((n) => (
                   <NoteCard key={n.id} note={n} imageUrl={n.image_path ? images[n.image_path] : undefined} {...actions} />
                 ))}
@@ -142,7 +150,7 @@ export function NotasPage() {
         </>
       )}
 
-      <NoteDialog note={editing} onClose={() => setEditing(null)} imageUrl={editing && editing !== 'new' && editing.image_path ? images[editing.image_path] : undefined} />
+      <NoteDialog note={editing} defaultType={filter === 'all' ? 'nota' : filter} onClose={() => setEditing(null)} imageUrl={editing && editing !== 'new' && editing.image_path ? images[editing.image_path] : undefined} />
     </Page>
   );
 }
@@ -152,8 +160,9 @@ function Chip({ on, onClick, label, count, dot }: { on: boolean; onClick: () => 
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={on}
       className={cx(
-        'flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] transition-colors md:h-[30px] md:px-3',
+        'note-filter flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] transition-colors md:h-[30px] md:px-3',
         on ? 'bg-ink font-semibold text-page' : 'bg-fill font-medium text-ink-2 hover:bg-fill-2',
       )}
     >
@@ -175,9 +184,9 @@ export function CaptureBar({ defaultType = 'nota', placeholder }: { defaultType?
   const submit = async () => {
     if (!text.trim() || busy) return;
     setBusy(true);
-    await capture(text, type);
-    setText('');
-    setBusy(false);
+    try {
+      if (await capture(text, type)) setText('');
+    } finally { setBusy(false); }
   };
 
   return (
@@ -186,17 +195,18 @@ export function CaptureBar({ defaultType = 'nota', placeholder }: { defaultType?
         e.preventDefault();
         void submit();
       }}
-      className="flex h-12 items-center gap-3 rounded-xl border border-line bg-plane pr-2 pl-4 focus-within:border-line-2 focus-within:bg-surface"
+      className="capture-bar flex h-12 items-center gap-3 rounded-xl border border-line bg-plane pr-2 pl-4 focus-within:border-line-2 focus-within:bg-surface"
     >
-      <Plus size={18} className="shrink-0 text-ink-3" />
+      <span className="capture-icon"><Plus size={19} /></span>
       <input
         value={text}
+        disabled={busy}
         onChange={(e) => setText(e.target.value)}
         placeholder={placeholder ?? 'Escribe algo, pega un link o anota un pendiente…'}
         className="min-w-0 flex-1 bg-transparent text-[14.5px] text-ink outline-none placeholder:text-ink-4"
         aria-label="Captura rápida"
       />
-      <div className="hidden items-center gap-2 sm:flex">
+      <div className="capture-type flex items-center gap-2">
         {link ? (
           <span className="flex items-center gap-1.5 text-[12.5px] text-ink-3">
             <Dot color={typeMeta('link').dot} size={7} /> Link
@@ -219,19 +229,19 @@ export function CaptureBar({ defaultType = 'nota', placeholder }: { defaultType?
       <button
         type="submit"
         disabled={!text.trim() || busy}
-        className="flex h-8 items-center gap-1.5 rounded-lg px-2 text-[12px] text-ink-3 disabled:opacity-50"
+        className="capture-submit flex h-8 items-center gap-1.5 rounded-lg px-2 text-[12px] text-ink-3 disabled:opacity-50"
         aria-label="Guardar"
       >
         <span className="flex h-5 w-6 items-center justify-center rounded-[5px] border border-line-2 bg-surface">
           <CornerDownLeft size={12} className="text-ink-2" />
         </span>
-        <span className="hidden md:inline">guardar</span>
+        <span>{busy ? 'Guardando…' : 'Guardar'}</span>
       </button>
     </form>
   );
 }
 
-function NoteDialog({ note, onClose, imageUrl }: { note: Note | 'new' | null; onClose: () => void; imageUrl?: string }) {
+function NoteDialog({ note, onClose, imageUrl, defaultType }: { note: Note | 'new' | null; onClose: () => void; imageUrl?: string; defaultType: NoteType }) {
   const api = useApi();
   const toast = useToast();
   const isNew = note === 'new';
@@ -248,7 +258,7 @@ function NoteDialog({ note, onClose, imageUrl }: { note: Note | 'new' | null; on
   useEffect(() => {
     if (!note) return;
     const n = note === 'new' ? null : note;
-    setType(n?.type ?? 'nota');
+    setType(n?.type ?? defaultType);
     setBody(n?.body ?? '');
     setUrl(n?.url ?? '');
     setLinkTitle(n?.link_title ?? '');
@@ -256,7 +266,7 @@ function NoteDialog({ note, onClose, imageUrl }: { note: Note | 'new' | null; on
     setPinned(n?.pinned ?? false);
     setFile(null);
     setRemoveImage(false);
-  }, [note]);
+  }, [note, defaultType]);
 
   const save = useApiMutation(
     async (api2, _: void) => {
@@ -387,4 +397,3 @@ function NoteDialog({ note, onClose, imageUrl }: { note: Note | 'new' | null; on
     </Dialog>
   );
 }
-

@@ -1,8 +1,8 @@
-import { Circle, CircleCheck, ExternalLink, Link2, Pencil, Pin, PinOff, Trash2 } from 'lucide-react';
+import { Circle, CircleCheck, ExternalLink, Lightbulb, Link2, NotebookPen, Pencil, Pin, PinOff, Search, SquareCheck, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { Note } from '@/data/types';
-import { cx, Dot, Menu } from '@/components/ui';
+import { cx, Menu } from '@/components/ui';
 import { relativeDay } from '@/lib/format';
 import { fromDayKey } from '@/lib/time';
 import { typeMeta } from './model';
@@ -31,6 +31,7 @@ function PageSkeleton() {
 
 export function NoteCard({ note, imageUrl, compact, ...actions }: { note: Note; imageUrl?: string; compact?: boolean } & NoteActions) {
   const t = typeMeta(note.type);
+  const TypeIcon = { hacer: SquareCheck, investigar: Search, link: Link2, nota: NotebookPen, inspiracion: Lightbulb }[note.type];
   const created = new Date(note.created_at);
   const due = note.due_date ? fromDayKey(note.due_date) : null;
   const isQuote = note.type === 'inspiracion' && !note.image_path && note.body.length <= 60;
@@ -51,21 +52,21 @@ export function NoteCard({ note, imageUrl, compact, ...actions }: { note: Note; 
   return (
     <article
       className={cx(
-        'group relative flex flex-col gap-2.5 rounded-[14px] border',
-        compact ? 'px-3.5 py-3' : 'px-4 py-3.5',
-        note.type === 'link' ? 'border-line' : 'border-[var(--note-edge)]',
-        note.done && 'opacity-60',
+        'note-card group relative flex flex-col gap-3 rounded-[18px] border border-line bg-surface',
+        compact ? 'note-card-compact p-4' : 'p-5',
+        `note-type-${note.type}`,
+        note.done && 'note-completed',
       )}
-      style={{ background: t.tint }}
+      data-note-type={note.type}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="inline-flex min-w-0 items-center gap-1.5 text-[11.5px] font-semibold text-ink-2">
-          <Dot color={t.dot} size={7} />
+        <span className="inline-flex min-w-0 items-center gap-2 text-[13px] font-medium text-ink-2">
+          <span className="note-type-icon" style={{ background: t.tint }}><TypeIcon size={16} /></span>
           <span className="truncate">{t.label}</span>
         </span>
         <div className="-my-1.5 -mr-1.5 flex items-center gap-0.5">
           {note.pinned && !compact && <Pin size={14} className="text-ink-3" />}
-          <div className={cx(!compact && 'opacity-100 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100')}>{menu}</div>
+          <div>{menu}</div>
         </div>
       </div>
 
@@ -94,19 +95,20 @@ export function NoteCard({ note, imageUrl, compact, ...actions }: { note: Note; 
             <p
               className={cx(
                 'break-words whitespace-pre-line text-ink',
-                isQuote ? 'text-[21px] leading-[26px] font-bold tracking-[-0.015em] text-balance' : 'text-[14px] leading-5 text-pretty',
+                isQuote ? 'text-[21px] leading-[26px] font-bold tracking-[-0.015em] text-balance' : 'text-[15px] leading-[1.55] text-pretty',
                 note.done && 'line-through decoration-ink-4',
                 compact && 'line-clamp-6',
               )}
             >
-              {note.body}
+              {note.type === 'nota' && note.body.includes('\n') ? <><span className="block pb-1.5 font-medium">{note.body.split('\n')[0]}</span>{note.body.split('\n').slice(1).join('\n')}</> : note.body}
             </p>
           )}
         </>
       )}
 
-      <div className="flex items-center justify-between gap-2 text-xs text-ink-3">
+      <div className="mt-auto flex items-center justify-between gap-2 pt-3 text-xs text-ink-3">
         <span>{due ? `Para el ${format(due, "EEEE d", { locale: es })}` : relativeDay(created)}</span>
+        {actions.onEdit && <button type="button" className="note-edit" aria-label={`Editar ${note.link_title || note.body.slice(0, 45) || 'nota'}`} onClick={() => actions.onEdit!(note)}><Pencil size={13} /> Editar</button>}
         {note.type === 'hacer' && actions.onToggleDone && (
           <button
             type="button"
