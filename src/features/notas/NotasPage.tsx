@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { CornerDownLeft, ImagePlus, NotebookPen, Pin, Plus, Search, X } from 'lucide-react';
 import { Page, PageHeader } from '@/components/Shell';
-import { Button, cx, Dialog, Dot, Empty, Field, Input, Segmented, Skeleton, Textarea } from '@/components/ui';
+import { Button, cx, Dialog, Dot, Empty, Field, Input, Skeleton, Textarea } from '@/components/ui';
 import { norm } from '@/lib/text';
 import { useApi } from '@/data/ApiContext';
 import { qk, useApiMutation, useNoteImages, useNotes } from '@/data/hooks';
@@ -17,7 +17,6 @@ type Filter = 'all' | NoteType;
 export function NotasPage() {
   const notesQ = useNotes();
   const [filter, setFilter] = useState<Filter>(() => new URLSearchParams(window.location.search).get('pendientes') ? 'hacer' : 'all');
-  const [status, setStatus] = useState<'all' | 'pending' | 'done'>(() => new URLSearchParams(window.location.search).get('pendientes') ? 'pending' : 'all');
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<Note | 'new' | null>(null);
   const [params, setParams] = useSearchParams();
@@ -47,10 +46,9 @@ export function NotasPage() {
     return notes.filter(
       (n) =>
         (filter === 'all' || n.type === filter) &&
-        (status === 'all' || (n.type === 'hacer' && n.done === (status === 'done'))) &&
         (!q || [n.body, n.link_title, n.link_description, n.url, n.link_site].some((s) => s && norm(s).includes(q))),
     );
-  }, [notes, filter, query, status]);
+  }, [notes, filter, query]);
 
   const pinned = visible.filter((n) => n.pinned);
   const rest = visible.filter((n) => !n.pinned);
@@ -88,9 +86,6 @@ export function NotasPage() {
                 </button>
               )}
             </label>
-            <Button variant="primary" icon={<Plus size={16} strokeWidth={2.2} />} onClick={() => setEditing('new')}>
-              Nueva nota
-            </Button>
           </>
         }
       />
@@ -98,15 +93,14 @@ export function NotasPage() {
       <div className="flex flex-col gap-4">
         <CaptureBar defaultType={filter === 'all' ? 'nota' : filter} />
         <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
-          <Chip on={filter === 'all'} onClick={() => { setFilter('all'); setStatus('all'); }} label="Todas" count={counts.all} />
+          <Chip on={filter === 'all'} onClick={() => setFilter('all')} label="Todas" count={counts.all} />
           {NOTE_TYPES.map((t) => (
-            <Chip key={t.value} on={filter === t.value} onClick={() => {setFilter(t.value); if(t.value !== 'hacer') setStatus('all');}} label={t.label} count={counts[t.value] ?? 0} dot={t.dot} />
+            <Chip key={t.value} on={filter === t.value} onClick={() => setFilter(t.value)} label={t.label} count={counts[t.value] ?? 0} dot={t.dot} />
           ))}
         </div>
         <div className="collection-toolbar notes-status">
-          <Segmented value={status} onChange={value => {setStatus(value); if(value !== 'all') setFilter('hacer');}} options={[{value: 'all', label: 'Todo'}, {value: 'pending', label: 'Pendientes'}, {value: 'done', label: 'Hechas'}]} />
           <span role="status" className="result-count">{visible.length} de {notes.length} notas</span>
-          {(query || filter !== 'all' || status !== 'all') && <Button variant="ghost" onClick={() => {setQuery(''); setFilter('all'); setStatus('all');}}>Limpiar filtros</Button>}
+          {(query || filter !== 'all') && <Button variant="ghost" onClick={() => {setQuery(''); setFilter('all');}}>Limpiar filtros</Button>}
         </div>
       </div>
 
