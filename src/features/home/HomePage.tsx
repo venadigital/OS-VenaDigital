@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowUpRight, ChartNoAxesColumnIncreasing, ChevronRight, Circle, CircleCheck, Play, Plus, Shapes, Sparkles, Square, Timer } from 'lucide-react';
 import { Page, PageHeader } from '@/components/Shell';
-import { Button, Card, cx, Dot, Label, LiveDot, Menu, Pill, Skeleton } from '@/components/ui';
+import { Button, Card, cx, Dot, Label, LiveDot, Pill, Skeleton } from '@/components/ui';
 import { useAccount } from '@/data/ApiContext';
 import { qk, useApiMutation, useBoards, useEntries, useNoteImages, useNotes, useNow, useStartTimer, useStopTimer } from '@/data/hooks';
 import { clock, dur, greeting, hhmm, longDate, monthName, ratio, relativeDay, usd } from '@/lib/format';
@@ -16,7 +16,6 @@ import type { Note, NoteInput } from '@/data/types';
 
 export function HomePage() {
   const { user } = useAccount();
-  const navigate = useNavigate();
   const now = useNow(60_000);
 
   return (
@@ -28,21 +27,6 @@ export function HomePage() {
           </>
         }
         title={`${greeting(now)}, ${user.name}`}
-        right={
-          <Menu
-            align="right"
-            trigger={
-              <Button variant="primary" icon={<Plus size={16} strokeWidth={2.2} />}>
-                Nuevo
-              </Button>
-            }
-            items={[
-              { label: 'Nota', onSelect: () => navigate('/notas?nueva=1') },
-              { label: 'Tarea', onSelect: () => navigate('/tiempo?nueva=1') },
-              { label: 'Tablero', onSelect: () => navigate('/tableros?nuevo=1') },
-            ]}
-          />
-        }
       />
       <CaptureBar placeholder="Anota una idea, un pendiente o pega un link…" />
       <div className="home-workspace">
