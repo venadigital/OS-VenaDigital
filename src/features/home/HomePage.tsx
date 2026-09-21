@@ -33,14 +33,14 @@ export function HomePage() {
         <TimerCard />
         <PendingCard now={now} />
       </div>
-      <div className="home-lower">
-        <PinnedNotes />
-        <RecentBoards />
-      </div>
       <section className="home-summary" aria-label="Resumen de actividad">
         <h2 className="section-title">Tu actividad, de un vistazo</h2>
         <div className="home-summary-grid"><TodayCard now={now} /><AiCard now={now} /></div>
       </section>
+      <div className="home-lower">
+        <PinnedNotes />
+        <RecentBoards />
+      </div>
     </Page>
   );
 }
