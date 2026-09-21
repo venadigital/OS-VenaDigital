@@ -6,6 +6,7 @@ Sistema operativo personal de trabajo de Vena Digital. Funciona en el navegador 
 |---|---|
 | **Inicio** | Resumen del día: cronómetro en curso, tiempo de hoy, consumo de IA del mes, notas fijadas y tableros recientes. Captura rápida de notas. |
 | **Tiempo** | Proyectos → tareas → registros. Cronómetro único (si inicias otra tarea, la anterior se detiene). Vista por día, semana y mes, filtro por proyecto, edición de registros. Se sincroniza en vivo entre dispositivos. |
+| **Calendario** | Tu Google Calendar dentro del OS: día, semana, mes y agenda; crear, editar y eliminar eventos, invitados, Google Meet y eventos recurrentes. Los eventos viven en Google, aquí no se copian. |
 | **Consumo IA** | Tokens de Claude Code y Codex convertidos a USD a precio de API, por día, cuenta y modelo. Compara con lo que pagas en suscripciones. Precios editables. |
 | **Tableros** | Pizarras con [Excalidraw](https://github.com/excalidraw/excalidraw) (MIT). Varios tableros, guardado automático y exportación a PNG. |
 | **Notas** | Muro de post-its: por hacer, por investigar, links (con vista previa), notas e inspiración (con imágenes). |
@@ -88,16 +89,29 @@ node collector/collector.mjs uninstall        # detiene y quita el servicio
 - **Historial anterior al colector:** los registros viejos no dicen con qué cuenta se hicieron. Puedes asignarlos a una cuenta al configurar: `setup ... --history-account tu@correo.com`. Si no, aparecen como "Sin cuenta asignada".
 - Si actualizas Node con otra ruta (por ejemplo con nvm), vuelve a correr `install`.
 
+## 6. Calendario (Google Calendar)
+
+La app no habla directo con Google: lo hace la Edge Function [`google-calendar`](supabase/functions/google-calendar/index.ts), que guarda el permiso (refresh token) en la tabla `google_connections`, a la que solo entra el servidor.
+
+1. **Google Cloud** ([console.cloud.google.com](https://console.cloud.google.com)): crea un proyecto, activa **Google Calendar API** y configura la pantalla de consentimiento (tipo *Externo*). Publícala **en producción**: en modo *Testing* Google caduca el permiso cada 7 días. Como es de uso personal no hace falta verificarla; al conectar verás una vez el aviso de «app no verificada».
+2. Crea un **cliente OAuth** de tipo *Aplicación web* con estos *URI de redireccionamiento autorizados*: `https://TU-DOMINIO/calendario` y, para desarrollo, `http://localhost:5173/calendario`.
+3. **Supabase → Edge Functions → Secrets**: agrega `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`. Nunca van en el repositorio.
+4. Despliega la función: `supabase functions deploy google-calendar`.
+5. En el OS: **Calendario → Conectar con Google**. Se hace una sola vez y sirve para todos tus dispositivos; se desconecta en Ajustes.
+
+Permisos que se piden: ver y editar eventos (`calendar.events`) y leer la lista de calendarios (`calendar.calendarlist.readonly`).
+
 ## Estructura
 
 ```
 src/
   components/      shell (menú, barra inferior, búsqueda ⌘K) y kit de UI
   data/            API: Supabase y modo demo con la misma interfaz, hooks de React Query
-  features/        home · tiempo · consumo · tableros · notas · ajustes · auth
+  features/        home · tiempo · calendario · consumo · tableros · notas · ajustes · auth
   lib/             formato es-CO, rangos de fechas, precios y cálculo de costos
 supabase/
   migrations/      esquema, RLS y funciones
+  functions/       Edge Functions (google-calendar)
   setup.sql        todo en un archivo para el SQL Editor
   tests/           pruebas del esquema con PGlite
 collector/         colector local de Claude Code + Codex

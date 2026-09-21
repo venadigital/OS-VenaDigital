@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import { useApi } from './ApiContext';
 import type { Api } from './api';
+import type { CalendarInfo } from './types';
 import { dayKey } from '@/lib/time';
 import { DEFAULT_PRICES } from '@/lib/pricing';
 import { useToast } from '@/components/Toast';
@@ -21,6 +22,9 @@ export const qk = {
   accounts: ['accounts'] as const,
   collectorStatus: ['collector-status'] as const,
   collectorTokens: ['collector-tokens'] as const,
+  calendarStatus: ['calendar', 'status'] as const,
+  calendars: ['calendar', 'calendars'] as const,
+  calendarEvents: (from: Date, to: Date, ids: string[]) => ['calendar', 'events', from.getTime(), to.getTime(), ...ids] as const,
 };
 
 /** Re-renders every `ms` (for live clocks). */
@@ -110,6 +114,28 @@ export const useCollectorStatus = () => {
 export const useCollectorTokens = () => {
   const api = useApi();
   return useQuery({ queryKey: qk.collectorTokens, queryFn: () => api.listCollectorTokens() });
+};
+
+// Calendario: Google is the source of truth, so refetch often to pick up changes made there.
+export const useCalendarStatus = () => {
+  const api = useApi();
+  return useQuery({ queryKey: qk.calendarStatus, queryFn: () => api.calendarStatus(), staleTime: 5 * 60_000, retry: false });
+};
+export const useCalendars = (enabled: boolean) => {
+  const api = useApi();
+  return useQuery({ queryKey: qk.calendars, queryFn: () => api.listCalendars(), enabled, staleTime: 10 * 60_000, retry: false });
+};
+export const useCalendarEvents = (from: Date, to: Date, calendars: CalendarInfo[] | undefined) => {
+  const api = useApi();
+  const list = calendars ?? [];
+  return useQuery({
+    queryKey: qk.calendarEvents(from, to, list.map((c) => c.id)),
+    queryFn: () => api.listCalendarEvents(from, to, list),
+    enabled: list.length > 0,
+    placeholderData: keepPreviousData,
+    refetchInterval: 5 * 60_000,
+    retry: false,
+  });
 };
 
 // ---------------------------------------------------------------- mutations

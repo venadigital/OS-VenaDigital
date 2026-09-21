@@ -5,6 +5,12 @@ import type {
   BoardScene,
   BoardSummary,
   CollectorStatus,
+  CalendarEvent,
+  CalendarEventInput,
+  CalendarInfo,
+  CalendarStatus,
+  AttendeeStatus,
+  SeriesScope,
   CollectorToken,
   UsageSession,
   LinkPreview,
@@ -80,6 +86,27 @@ export interface Api {
   /** Returns the raw token once; only its SHA-256 is stored. */
   createCollectorToken(label: string): Promise<string>;
   revokeCollectorToken(id: string): Promise<void>;
+
+  // Calendario (Google Calendar, live through the `google-calendar` Edge Function)
+  calendarStatus(): Promise<CalendarStatus>;
+  /** Google's consent page; it comes back to `redirectUri` with ?code&state. */
+  calendarAuthUrl(redirectUri: string, state: string): Promise<string>;
+  calendarConnect(code: string, redirectUri: string): Promise<void>;
+  calendarDisconnect(): Promise<void>;
+  listCalendars(): Promise<CalendarInfo[]>;
+  /** Events overlapping [from, to) in the given calendars. */
+  listCalendarEvents(from: Date, to: Date, calendars: CalendarInfo[]): Promise<CalendarEvent[]>;
+  createCalendarEvent(input: CalendarEventInput, opts: { notify: boolean }): Promise<void>;
+  updateCalendarEvent(event: CalendarEvent, input: CalendarEventInput, opts: { scope: SeriesScope; notify: boolean }): Promise<void>;
+  deleteCalendarEvent(event: CalendarEvent, opts: { scope: SeriesScope; notify: boolean }): Promise<void>;
+  respondCalendarEvent(event: CalendarEvent, response: Exclude<AttendeeStatus, 'needsAction'>): Promise<void>;
+}
+
+/** Errors from the calendar bridge; `code` tells "not_connected" from the rest. */
+export class CalendarError extends Error {
+  constructor(public code: string, message: string) {
+    super(message);
+  }
 }
 
 export async function newCollectorToken(): Promise<{ token: string; hash: string }> {

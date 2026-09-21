@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { newCollectorToken, type Api } from './api';
+import { CalendarError, newCollectorToken, type Api } from './api';
+import { fromGoogleCalendar, fromGoogleEvent, googleDates, sortCalendars, toGoogleEvent, type GoogleCalendar, type GoogleEvent } from '@/lib/googleCalendar';
 import type {
   AiAccount,
   Board,
@@ -29,6 +30,21 @@ export function createSupabaseApi(sb: SupabaseClient): Api {
     if (!data.user) throw new Error('Sesión expirada');
     return data.user.id;
   };
+  /** Calls the `google-calendar` Edge Function. */
+  const calendar = async <T>(action: string, payload: Record<string, unknown> = {}): Promise<T> => {
+    const { data, error } = await sb.functions.invoke('google-calendar', { body: { action, ...payload } });
+    if (!error) return data as T;
+    const res = (error as { context?: unknown }).context;
+    if (res instanceof Response) {
+      const body = (await res.json().catch(() => null)) as { error?: { code?: string; message?: string } } | null;
+      if (body?.error) throw new CalendarError(body.error.code ?? '', body.error.message ?? error.message);
+      if (res.status === 404) throw new CalendarError('not_deployed', 'El servidor del calendario todavía no está instalado');
+    }
+    throw new CalendarError('', error.message);
+  };
+  const timeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const meetChange = (wanted: boolean, has: boolean) => (wanted && !has ? 'add' : !wanted && has ? 'remove' : undefined);
+
   const boardFolder = async (boardId: string) => `${await userId()}/${boardId}`;
 
   return {
@@ -255,6 +271,58 @@ export function createSupabaseApi(sb: SupabaseClient): Api {
     },
     async revokeCollectorToken(id) {
       check(await sb.from('collector_tokens').update({ revoked_at: new Date().toISOString() }).eq('id', id));
+    },
+    // ---------- Calendario ----------
+    calendarStatus: () => calendar('status'),
+    async calendarAuthUrl(redirectUri, state) {
+      return (await calendar<{ url: string }>('auth_url', { redirect_uri: redirectUri, state })).url;
+    },
+    async calendarConnect(code, redirectUri) {
+      await calendar('connect', { code, redirect_uri: redirectUri });
+    },
+    async calendarDisconnect() {
+      await calendar('disconnect');
+    },
+    async listCalendars() {
+      const { calendars } = await calendar<{ calendars: GoogleCalendar[] }>('calendars');
+      return sortCalendars(calendars.filter((c) => !c.hidden).map(fromGoogleCalendar));
+    },
+    async listCalendarEvents(from, to, calendars) {
+      if (calendars.length === 0) return [];
+      const byId = new Map(calendars.map((c) => [c.id, c]));
+      const { events } = await calendar<{ events: GoogleEvent[] }>('events', {
+        timeMin: from.toISOString(),
+        timeMax: to.toISOString(),
+        calendarIds: calendars.map((c) => c.id),
+      });
+      return events.flatMap((e) => fromGoogleEvent(e, byId.get(e.calendarId)) ?? []);
+    },
+    async createCalendarEvent(input, { notify }) {
+      await calendar('create', { calendarId: input.calendarId, event: toGoogleEvent(input, timeZone()), meet: meetChange(input.meet, false), notify });
+    },
+    async updateCalendarEvent(event, input, { scope, notify }) {
+      const resource: Record<string, unknown> = toGoogleEvent(input, timeZone());
+      const sameTime = input.allDay === event.allDay && input.start === event.start && input.end === event.end;
+      if (scope === 'all' && sameTime) {
+        delete resource.start;
+        delete resource.end;
+      }
+      await calendar('update', {
+        calendarId: event.calendarId,
+        eventId: event.id,
+        seriesId: event.seriesId,
+        instanceStart: googleDates(event, timeZone()).start,
+        scope,
+        event: resource,
+        meet: meetChange(input.meet, Boolean(event.meetUrl)),
+        notify,
+      });
+    },
+    async deleteCalendarEvent(event, { scope, notify }) {
+      await calendar('delete', { calendarId: event.calendarId, eventId: event.id, seriesId: event.seriesId, scope, notify });
+    },
+    async respondCalendarEvent(event, response) {
+      await calendar('respond', { calendarId: event.calendarId, eventId: event.id, response });
     },
   };
 }

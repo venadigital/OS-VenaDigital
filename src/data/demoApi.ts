@@ -20,6 +20,7 @@ import { DEFAULT_PRICES } from '@/lib/pricing';
 import { SERIES } from '@/lib/palette';
 import { dayKey } from '@/lib/time';
 import { sketchDataUrl } from './demoSketches';
+import { DEMO_CALENDARS, seedCalendar } from './demoCalendar';
 
 let seq = 0;
 const uid = () => `demo-${Date.now().toString(36)}-${++seq}`;
@@ -258,6 +259,7 @@ const later = <T>(v: T) => new Promise<T>((r) => setTimeout(() => r(v), 60));
 
 export function createDemoApi(): Api {
   const s = seed(new Date());
+  const cal = { connected: true, events: seedCalendar(new Date()) };
   const boardFiles = new Map<string, Blob>(); // "<board id>/<file id>"
   const timerListeners = new Set<() => void>();
   const notifyTimer = () => timerListeners.forEach((fn) => fn());
@@ -466,6 +468,64 @@ export function createDemoApi(): Api {
     },
     async revokeCollectorToken(id) {
       Object.assign(s.tokens.find((t) => t.id === id) ?? {}, { revoked_at: iso(new Date()) });
+      return later(undefined);
+    },
+    // ---------- Calendario ----------
+    calendarStatus: async () => later({ configured: true, connected: cal.connected, email: cal.connected ? 'demo@vena.os' : null }),
+    calendarAuthUrl: async () => later(''),
+    async calendarConnect() {
+      cal.connected = true;
+      return later(undefined);
+    },
+    async calendarDisconnect() {
+      cal.connected = false;
+      return later(undefined);
+    },
+    listCalendars: async () => later(clone(DEMO_CALENDARS)),
+    async listCalendarEvents(from, to, calendars) {
+      const ids = new Set(calendars.map((c) => c.id));
+      return later(clone(cal.events.filter((e) => ids.has(e.calendarId) && new Date(e.start) < to && new Date(e.end) > from)));
+    },
+    async createCalendarEvent(input) {
+      const { attendees, meet, ...rest } = input;
+      cal.events.push({
+        ...rest,
+        id: uid(),
+        title: rest.title.trim() || '(Sin título)',
+        seriesId: null,
+        attendees: attendees.map((a) => ({ email: a.email, name: null, status: a.status ?? 'needsAction', self: false, organizer: false })),
+        meetUrl: meet ? 'https://meet.google.com/demo-nuevo' : null,
+        htmlLink: null,
+        colorId: null,
+        canEdit: true,
+      });
+      return later(undefined);
+    },
+    async updateCalendarEvent(event, input, { scope }) {
+      const { attendees, meet, calendarId: _calendar, ...rest } = input;
+      const shift = new Date(input.start).getTime() - new Date(event.start).getTime();
+      const length = new Date(input.end).getTime() - new Date(input.start).getTime();
+      for (const e of cal.events) {
+        const target = e.id === event.id;
+        if (!target && !(scope === 'all' && event.seriesId && e.seriesId === event.seriesId)) continue;
+        const start = target ? new Date(input.start) : new Date(new Date(e.start).getTime() + shift);
+        Object.assign(e, rest, {
+          title: rest.title.trim() || '(Sin título)',
+          start: start.toISOString(),
+          end: new Date(start.getTime() + length).toISOString(),
+          attendees: attendees.map((a) => e.attendees.find((x) => x.email === a.email) ?? { email: a.email, name: null, status: 'needsAction', self: false, organizer: false }),
+          meetUrl: meet ? (e.meetUrl ?? 'https://meet.google.com/demo-nuevo') : null,
+        });
+      }
+      return later(undefined);
+    },
+    async deleteCalendarEvent(event, { scope }) {
+      cal.events = cal.events.filter((e) => e.id !== event.id && !(scope === 'all' && event.seriesId && e.seriesId === event.seriesId));
+      return later(undefined);
+    },
+    async respondCalendarEvent(event, response) {
+      const self = cal.events.find((e) => e.id === event.id)?.attendees.find((a) => a.self);
+      if (self) self.status = response;
       return later(undefined);
     },
   };

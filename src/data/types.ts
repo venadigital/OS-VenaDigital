@@ -149,3 +149,67 @@ export type LinkPreview = {
   description?: string | null;
   image?: string | null;
 };
+
+// ---------- Calendario (Google Calendar) ----------
+export type CalendarStatus = {
+  /** False until the Google credentials are set on the server. */
+  configured: boolean;
+  connected: boolean;
+  email: string | null;
+};
+
+export type CalendarInfo = {
+  id: string;
+  name: string;
+  color: string;
+  primary: boolean;
+  /** Owner or writer: events can be created and edited here. */
+  writable: boolean;
+  /** Shown in Google Calendar's own list; the default visibility here. */
+  selected: boolean;
+};
+
+export type AttendeeStatus = 'needsAction' | 'accepted' | 'declined' | 'tentative';
+
+export type CalendarAttendee = {
+  email: string;
+  name: string | null;
+  status: AttendeeStatus;
+  self: boolean;
+  organizer: boolean;
+};
+
+export type CalendarEvent = {
+  id: string;
+  calendarId: string;
+  title: string;
+  description: string;
+  location: string;
+  allDay: boolean;
+  /** Timed: ISO instants. All-day: local midnight of the first day and of the day AFTER the last one. */
+  start: string;
+  end: string;
+  /** Set on occurrences of a recurring event. */
+  seriesId: string | null;
+  attendees: CalendarAttendee[];
+  meetUrl: string | null;
+  htmlLink: string | null;
+  /** Google event color id (1–11), when the event overrides its calendar color. */
+  colorId: string | null;
+  /** The user organizes it (or guests may modify it). */
+  canEdit: boolean;
+};
+
+export type CalendarEventInput = {
+  calendarId: string;
+  title: string;
+  description: string;
+  location: string;
+  allDay: boolean;
+  start: string;
+  end: string;
+  attendees: { email: string; status?: AttendeeStatus }[];
+  meet: boolean;
+};
+
+export type SeriesScope = 'this' | 'all';

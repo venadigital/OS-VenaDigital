@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CornerDownLeft, Moon, NotebookPen, Play, Search, Settings2, Shapes, Sun } from 'lucide-react';
+import { CalendarPlus, CornerDownLeft, Moon, NotebookPen, Play, Search, Settings2, Shapes, Sun } from 'lucide-react';
 import { useBoards, useNotes, useStartTimer } from '@/data/hooks';
 import { useTimeData } from '@/features/tiempo/model';
 import { NAV } from './Shell';
@@ -57,6 +57,7 @@ export function CommandPalette() {
       { id: 'nav:ajustes', group: 'Ir a', label: 'Ajustes', icon: <Settings2 size={16} />, run: go('/ajustes') },
       { id: 'act:note', group: 'Crear', label: 'Nueva nota', icon: <NotebookPen size={16} />, run: go('/notas?nueva=1') },
       { id: 'act:task', group: 'Crear', label: 'Nueva tarea', icon: <Play size={16} />, run: go('/tiempo?nueva=1') },
+      { id: 'act:event', group: 'Crear', label: 'Nuevo evento', icon: <CalendarPlus size={16} />, run: go('/calendario?nuevo=1') },
       { id: 'act:board', group: 'Crear', label: 'Nuevo tablero', icon: <Shapes size={16} />, run: go('/tableros?nuevo=1') },
       theme === 'dark'
         ? { id: 'act:theme', group: 'Apariencia', label: 'Usar modo claro', icon: <Sun size={16} />, run: toggleTheme }

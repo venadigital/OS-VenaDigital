@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Download, KeyRound, Laptop, LogOut, Smartphone } from 'lucide-react';
+import { CalendarDays, Download, KeyRound, Laptop, LogOut, Smartphone } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { subYears } from 'date-fns';
 import { Page, PageHeader } from '@/components/Shell';
 import { Button, Card, CardHead, cx, Field, Input, Segmented } from '@/components/ui';
@@ -11,6 +13,8 @@ import { setThemePref, useTheme } from '@/lib/theme';
 import { supabase } from '@/lib/supabase';
 import { dayKey } from '@/lib/time';
 import { CollectorDialog } from '@/features/consumo/dialogs';
+import { useApiMutation, useCalendarStatus } from '@/data/hooks';
+import { startGoogleConnect } from '@/features/calendario/connect';
 
 export function AjustesPage() {
   const { user, signOut, mode } = useAccount();
@@ -88,6 +92,8 @@ export function AjustesPage() {
         </Button>
       </Card>
 
+      <CalendarCard />
+
       <Card>
         <CardHead title="Usar en el iPhone" />
         <ol className="flex list-decimal flex-col gap-1.5 pl-5 text-[13.5px] leading-5 text-ink-2">
@@ -106,6 +112,62 @@ export function AjustesPage() {
 
       <CollectorDialog open={collectorOpen} onClose={() => setCollectorOpen(false)} />
     </Page>
+  );
+}
+
+function CalendarCard() {
+  const api = useApi();
+  const qc = useQueryClient();
+  const toast = useToast();
+  const status = useCalendarStatus();
+  const [confirm, setConfirm] = useState(false);
+  const disconnect = useApiMutation((a) => a.calendarDisconnect(), [['calendar']], 'No se pudo desconectar');
+  const connect = async () => {
+    try {
+      await startGoogleConnect(api);
+      await qc.invalidateQueries({ queryKey: ['calendar'] });
+    } catch (err) {
+      toast(err instanceof Error ? err.message : String(err), 'error');
+    }
+  };
+  const connected = Boolean(status.data?.connected);
+  return (
+    <Card>
+      <CardHead title="Google Calendar" />
+      {connected ? (
+        <>
+          <div className="cal-connection">
+            <CalendarDays size={16} />
+            <span>
+              Conectado{status.data?.email ? ` como ${status.data.email}` : ''}. Los eventos se leen y se guardan directo en Google; aquí no se copia nada.
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link to="/calendario">
+              <Button>Abrir calendario</Button>
+            </Link>
+            <Button
+              variant={confirm ? 'danger' : 'ghost'}
+              disabled={disconnect.isPending}
+              onClick={() => (confirm ? disconnect.mutate(undefined, { onSuccess: () => { setConfirm(false); toast('Google Calendar desconectado'); } }) : setConfirm(true))}
+            >
+              {confirm ? '¿Desconectar?' : 'Desconectar'}
+            </Button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="text-[13.5px] leading-5 text-ink-2">
+            {status.error || (status.data && !status.data.configured)
+              ? 'Falta terminar la instalación del servidor del calendario (función y credenciales de Google en Supabase).'
+              : 'Mira y edita tus eventos de Google Calendar sin salir del OS. El permiso se pide una sola vez y sirve para el Mac y el iPhone.'}
+          </p>
+          <Button icon={<CalendarDays size={15} />} className="self-start" disabled={status.isLoading || Boolean(status.error) || !status.data?.configured} onClick={() => void connect()}>
+            Conectar con Google
+          </Button>
+        </>
+      )}
+    </Card>
   );
 }
 

@@ -241,3 +241,15 @@ describe('tableros', () => {
     ).rejects.toThrow();
   });
 });
+
+describe('calendario', () => {
+  it('keeps Google tokens out of reach of the browser roles', async () => {
+    await db.exec(`insert into public.google_connections (user_id, email, refresh_token) values ('${USER_A}', 'a@x.test', 'secreto')`);
+    for (const role of ['authenticated', 'anon'] as const) {
+      await expect(as(USER_A, role, () => db.query(`select refresh_token from public.google_connections`))).rejects.toThrow(/permission denied/);
+    }
+    await expect(
+      as(USER_A, 'authenticated', () => db.query(`update public.google_connections set refresh_token = 'otro'`)),
+    ).rejects.toThrow(/permission denied/);
+  });
+});
