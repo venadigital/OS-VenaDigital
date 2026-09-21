@@ -70,6 +70,15 @@ export function CalendarioPage() {
     setParams({}, { replace: true });
   }, [params, connected, setParams]);
 
+  // An event chosen on Inicio ("Agenda de hoy"): open it once today's events are here.
+  const wanted = params.get('evento');
+  useEffect(() => {
+    if (!wanted || !eventsQ.data) return;
+    const event = eventsQ.data.find((e) => e.id === wanted);
+    if (event) setDraft({ event });
+    setParams({}, { replace: true });
+  }, [wanted, eventsQ.data, setParams]);
+
   // Google withdrew the permission: fall back to the connect screen.
   const lost = [calendarsQ.error, eventsQ.error].some((e) => e instanceof CalendarError && e.code === 'not_connected');
   useEffect(() => {

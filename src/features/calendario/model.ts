@@ -156,3 +156,45 @@ export function writePrefs(scope: string, prefs: Prefs) {
 
 /** A calendar shows unless hidden here; by default it follows Google's own checkbox. */
 export const isVisible = (c: CalendarInfo, visible: Record<string, boolean>) => visible[c.id] ?? c.selected;
+
+// ---------------------------------------------------------------- today (Inicio)
+type AgendaEvent = Pick<CalendarEvent, 'allDay' | 'start' | 'end' | 'title' | 'attendees'>;
+
+export type TodayAgenda<T> = {
+  /** Everything on today's calendar, declined invitations left out. */
+  count: number;
+  allDay: T[];
+  /** The event happening now, or else the next one to start. */
+  focus: { event: T; live: boolean; minutes: number } | null;
+  /** The other timed events of the day, in order; `past` ones are already over. */
+  rest: { event: T; past: boolean }[];
+  /** First event of tomorrow, to fill an empty day. */
+  tomorrow: T | null;
+};
+
+const declined = (e: AgendaEvent) => e.attendees.some((a) => a.self && a.status === 'declined');
+
+export function todayAgenda<T extends AgendaEvent>(events: T[], now: Date): TodayAgenda<T> {
+  const mine = events.filter((e) => !declined(e));
+  const today = eventsOfDay(mine, now);
+  const allDay = today.filter(isAllDayLike);
+  const timed = today.filter((e) => !isAllDayLike(e));
+  const t = now.getTime();
+  const current = timed.find((e) => new Date(e.start).getTime() <= t && new Date(e.end).getTime() > t);
+  const next = timed.find((e) => new Date(e.start).getTime() > t);
+  const chosen = current ?? next ?? null;
+  const focus = chosen
+    ? {
+        event: chosen,
+        live: chosen === current,
+        minutes: Math.max(1, Math.round(((chosen === current ? new Date(chosen.end).getTime() : new Date(chosen.start).getTime()) - t) / MS_MIN)),
+      }
+    : null;
+  return {
+    count: today.length,
+    allDay,
+    focus,
+    rest: timed.filter((e) => e !== chosen).map((event) => ({ event, past: new Date(event.end).getTime() <= t })),
+    tomorrow: eventsOfDay(mine, addDays(now, 1)).find((e) => !isAllDayLike(e)) ?? eventsOfDay(mine, addDays(now, 1))[0] ?? null,
+  };
+}

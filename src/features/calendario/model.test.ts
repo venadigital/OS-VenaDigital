@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { agendaDays, isAllDayLike, layoutDay, viewRange } from './model';
+import { agendaDays, isAllDayLike, layoutDay, todayAgenda, viewRange } from './model';
 import { fromGoogleEvent, googleDates, plainText } from '@/lib/googleCalendar';
 
 const day = new Date(2026, 8, 21); // lunes 21 sep 2026
@@ -34,6 +34,39 @@ describe('calendario · layout', () => {
     const { from, to } = viewRange('month', day);
     expect(from.getDay()).toBe(1);
     expect((to.getTime() - from.getTime()) / 86_400_000).toBe(42);
+  });
+});
+
+describe('calendario · agenda de hoy', () => {
+  const me = (status: 'accepted' | 'declined') => [{ email: 'yo@x.test', name: null, status, self: true, organizer: false }];
+  const item = (title: string, start: string, end: string, extra: { allDay?: boolean; declined?: boolean } = {}) => ({
+    ...ev(title, start, end, extra.allDay),
+    attendees: extra.declined ? me('declined') : [],
+  });
+  const events = [
+    item('Entrega', at(0), at(0, 0, 22), { allDay: true }),
+    item('Planeación', at(8, 30), at(9)),
+    item('Seguimiento', at(10), at(11)),
+    item('Rechazada', at(10), at(10, 30), { declined: true }),
+    item('Newsletter', at(15), at(16)),
+    item('Mañana temprano', at(8, 0, 22), at(9, 0, 22)),
+  ];
+
+  it('highlights the next event and counts down to it', () => {
+    const a = todayAgenda(events, new Date(2026, 8, 21, 9, 40));
+    expect(a.count).toBe(4);
+    expect(a.focus).toMatchObject({ live: false, minutes: 20 });
+    expect(a.focus?.event.title).toBe('Seguimiento');
+    expect(a.rest.map((r) => [r.event.title, r.past])).toEqual([['Planeación', true], ['Newsletter', false]]);
+    expect(a.allDay.map((e) => e.title)).toEqual(['Entrega']);
+  });
+
+  it('shows the running meeting with the time left, and tomorrow once the day is over', () => {
+    const live = todayAgenda(events, new Date(2026, 8, 21, 10, 25));
+    expect(live.focus).toMatchObject({ live: true, minutes: 35 });
+    const late = todayAgenda(events, new Date(2026, 8, 21, 20, 0));
+    expect(late.focus).toBeNull();
+    expect(late.tomorrow?.title).toBe('Mañana temprano');
   });
 });
 

@@ -12,6 +12,7 @@ import { CaptureBar } from '@/features/notas/NotasPage';
 import { NoteCard } from '@/features/notas/NoteCard';
 import { totalsByProject, useRunningTimer, useTimeData } from '@/features/tiempo/model';
 import { useConsumo } from '@/features/consumo/model';
+import { TodayAgendaCard } from '@/features/calendario/TodayAgendaCard';
 import type { Note, NoteInput } from '@/data/types';
 
 export function HomePage() {
@@ -31,6 +32,7 @@ export function HomePage() {
       <CaptureBar placeholder="Anota una idea, un pendiente o pega un link…" />
       <div className="home-workspace">
         <TimerCard />
+        <TodayAgendaCard now={now} />
         <PendingCard now={now} />
       </div>
       <section className="home-summary" aria-label="Resumen de actividad">
