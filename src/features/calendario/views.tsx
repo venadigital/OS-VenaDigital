@@ -1,5 +1,5 @@
 // The three ways to look at the calendar: hour grid (day / week), month and agenda.
-import { useEffect, useMemo, useRef, type CSSProperties, type MouseEvent } from 'react';
+import { useMemo, type CSSProperties, type MouseEvent } from 'react';
 import { addDays, format, isSameDay, isSameMonth, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { MapPin, Repeat, Users, Video } from 'lucide-react';
@@ -11,6 +11,9 @@ import { agendaDays, eventsOfDay, isAllDayLike, layoutDay } from './model';
 
 const HOUR_PX = 52;
 const SNAP_MIN = 30;
+// The grid shows the working day and grows only when an event falls outside it, so the page never needs a second scrollbar.
+const DAY_STARTS = 7;
+const DAY_ENDS = 21;
 
 export type ViewProps = {
   events: CalendarEvent[];
@@ -38,29 +41,29 @@ const timeRange = (e: CalendarEvent) => `${hhmm(new Date(e.start))} – ${hhmm(n
 
 // ---------------------------------------------------------------- hour grid
 export function TimeGrid({ days, events, colorOf, now, onEvent, onSlot, onDay }: ViewProps & { days: Date[] }) {
-  const scroller = useRef<HTMLDivElement>(null);
-  const firstDay = days[0].getTime();
-  // Open around the working day (or the current hour when today is on screen).
-  useEffect(() => {
-    const showsToday = days.some((d) => isSameDay(d, new Date()));
-    const hour = showsToday ? Math.max(0, new Date().getHours() - 1.5) : 7;
-    scroller.current?.scrollTo({ top: Math.min(hour, 7.5) * HOUR_PX });
-  }, [firstDay, days.length]);
-
   const strip = useMemo(() => days.map((d) => eventsOfDay(events, d).filter(isAllDayLike)), [days, events]);
   const placed = useMemo(() => days.map((d) => layoutDay(events, d)), [days, events]);
   const hasStrip = strip.some((list) => list.length > 0);
+  const [firstHour, lastHour] = useMemo(() => {
+    const all = placed.flat();
+    const first = Math.min(DAY_STARTS, ...all.map((p) => Math.floor(p.top / 60)));
+    const last = Math.max(DAY_ENDS, ...all.map((p) => Math.ceil((p.top + p.height) / 60)));
+    return [Math.max(0, first), Math.min(24, last)];
+  }, [placed]);
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const y = (minutes: number) => ((minutes - firstHour * 60) / 60) * HOUR_PX;
 
   const slotAt = (day: Date, ev: MouseEvent<HTMLDivElement>) => {
     if (ev.target !== ev.currentTarget) return;
-    const y = ev.clientY - ev.currentTarget.getBoundingClientRect().top;
-    const minutes = Math.min(1440 - SNAP_MIN, Math.max(0, Math.floor(((y / HOUR_PX) * 60) / SNAP_MIN) * SNAP_MIN));
+    const offset = ev.clientY - ev.currentTarget.getBoundingClientRect().top;
+    const clicked = firstHour * 60 + Math.floor(((offset / HOUR_PX) * 60) / SNAP_MIN) * SNAP_MIN;
+    const minutes = Math.min(1440 - SNAP_MIN, Math.max(0, clicked));
     onSlot(new Date(startOfDay(day).getTime() + minutes * 60_000), false);
   };
 
   return (
     <div className="cal-grid" style={{ '--cal-days': days.length } as CSSProperties}>
-      <div ref={scroller} className="cal-scroll">
+      <div className="cal-flow">
         <div className="cal-sticky">
           <div className="cal-row cal-head">
             <div className="cal-gutter" />
@@ -87,11 +90,11 @@ export function TimeGrid({ days, events, colorOf, now, onEvent, onSlot, onDay }:
             </div>
           )}
         </div>
-        <div className="cal-row cal-body" style={{ height: 24 * HOUR_PX, '--hour': `${HOUR_PX}px` } as CSSProperties}>
+        <div className="cal-row cal-body" style={{ height: (lastHour - firstHour) * HOUR_PX, '--hour': `${HOUR_PX}px` } as CSSProperties}>
           <div className="cal-gutter cal-hours" aria-hidden="true">
-            {Array.from({ length: 23 }, (_, h) => (
-              <span key={h} className="tnum" style={{ top: (h + 1) * HOUR_PX }}>
-                {String(h + 1).padStart(2, '0')}:00
+            {Array.from({ length: lastHour - firstHour }, (_, i) => (
+              <span key={i} className="tnum" style={{ top: i * HOUR_PX }}>
+                {String(firstHour + i).padStart(2, '0')}:00
               </span>
             ))}
           </div>
@@ -106,7 +109,7 @@ export function TimeGrid({ days, events, colorOf, now, onEvent, onSlot, onDay }:
                   title={`${e.title} · ${timeRange(e)}`}
                   style={{
                     '--ev': colorOf(e),
-                    top: (top / 60) * HOUR_PX,
+                    top: y(top),
                     height: Math.max(18, (height / 60) * HOUR_PX - 2),
                     left: `calc(${(col / cols) * 100}% + 1px)`,
                     width: `calc(${100 / cols}% - 3px)`,
@@ -117,7 +120,7 @@ export function TimeGrid({ days, events, colorOf, now, onEvent, onSlot, onDay }:
                   {height >= 75 && e.location && <span className="cal-event-time truncate">{e.location}</span>}
                 </button>
               ))}
-              {isSameDay(d, now) && <div className="cal-now" style={{ top: ((now.getHours() * 60 + now.getMinutes()) / 60) * HOUR_PX }} />}
+              {isSameDay(d, now) && nowMinutes >= firstHour * 60 && nowMinutes <= lastHour * 60 && <div className="cal-now" style={{ top: y(nowMinutes) }} />}
             </div>
           ))}
         </div>
