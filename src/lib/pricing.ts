@@ -12,19 +12,21 @@ const claude = (input: number, output: number, cacheRead = input * 0.1): Rates =
   cache_write: input * 1.25,
   cache_write_1h: input * 2,
 });
-// OpenAI: cached input is its own rate; no cache-write charge.
-const openai = (input: number, cached: number, output: number): Rates => ({
+// OpenAI: cached input is its own rate. The 5.6 and 6 families also charge for cache
+// writes (1.25× input); the older models don't, so that rate stays in 0.
+const openai = (input: number, cached: number, output: number, cacheWrite = 0): Rates => ({
   input,
   output,
   cache_read: cached,
-  cache_write: 0,
+  cache_write: cacheWrite,
   cache_write_1h: 0,
 });
 
-/** Reference API prices (USD per 1M tokens), checked 11 Sep 2026. */
+/** Reference API prices (USD per 1M tokens), checked 23 Sep 2026. */
 export const DEFAULT_PRICES: ModelPriceInput[] = [
   { model: 'claude-fable-5-1', ...claude(10, 50, 0.25) },
   { model: 'claude-fable-5', ...claude(10, 50) },
+  { model: 'claude-opus-5-5', ...claude(4, 20, 0.2) },
   { model: 'claude-opus-5', ...claude(5, 25) },
   { model: 'claude-opus-4-8', ...claude(5, 25) },
   { model: 'claude-opus-4-7', ...claude(5, 25) },
@@ -35,10 +37,12 @@ export const DEFAULT_PRICES: ModelPriceInput[] = [
   { model: 'claude-sonnet-4-6', ...claude(3, 15) },
   { model: 'claude-sonnet-4-5', ...claude(3, 15) },
   { model: 'claude-haiku-4-5', ...claude(1, 5) },
-  { model: 'gpt-6-astra', ...openai(10, 1, 50) },
-  { model: 'gpt-5.6-sol', ...openai(4, 0.4, 20) },
-  { model: 'gpt-5.6-terra', ...openai(2, 0.2, 12) },
-  { model: 'gpt-5.6-luna', ...openai(0.2, 0.02, 1.2) },
+  { model: 'gpt-6-astra', ...openai(10, 1, 50, 12.5) },
+  { model: 'gpt-6-sol', ...openai(2, 0.2, 10, 2.5) },
+  { model: 'gpt-6-luna', ...openai(0.1, 0.01, 0.5, 0.125) },
+  { model: 'gpt-5.6-sol', ...openai(4, 0.4, 20, 5) },
+  { model: 'gpt-5.6-terra', ...openai(2, 0.2, 12, 2.5) },
+  { model: 'gpt-5.6-luna', ...openai(0.2, 0.02, 1.2, 0.25) },
   { model: 'gpt-5.5', ...openai(5, 0.5, 30) },
   { model: 'gpt-5.4', ...openai(2.5, 0.25, 15) },
   { model: 'gpt-5.4-mini', ...openai(0.75, 0.075, 4.5) },

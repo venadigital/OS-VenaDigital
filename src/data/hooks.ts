@@ -93,9 +93,11 @@ export const usePrices = () => {
     queryKey: qk.prices,
     queryFn: async () => {
       let prices = await api.listPrices();
-      if (prices.length === 0) {
-        // First visit: load the reference price table.
-        await api.seedPrices(DEFAULT_PRICES);
+      // First visit: the whole reference table. Later: only models added to it since
+      // (seeding never overwrites a price already saved, so edits are kept).
+      const missing = DEFAULT_PRICES.filter((d) => !prices.some((p) => p.model === d.model));
+      if (missing.length) {
+        await api.seedPrices(missing);
         prices = await api.listPrices();
         void qc.invalidateQueries({ queryKey: ['usage'] });
       }
