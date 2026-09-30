@@ -114,7 +114,7 @@ export function CommandPalette() {
 
   let lastGroup = '';
   return (
-    <Dialog open={open} onClose={() => setOpen(false)} title="Buscar en tu OS" width={620}>
+    <Dialog open={open} onClose={() => setOpen(false)} title="Buscar en tu OS" width={620} dismissible>
       <div
         className="command-panel flex w-full flex-col overflow-hidden"
         onMouseDown={(e) => e.stopPropagation()}

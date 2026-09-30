@@ -199,7 +199,11 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
   );
 }
 
-/** Modal built on the native <dialog>. */
+/**
+ * Modal built on the native <dialog>. It closes only from its own buttons, so a stray
+ * click outside or the Escape key never throws away what was being written.
+ * `dismissible` restores click-outside and Escape for modals with nothing to lose (search).
+ */
 export function Dialog({
   open,
   onClose,
@@ -207,6 +211,7 @@ export function Dialog({
   children,
   footer,
   width = 440,
+  dismissible = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -214,6 +219,7 @@ export function Dialog({
   children: ReactNode;
   footer?: ReactNode;
   width?: number;
+  dismissible?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -228,13 +234,20 @@ export function Dialog({
   return (
     <dialog
       ref={ref}
-      onClose={onClose}
+      // The browser may still close it (repeated Escape, a phone's back gesture): reopen with the work intact.
+      onClose={() => {
+        if (dismissible) onClose();
+        else if (open) ref.current?.showModal();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape' && !dismissible) e.preventDefault();
+      }}
       onCancel={(e) => {
         e.preventDefault();
-        onClose();
+        if (dismissible) onClose();
       }}
       onClick={(e) => {
-        if (e.target === ref.current) onClose();
+        if (dismissible && e.target === ref.current) onClose();
       }}
       aria-label={title}
       className="os-dialog m-auto max-h-[calc(100dvh-32px)] w-[calc(100vw-24px)] rounded-2xl border border-line bg-overlay p-0 text-ink shadow-[0_24px_64px_rgb(var(--shade)/0.18)]"
