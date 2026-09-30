@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { addDays, differenceInCalendarDays, format, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { useClientLogs, useClients, useEntries, useInvoices, useNow } from '@/data/hooks';
+import { useClientLogs, useClients, useEntries, useInvoices, useNow, useTaskEntries } from '@/data/hooks';
 import type { Agreement, Client, ClientLog, ClientStatus, ContactChannel, Currency, Invoice, LogKind, Project, Task, TimeEntry } from '@/data/types';
 import { useTimeData } from '@/features/tiempo/model';
 import { dayKey, fromDayKey, overlapMinutes, rangeFor } from '@/lib/time';
@@ -44,13 +44,22 @@ export function hm(minutes: number): string {
   return m ? `${h} h ${String(m).padStart(2, '0')} m` : `${h} h`;
 }
 
-export const initials = (name: string) =>
-  name
+/**
+ * Two letters for an avatar, ignoring emoji and symbols:
+ * "👩🏽 Diana Boldizar" → "DB", "🎾 CDAF" → "CD", "Clínica de la Sabana" → "CS".
+ */
+export function initials(name: string): string {
+  const words = name
     .split(/\s+/)
-    .filter((w) => w.length > 2 || /^[A-ZÁÉÍÓÚÑ]/.test(w))
-    .slice(0, 2)
-    .map((w) => w[0]!.toUpperCase())
-    .join('') || name.slice(0, 2).toUpperCase();
+    .map((w) => w.replace(/[^\p{L}\p{N}]/gu, ''))
+    .filter(Boolean);
+  if (words.length === 0) return '·';
+  // Skip short lowercase joiners ("de", "la", "y") when there is more to go on.
+  const main = words.filter((w) => w.length > 2 || /^\p{Lu}/u.test(w));
+  const pick = main.length ? main : words;
+  const letters = pick.length === 1 ? [...pick[0]].slice(0, 2) : pick.slice(0, 2).map((w) => [...w][0]);
+  return letters.join('').toUpperCase();
+}
 
 /** "jue 2 oct". */
 export function dayLabel(key: string): string {
@@ -124,6 +133,24 @@ export function monthBilling(client: Client, monthMinutes: number): { extraMinut
   return { extraMinutes: 0, toBill: null };
 }
 
+/**
+ * What the hours bar measures, when there is a limit to measure against:
+ * a retainer's monthly hours, or a project's estimate (all-time hours).
+ */
+export type HoursGauge = { label: string; used: number; cap: number; over: boolean };
+
+export function hoursGauge(client: Client, monthMinutes: number, totalMinutes: number | null): HoursGauge | null {
+  if (client.agreement === 'retainer' && client.included_hours) {
+    const cap = client.included_hours * 60;
+    return { label: 'Horas este mes', used: monthMinutes, cap, over: monthMinutes > cap };
+  }
+  if (client.agreement === 'proyecto' && client.estimated_hours && totalMinutes != null) {
+    const cap = client.estimated_hours * 60;
+    return { label: 'Horas del proyecto', used: totalMinutes, cap, over: totalMinutes > cap };
+  }
+  return null;
+}
+
 /** Income per hour worked: retainer over the month, project over its total, hourly as agreed. */
 export function valuePerHour(client: Client, monthMinutes: number, totalMinutes: number): number | null {
   if (client.agreement === 'horas') return client.fee || null;
@@ -149,7 +176,7 @@ export function lastContact(logs: ClientLog[]): ClientLog | undefined {
 
 export function issuesFor(
   client: Client,
-  ctx: { tasks: Task[]; invoices: Invoice[]; logs: ClientLog[]; monthMinutes: number; now: Date },
+  ctx: { tasks: Task[]; invoices: Invoice[]; logs: ClientLog[]; monthMinutes: number; totalMinutes?: number | null; now: Date },
 ): Issue[] {
   if (client.status !== 'activo') return [];
   const today = startOfDay(ctx.now);
@@ -166,6 +193,9 @@ export function issuesFor(
   }
   if (client.agreement === 'retainer' && client.included_hours && ctx.monthMinutes > client.included_hours * 60) {
     out.push({ level: 'warn', kind: 'retainer', rank: 50, text: `Retainer excedido: ${hm(ctx.monthMinutes)} de ${hm(client.included_hours * 60)}` });
+  }
+  if (client.agreement === 'proyecto' && client.estimated_hours && ctx.totalMinutes != null && ctx.totalMinutes > client.estimated_hours * 60) {
+    out.push({ level: 'warn', kind: 'retainer', rank: 50, text: `Proyecto por encima de lo estimado: ${hm(ctx.totalMinutes)} de ${hm(client.estimated_hours * 60)}` });
   }
   const last = lastContact(ctx.logs);
   const since = differenceInCalendarDays(today, startOfDay(new Date(last?.occurred_at ?? client.created_at)));
@@ -191,6 +221,8 @@ export type ClientSummary = {
   logs: ClientLog[];
   invoices: Invoice[];
   monthMinutes: number;
+  /** All-time hours of the project; only loaded for projects with an estimate. */
+  totalMinutes: number | null;
   /** Open task with the nearest delivery date. */
   nextDue?: Task;
   lastContact?: ClientLog;
@@ -203,7 +235,18 @@ const HEALTH_ORDER: Record<Health, number> = { crit: 0, warn: 1, ok: 2, off: 3 }
 
 export function summarize(
   clients: Client[],
-  data: { projects: Project[]; tasks: Task[]; logs: ClientLog[]; invoices: Invoice[]; monthEntries: TimeEntry[]; from: Date; to: Date; now: Date },
+  data: {
+    projects: Project[];
+    tasks: Task[];
+    logs: ClientLog[];
+    invoices: Invoice[];
+    monthEntries: TimeEntry[];
+    /** All-time entries of the tasks of estimated projects. */
+    projectEntries?: TimeEntry[];
+    from: Date;
+    to: Date;
+    now: Date;
+  },
 ): ClientSummary[] {
   const projectById = new Map(data.projects.map((p) => [p.id, p]));
   return clients
@@ -212,9 +255,11 @@ export function summarize(
       const tasks = project ? data.tasks.filter((t) => t.project_id === project.id) : [];
       const logs = data.logs.filter((l) => l.client_id === client.id);
       const invoices = data.invoices.filter((f) => f.client_id === client.id);
-      const monthMinutes = minutesFor(data.monthEntries, new Set(tasks.map((t) => t.id)), data.from, data.to, data.now);
+      const taskIds = new Set(tasks.map((t) => t.id));
+      const monthMinutes = minutesFor(data.monthEntries, taskIds, data.from, data.to, data.now);
+      const totalMinutes = needsTotal(client) && data.projectEntries ? minutesFor(data.projectEntries, taskIds, new Date(0), new Date(8.64e15), data.now) : null;
       const nextDue = tasks.filter((t) => !t.archived && t.due_date).sort((a, b) => a.due_date!.localeCompare(b.due_date!))[0];
-      const issues = issuesFor(client, { tasks, invoices, logs, monthMinutes, now: data.now });
+      const issues = issuesFor(client, { tasks, invoices, logs, monthMinutes, totalMinutes, now: data.now });
       return {
         client,
         project,
@@ -222,6 +267,7 @@ export function summarize(
         logs,
         invoices,
         monthMinutes,
+        totalMinutes,
         nextDue,
         lastContact: lastContact(logs),
         pendingAmount: invoices.filter((f) => !f.paid_on && f.currency === client.currency).reduce((s, f) => s + f.amount, 0),
@@ -231,6 +277,8 @@ export function summarize(
     })
     .sort((a, b) => HEALTH_ORDER[a.health] - HEALTH_ORDER[b.health] || (a.issues[0]?.rank ?? 999) - (b.issues[0]?.rank ?? 999) || a.client.name.localeCompare(b.client.name, 'es'));
 }
+
+const needsTotal = (c: Client) => c.agreement === 'proyecto' && Boolean(c.estimated_hours);
 
 /** Clients with their month hours, health and money, refreshed every minute. */
 export function useClientsData() {
@@ -243,6 +291,12 @@ export function useClientsData() {
   const invoicesQ = useInvoices();
   const entriesQ = useEntries(from, to);
   const time = useTimeData();
+  // Estimated projects are measured over their whole life, not just this month.
+  const estimatedTaskIds = useMemo(() => {
+    const projectIds = new Set((clientsQ.data ?? []).filter(needsTotal).map((c) => c.project_id).filter(Boolean));
+    return time.tasks.filter((t) => projectIds.has(t.project_id)).map((t) => t.id).sort();
+  }, [clientsQ.data, time.tasks]);
+  const projectEntriesQ = useTaskEntries(estimatedTaskIds);
   const summaries = useMemo(
     () =>
       summarize(clientsQ.data ?? [], {
@@ -251,11 +305,12 @@ export function useClientsData() {
         logs: logsQ.data ?? [],
         invoices: invoicesQ.data ?? [],
         monthEntries: entriesQ.data ?? [],
+        projectEntries: projectEntriesQ.data,
         from,
         to,
         now,
       }),
-    [clientsQ.data, time.projects, time.tasks, logsQ.data, invoicesQ.data, entriesQ.data, from, to, now],
+    [clientsQ.data, time.projects, time.tasks, logsQ.data, invoicesQ.data, entriesQ.data, projectEntriesQ.data, from, to, now],
   );
   return {
     summaries,

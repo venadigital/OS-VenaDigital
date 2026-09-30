@@ -62,6 +62,7 @@ export function ClientDialog({
         fee: parseAmount(v.fee) ?? 0,
         included_hours: v.agreement === 'retainer' ? parseAmount(v.included_hours) : null,
         extra_hour_rate: v.agreement === 'retainer' ? parseAmount(v.extra_hour_rate) : null,
+        estimated_hours: v.agreement === 'proyecto' ? parseAmount(v.estimated_hours) : null,
         billing_day: v.agreement === 'retainer' && v.billing_day ? Math.min(31, Math.max(1, Number(v.billing_day))) : null,
         payment_terms_days: Math.min(180, Math.max(0, Number(v.payment_terms_days) || 0)),
       };
@@ -168,6 +169,11 @@ export function ClientDialog({
         <Field label="Plazo de pago (días)">
           <Input type="number" min={0} max={180} value={f.payment_terms_days} onChange={(e) => set('payment_terms_days', e.target.value)} />
         </Field>
+        {f.agreement === 'proyecto' && (
+          <Field label="Horas estimadas" hint="Opcional. Mide las horas reales del proyecto contra este presupuesto.">
+            <Input inputMode="decimal" value={f.estimated_hours} onChange={(e) => set('estimated_hours', e.target.value)} placeholder="Ej. 80" />
+          </Field>
+        )}
         {f.agreement === 'retainer' && (
           <>
             <Field label="Horas incluidas al mes">
@@ -210,6 +216,7 @@ type Form = {
   fee: string;
   included_hours: string;
   extra_hour_rate: string;
+  estimated_hours: string;
   billing_day: string;
   payment_terms_days: string;
 };
@@ -233,6 +240,7 @@ function formOf(c?: Client): Form {
     fee: c ? amountInput(c.fee) : '',
     included_hours: amountInput(c?.included_hours),
     extra_hour_rate: amountInput(c?.extra_hour_rate),
+    estimated_hours: amountInput(c?.estimated_hours),
     billing_day: c?.billing_day ? String(c.billing_day) : '',
     payment_terms_days: String(c?.payment_terms_days ?? 15),
   };

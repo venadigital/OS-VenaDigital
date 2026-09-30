@@ -369,6 +369,7 @@ export function createDemoApi(): Api {
         fee: 0,
         included_hours: null,
         extra_hour_rate: null,
+        estimated_hours: null,
         billing_day: null,
         payment_terms_days: 15,
         ...input,

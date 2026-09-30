@@ -24,6 +24,7 @@ const client = (patch: Partial<Client> = {}): Client => ({
   fee: 4_200_000,
   included_hours: 30,
   extra_hour_rate: 180_000,
+  estimated_hours: null,
   billing_day: 1,
   payment_terms_days: 15,
   created_at: iso(1),
@@ -152,5 +153,34 @@ describe('clientes · montos escritos', () => {
     expect(parseAmount('')).toBeNull();
     expect(amountInput(4_200_000)).toBe('4.200.000');
     expect(parseAmount(amountInput(1250.5))).toBe(1250.5);
+  });
+});
+
+describe('clientes · barra de horas e iniciales', () => {
+  it('builds initials without emoji or symbols', async () => {
+    const { initials } = await import('./model');
+    expect(initials('👩🏽 Diana Boldizar')).toBe('DB');
+    expect(initials('🎾 CDAF')).toBe('CD');
+    expect(initials('🧠 Pinares Mind Health')).toBe('PM');
+    expect(initials('Clínica de la Sabana')).toBe('CS');
+    expect(initials('Ñandú')).toBe('ÑA');
+    expect(initials('🔥')).toBe('·');
+  });
+
+  it('measures a bar only against a limit', async () => {
+    const { hoursGauge } = await import('./model');
+    expect(hoursGauge(client(), 20 * 60, null)).toEqual({ label: 'Horas este mes', used: 1200, cap: 1800, over: false });
+    const project = client({ agreement: 'proyecto', estimated_hours: 80 });
+    expect(hoursGauge(project, 10 * 60, 90 * 60)).toEqual({ label: 'Horas del proyecto', used: 5400, cap: 4800, over: true });
+    expect(hoursGauge(project, 10 * 60, null)).toBeNull();
+    expect(hoursGauge(client({ agreement: 'proyecto' }), 600, 600)).toBeNull();
+    expect(hoursGauge(client({ agreement: 'horas', fee: 70_000 }), 600, 600)).toBeNull();
+  });
+
+  it('warns when a project goes past its estimate', () => {
+    const base = { tasks: [], invoices: [], logs: [log(28)], monthMinutes: 0, now };
+    const project = client({ agreement: 'proyecto', included_hours: null, estimated_hours: 20 });
+    expect(issuesFor(project, { ...base, totalMinutes: 21 * 60 }).map((i) => i.text)).toEqual(['Proyecto por encima de lo estimado: 21 h de 20 h']);
+    expect(issuesFor(project, { ...base, totalMinutes: 19 * 60 })).toEqual([]);
   });
 });

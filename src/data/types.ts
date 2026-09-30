@@ -243,6 +243,8 @@ export type Client = {
   fee: number;
   included_hours: number | null;
   extra_hour_rate: number | null;
+  /** Proyecto: hours the project was budgeted for. */
+  estimated_hours: number | null;
   billing_day: number | null;
   payment_terms_days: number;
   created_at: string;

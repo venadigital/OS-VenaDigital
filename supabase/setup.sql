@@ -767,3 +767,11 @@ create policy "own client invoices" on public.client_invoices for all to authent
   );
 
 grant select, insert, update, delete on public.clients, public.client_logs, public.client_invoices to authenticated;
+
+
+-- =====================================================================
+-- 20260930000008_client_estimated_hours.sql
+-- =====================================================================
+-- Clientes de proyecto: horas estimadas, para medir las horas reales contra el presupuesto.
+alter table public.clients
+  add column estimated_hours numeric(7, 2) check (estimated_hours is null or estimated_hours >= 0);

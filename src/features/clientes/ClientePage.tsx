@@ -18,6 +18,7 @@ import {
   CHANNEL_LABEL,
   dayLabel,
   hm,
+  hoursGauge,
   initials,
   logKindLabel,
   money,
@@ -185,6 +186,7 @@ function Summary({ s, now, from, to, projects, onEdit }: { s: ClientSummary; now
 
   const included = client.agreement === 'retainer' && client.included_hours ? client.included_hours * 60 : null;
   const over = included != null && s.monthMinutes > included;
+  const gauge = hoursGauge(client, s.monthMinutes, totals.loading ? null : totals.total);
   const perHour = valuePerHour(client, s.monthMinutes, totals.total);
   const billing = monthBilling(client, s.monthMinutes);
   const pending = s.invoices.filter((f) => !f.paid_on && f.currency === client.currency).sort((a, b) => (a.due_on ?? '').localeCompare(b.due_on ?? ''));
@@ -203,17 +205,31 @@ function Summary({ s, now, from, to, projects, onEdit }: { s: ClientSummary; now
   return (
     <>
       <div className="cl-tiles">
-        <Tile icon={<Clock3 size={17} />} label="Horas este mes" className="cl-lilac">
-          <div className="cl-tile-value">{hm(s.monthMinutes)}</div>
-          {included != null ? (
+        <Tile icon={<Clock3 size={17} />} label={gauge?.label ?? 'Horas este mes'} className="cl-lilac">
+          <div className="cl-tile-value">{hm(gauge?.used ?? s.monthMinutes)}</div>
+          {gauge ? (
             <>
-              <div className={`cl-track ${over ? 'is-over' : ''}`}><i style={{ width: `${Math.min(100, (s.monthMinutes / included) * 100)}%` }} /></div>
-              <div className={`cl-cap ${over ? 'cl-amber-ink' : ''}`}>
-                {over ? `${hm(s.monthMinutes - included)} por encima de ${hm(included)}` : `de ${hm(included)} · quedan ${hm(included - s.monthMinutes)}`}
+              <div className={`cl-track ${gauge.over ? 'is-over' : ''}`}><i style={{ width: `${Math.min(100, (gauge.used / gauge.cap) * 100)}%` }} /></div>
+              <div className={`cl-cap ${gauge.over ? 'cl-amber-ink' : ''}`}>
+                {included
+                  ? gauge.over
+                    ? `${hm(gauge.used - gauge.cap)} por encima de ${hm(gauge.cap)}`
+                    : `de ${hm(gauge.cap)} · quedan ${hm(gauge.cap - gauge.used)}`
+                  : gauge.over
+                    ? `${hm(gauge.used - gauge.cap)} por encima de las ${hm(gauge.cap)} estimadas`
+                    : `de ${hm(gauge.cap)} estimadas · ${hm(s.monthMinutes)} este mes`}
               </div>
             </>
           ) : (
-            <div className="cl-cap">{s.project ? `${hm(totals.total)} en total` : 'Une un proyecto de Tiempo'}</div>
+            <div className="cl-cap">
+              {!s.project
+                ? 'Une un proyecto de Tiempo'
+                : client.agreement === 'horas'
+                  ? `Por facturar este mes: ${money(billing.toBill ?? 0, client.currency)}`
+                  : client.agreement === 'proyecto'
+                    ? `${hm(totals.total)} en total · sin horas estimadas`
+                    : `${hm(totals.total)} en total`}
+            </div>
           )}
         </Tile>
         <Tile icon={<Gauge size={17} />} label={included ? 'Retainer consumido' : 'Valor por hora'}>
@@ -343,6 +359,7 @@ export function AgreementList({ client }: { client: Client }) {
       />
       {client.agreement === 'retainer' && <Kv k="Incluye" v={client.included_hours != null ? `${hm(client.included_hours * 60)} al mes` : null} />}
       {client.agreement === 'retainer' && <Kv k="Hora extra" v={client.extra_hour_rate != null ? money(client.extra_hour_rate, c) : null} />}
+      {client.agreement === 'proyecto' && <Kv k="Horas estimadas" v={client.estimated_hours != null ? hm(client.estimated_hours * 60) : null} />}
       <Kv k="Facturación" v={client.billing_day ? `El día ${client.billing_day} · vence a ${client.payment_terms_days} días` : `Vence a ${client.payment_terms_days} días`} />
     </div>
   );

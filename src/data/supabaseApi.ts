@@ -30,7 +30,7 @@ const numOrNull = (v: unknown) => (v == null ? null : num(v));
 
 // Postgres numeric comes back as a string.
 const toClient = (r: Record<string, unknown>): Client =>
-  ({ ...r, fee: num(r.fee), included_hours: numOrNull(r.included_hours), extra_hour_rate: numOrNull(r.extra_hour_rate) }) as Client;
+  ({ ...r, fee: num(r.fee), included_hours: numOrNull(r.included_hours), extra_hour_rate: numOrNull(r.extra_hour_rate), estimated_hours: numOrNull(r.estimated_hours) }) as Client;
 const toInvoice = (r: Record<string, unknown>): Invoice => ({ ...r, amount: num(r.amount) }) as Invoice;
 
 export function createSupabaseApi(sb: SupabaseClient): Api {

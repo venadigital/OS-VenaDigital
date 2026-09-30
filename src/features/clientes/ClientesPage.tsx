@@ -8,7 +8,7 @@ import type { ClientStatus } from '@/data/types';
 import { norm } from '@/lib/text';
 import { fromDayKey } from '@/lib/time';
 import { ClientDialog } from './dialogs';
-import { AGREEMENT_LABEL, dayLabel, HEALTH_COLOR, HEALTH_LABEL, hm, initials, invoiceState, logKindLabel, money, relDays, STATUS_LABEL, useClientsData, type ClientSummary } from './model';
+import { AGREEMENT_LABEL, dayLabel, HEALTH_COLOR, HEALTH_LABEL, hm, hoursGauge, initials, invoiceState, monthBilling, logKindLabel, money, relDays, STATUS_LABEL, useClientsData, type ClientSummary, type HoursGauge } from './model';
 import './clientes.css';
 
 type Filter = 'todos' | ClientStatus;
@@ -38,8 +38,6 @@ export function ClientesPage() {
         (!q || [s.client.name, s.client.contact_name, s.client.company].some((v) => v && norm(v).includes(q))),
     );
   }, [summaries, filter, query]);
-  // Bars for clients without included hours compare against the busiest client.
-  const maxMinutes = Math.max(60, ...summaries.map((s) => s.monthMinutes));
 
   const options: { value: Filter; label: string }[] = [
     { value: 'todos', label: 'Todos' },
@@ -121,7 +119,7 @@ export function ClientesPage() {
             ) : (
               <div className="cl-grid">
                 {visible.map((s) => (
-                  <ClientCard key={s.client.id} s={s} now={now} maxMinutes={maxMinutes} />
+                  <ClientCard key={s.client.id} s={s} now={now} />
                 ))}
               </div>
             )}
@@ -144,12 +142,10 @@ export function avatarStyle(color?: string) {
   return { background: color ? `color-mix(in srgb, ${color} 38%, var(--color-surface))` : 'var(--stay-lilac)' };
 }
 
-function ClientCard({ s, now, maxMinutes }: { s: ClientSummary; now: Date; maxMinutes: number }) {
+function ClientCard({ s, now }: { s: ClientSummary; now: Date }) {
   const { client } = s;
   const off = client.status !== 'activo';
-  const included = client.agreement === 'retainer' && client.included_hours ? client.included_hours * 60 : null;
-  const over = included != null && s.monthMinutes > included;
-  const pct = Math.min(100, (s.monthMinutes / (included ?? maxMinutes)) * 100);
+  const gauge = hoursGauge(client, s.monthMinutes, s.totalMinutes);
   const dueDays = s.nextDue?.due_date ? differenceInCalendarDays(fromDayKey(s.nextDue.due_date), now) : null;
   const contactDays = s.lastContact ? differenceInCalendarDays(now, new Date(s.lastContact.occurred_at)) : null;
   const pending = s.invoices.filter((f) => !f.paid_on);
@@ -173,18 +169,7 @@ function ClientCard({ s, now, maxMinutes }: { s: ClientSummary; now: Date; maxMi
         <span className="cl-dot" style={{ background: HEALTH_COLOR[s.health] }} title={HEALTH_LABEL[s.health]} />
       </div>
 
-      <div className="flex flex-col gap-[7px]">
-        <div className="flex items-center justify-between gap-2 text-[13px]">
-          <span className="text-ink-2">Horas este mes</span>
-          <span className={`tnum font-medium ${over ? 'cl-amber-ink' : ''}`}>
-            {hm(s.monthMinutes)}
-            {included != null && <span className="font-normal text-ink-3"> de {hm(included)}</span>}
-          </span>
-        </div>
-        <div className={`cl-track ${over ? 'is-over' : included == null ? 'is-soft' : ''}`}>
-          <i style={{ width: `${pct}%` }} />
-        </div>
-      </div>
+      <HoursBlock s={s} gauge={gauge} />
 
       <div className="cl-meta">
         {s.nextDue && dueDays != null ? (
@@ -217,5 +202,45 @@ function ClientCard({ s, now, maxMinutes }: { s: ClientSummary; now: Date; maxMi
         )}
       </div>
     </Link>
+  );
+}
+
+/**
+ * Hours on a card. A bar only when there is a limit (retainer hours, project estimate);
+ * hourly clients show what the month is worth instead.
+ */
+function HoursBlock({ s, gauge }: { s: ClientSummary; gauge: HoursGauge | null }) {
+  const { client } = s;
+  if (gauge) {
+    return (
+      <div className="flex flex-col gap-[7px]">
+        <div className="flex items-center justify-between gap-2 text-[13px]">
+          <span className="text-ink-2">{gauge.label}</span>
+          <span className={`tnum font-medium ${gauge.over ? 'cl-amber-ink' : ''}`}>
+            {hm(gauge.used)}
+            <span className="font-normal text-ink-3"> de {hm(gauge.cap)}</span>
+          </span>
+        </div>
+        <div className={`cl-track ${gauge.over ? 'is-over' : ''}`}>
+          <i style={{ width: `${Math.min(100, (gauge.used / gauge.cap) * 100)}%` }} />
+        </div>
+      </div>
+    );
+  }
+  const second =
+    client.agreement === 'horas'
+      ? { k: 'Por facturar este mes', v: money(monthBilling(client, s.monthMinutes).toBill ?? 0, client.currency) }
+      : { k: client.agreement === 'proyecto' ? 'Sin horas estimadas' : 'Sin horas incluidas', v: null };
+  return (
+    <div className="flex flex-col gap-1 text-[13px]">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-ink-2">Horas este mes</span>
+        <span className="tnum font-medium">{hm(s.monthMinutes)}</span>
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-ink-3">{second.k}</span>
+        {second.v && <span className="tnum font-medium">{second.v}</span>}
+      </div>
+    </div>
   );
 }

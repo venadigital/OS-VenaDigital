@@ -7,8 +7,8 @@ import { dayKey } from '@/lib/time';
 type Seeded = { clients: Client[]; logs: ClientLog[]; invoices: Invoice[] };
 
 type Plan = {
-  client: Omit<Client, 'id' | 'project_id' | 'created_at' | 'updated_at' | 'notes' | 'contact_role' | 'company' | 'city' | 'phone' | 'email' | 'channel'> &
-    Partial<Pick<Client, 'contact_role' | 'company' | 'city' | 'phone' | 'email' | 'channel' | 'notes'>>;
+  client: Omit<Client, 'id' | 'project_id' | 'created_at' | 'updated_at' | 'notes' | 'contact_role' | 'company' | 'city' | 'phone' | 'email' | 'channel' | 'estimated_hours'> &
+    Partial<Pick<Client, 'contact_role' | 'company' | 'city' | 'phone' | 'email' | 'channel' | 'notes' | 'estimated_hours'>>;
   color: string;
   /** name, due in days (null: none), done, minutes per weekday this month */
   tasks: [string, number | null, boolean, number][];
@@ -66,6 +66,7 @@ const PLANS: Plan[] = [
       agreement: 'proyecto',
       currency: 'COP',
       fee: 18_000_000,
+      estimated_hours: 80,
       included_hours: null,
       extra_hour_rate: null,
       billing_day: null,
@@ -90,6 +91,7 @@ const PLANS: Plan[] = [
       agreement: 'proyecto',
       currency: 'COP',
       fee: 24_000_000,
+      estimated_hours: 20,
       included_hours: null,
       extra_hour_rate: null,
       billing_day: null,
@@ -207,6 +209,7 @@ export function seedClients(
       email: null,
       channel: null,
       notes: '',
+      estimated_hours: null,
       ...plan.client,
       since: dayKey(subMonths(startOfMonth(now), 6 - i)),
       id: uid(),
