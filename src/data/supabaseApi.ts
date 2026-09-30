@@ -141,7 +141,27 @@ export function createSupabaseApi(sb: SupabaseClient): Api {
       check(await sb.from('clients').update(patch).eq('id', id));
     },
     async deleteClient(id) {
+      const row = check(await sb.from('clients').select('logo_path').eq('id', id).maybeSingle()) as { logo_path: string | null } | null;
       check(await sb.from('clients').delete().eq('id', id));
+      if (row?.logo_path) await sb.storage.from('clients').remove([row.logo_path]);
+    },
+    async uploadClientLogo(file) {
+      const ext = file.type === 'image/webp' ? 'webp' : file.type === 'image/jpeg' ? 'jpg' : 'png';
+      const path = `${await userId()}/${crypto.randomUUID()}.${ext}`;
+      const res = await sb.storage.from('clients').upload(path, file, { contentType: file.type || 'image/png', upsert: false });
+      if (res.error) throw new Error(res.error.message);
+      return path;
+    },
+    async removeClientLogo(path) {
+      await sb.storage.from('clients').remove([path]);
+    },
+    async clientLogoUrls(paths) {
+      if (!paths.length) return {};
+      const res = await sb.storage.from('clients').createSignedUrls(paths, 60 * 60);
+      if (res.error) return {};
+      const out: Record<string, string> = {};
+      for (const item of res.data ?? []) if (item.path && item.signedUrl) out[item.path] = item.signedUrl;
+      return out;
     },
     async listClientLogs() {
       return check(await sb.from('client_logs').select('*').order('occurred_at', { ascending: false }).limit(5000)) as ClientLog[];

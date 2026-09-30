@@ -245,6 +245,10 @@ export type Client = {
   extra_hour_rate: number | null;
   /** Proyecto: hours the project was budgeted for. */
   estimated_hours: number | null;
+  /** Words that tie AI work folders to this client ("Diana", "Danluwi"). */
+  ai_keywords: string[];
+  /** Photo or logo in the private `clients` bucket. */
+  logo_path: string | null;
   billing_day: number | null;
   payment_terms_days: number;
   created_at: string;

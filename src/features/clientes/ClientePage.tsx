@@ -9,16 +9,18 @@ import { qk, useApiMutation, usePrices, useSessions } from '@/data/hooks';
 import type { Client, ClientLog, Invoice, Project } from '@/data/types';
 import { usd } from '@/lib/format';
 import { norm } from '@/lib/text';
-import { projectForFolder, sessionCost } from '@/lib/pricing';
+import { sessionCost } from '@/lib/pricing';
 import { dayKey, fromDayKey } from '@/lib/time';
-import { avatarStyle } from './ClientesPage';
+import { ClientAvatar } from './ClientAvatar';
 import { ClientDialog, InvoiceDialog, type InvoiceDraft } from './dialogs';
 import {
   AGREEMENT_LABEL,
   CHANNEL_LABEL,
   dayLabel,
+  clientForFolder,
   hm,
   hoursGauge,
+  keywordsOf,
   initials,
   logKindLabel,
   money,
@@ -89,7 +91,7 @@ export function ClientePage() {
         }
         title={
           <span className="cl-title-row">
-            <span className="cl-avatar is-lg" style={avatarStyle(s.project?.color)}>{initials(client.name)}</span>
+            <ClientAvatar client={client} color={s.project?.color} large />
             <span className="min-w-0">{client.name}</span>
             <span className="flex gap-1.5">
               <span className={client.status === 'activo' ? 'cl-pill is-lime' : 'cl-pill is-gray'}>{STATUS_LABEL[client.status]}</span>
@@ -133,7 +135,7 @@ export function ClientePage() {
         ))}
       </nav>
 
-      {tab === 'resumen' && <Summary s={s} now={data.now} from={data.from} to={data.to} projects={data.projects} onEdit={() => setEditing(true)} />}
+      {tab === 'resumen' && <Summary s={s} now={data.now} from={data.from} to={data.to} projects={data.projects} clients={data.summaries.map((x) => x.client)} onEdit={() => setEditing(true)} />}
       {tab === 'tareas' && <TasksTab s={s} now={data.now} from={data.from} to={data.to} clients={data.summaries.map((x) => x.client)} />}
       {tab === 'bitacora' && <LogTab s={s} now={data.now} />}
       {tab === 'facturacion' && <BillingTab s={s} now={data.now} draft={draft} onEdit={() => setEditing(true)} />}
@@ -164,25 +166,29 @@ export function invoiceDraft(s: ClientSummary, all: Invoice[], now: Date): Invoi
 }
 
 // ---------------------------------------------------------------- Resumen
-function Summary({ s, now, from, to, projects, onEdit }: { s: ClientSummary; now: Date; from: Date; to: Date; projects: Project[]; onEdit: () => void }) {
+function Summary({ s, now, from, to, projects, clients, onEdit }: { s: ClientSummary; now: Date; from: Date; to: Date; projects: Project[]; clients: Client[]; onEdit: () => void }) {
   const { client } = s;
   const totals = useTaskTotals(s, now);
   const sessionsQ = useSessions(from, to);
   const pricesQ = usePrices();
+  // AI sessions whose work folder belongs to this client (project folder or keywords).
   const ai = useMemo(() => {
     let cost = 0;
     let n = 0;
     let unpriced = false;
-    if (!s.project) return { cost, n, unpriced };
+    const folders = new Map<string, { sessions: number; cost: number }>();
     for (const x of sessionsQ.data ?? []) {
-      if (projectForFolder(x.project, projects)?.id !== s.project.id) continue;
+      if (clientForFolder(x.project, clients, projects)?.id !== s.client.id) continue;
       const c = sessionCost(x, pricesQ.data ?? []);
       cost += c.cost;
       unpriced ||= c.unpriced;
       n++;
+      const f = folders.get(x.project) ?? { sessions: 0, cost: 0 };
+      folders.set(x.project, { sessions: f.sessions + 1, cost: f.cost + c.cost });
     }
-    return { cost, n, unpriced };
-  }, [sessionsQ.data, pricesQ.data, projects, s.project]);
+    return { cost, n, unpriced, folders: [...folders.entries()].sort((a, b) => b[1].cost - a[1].cost) };
+  }, [sessionsQ.data, pricesQ.data, projects, clients, s.client.id]);
+  const keywords = keywordsOf(client);
 
   const included = client.agreement === 'retainer' && client.included_hours ? client.included_hours * 60 : null;
   const over = included != null && s.monthMinutes > included;
@@ -248,7 +254,9 @@ function Summary({ s, now, from, to, projects, onEdit }: { s: ClientSummary; now
         <Tile icon={<Sparkles size={17} />} label="Costo de IA del mes" className="cl-lime">
           <div className="cl-tile-value">{usd(ai.cost)}</div>
           <div className="cl-cap">
-            {!s.project ? 'Sin proyecto unido' : ai.n ? `USD · ${ai.n} ${ai.n === 1 ? 'sesión' : 'sesiones'} en la carpeta${ai.unpriced ? ' · hay modelos sin precio' : ''}` : `Sin sesiones en la carpeta ${s.project.folder ?? s.project.name}`}
+            {ai.n
+              ? `USD · ${ai.n} ${ai.n === 1 ? 'sesión' : 'sesiones'} en ${ai.folders.length} ${ai.folders.length === 1 ? 'carpeta' : 'carpetas'}${ai.unpriced ? ' · hay modelos sin precio' : ''}`
+              : `Ninguna carpeta con ${keywords.map((k) => `«${k}»`).join(', ')} este mes`}
           </div>
         </Tile>
         <Tile icon={<Wallet size={17} />} label="Pendiente de cobro" className={pending.length ? 'cl-amber' : ''}>
@@ -329,6 +337,23 @@ function Summary({ s, now, from, to, projects, onEdit }: { s: ClientSummary; now
         <Card as="section" className="cl-lilac gap-3.5">
           <CardHead title="Acuerdo vigente" right={<Link className="cl-link" to={`/clientes/${client.id}?tab=facturacion`} replace>Ver facturación</Link>} />
           <AgreementList client={client} />
+        </Card>
+
+        <Card as="section" className="gap-3">
+          <CardHead title="Carpetas de IA del mes" right={<button type="button" className="cl-link" onClick={onEdit}>Palabras clave</button>} />
+          {ai.folders.length === 0 ? (
+            <p className="text-[13px] text-ink-3">Ninguna sesión de Claude Code o Codex este mes en carpetas con {keywords.map((k) => `«${k}»`).join(', ')}.</p>
+          ) : (
+            <div className="flex flex-col">
+              {ai.folders.map(([folder, v]) => (
+                <div key={folder} className="cl-kv">
+                  <span className="min-w-0 truncate !text-ink">{folder}</span>
+                  <span className="tnum">{usd(v.cost)} <span className="font-normal text-ink-3">· {v.sessions}</span></span>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="cl-cap">Cuenta cada carpeta cuyo nombre contiene {keywords.map((k) => `«${k}»`).join(', ')}, o la carpeta unida a su proyecto de Tiempo.</p>
         </Card>
 
         {client.notes && (

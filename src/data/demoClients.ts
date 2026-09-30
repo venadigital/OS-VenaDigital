@@ -7,8 +7,8 @@ import { dayKey } from '@/lib/time';
 type Seeded = { clients: Client[]; logs: ClientLog[]; invoices: Invoice[] };
 
 type Plan = {
-  client: Omit<Client, 'id' | 'project_id' | 'created_at' | 'updated_at' | 'notes' | 'contact_role' | 'company' | 'city' | 'phone' | 'email' | 'channel' | 'estimated_hours'> &
-    Partial<Pick<Client, 'contact_role' | 'company' | 'city' | 'phone' | 'email' | 'channel' | 'notes' | 'estimated_hours'>>;
+  client: Omit<Client, 'id' | 'project_id' | 'created_at' | 'updated_at' | 'notes' | 'contact_role' | 'company' | 'city' | 'phone' | 'email' | 'channel' | 'estimated_hours' | 'ai_keywords' | 'logo_path'> &
+    Partial<Pick<Client, 'contact_role' | 'company' | 'city' | 'phone' | 'email' | 'channel' | 'notes' | 'estimated_hours' | 'ai_keywords' | 'logo_path'>>;
   color: string;
   /** name, due in days (null: none), done, minutes per weekday this month */
   tasks: [string, number | null, boolean, number][];
@@ -210,6 +210,8 @@ export function seedClients(
       channel: null,
       notes: '',
       estimated_hours: null,
+      ai_keywords: [],
+      logo_path: null,
       ...plan.client,
       since: dayKey(subMonths(startOfMonth(now), 6 - i)),
       id: uid(),

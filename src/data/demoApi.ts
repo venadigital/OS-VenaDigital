@@ -370,6 +370,8 @@ export function createDemoApi(): Api {
         included_hours: null,
         extra_hour_rate: null,
         estimated_hours: null,
+        ai_keywords: [],
+        logo_path: null,
         billing_day: null,
         payment_terms_days: 15,
         ...input,
@@ -392,6 +394,17 @@ export function createDemoApi(): Api {
       s.invoices = s.invoices.filter((f) => f.client_id !== id);
       return later(undefined);
     },
+    async uploadClientLogo(file) {
+      // Demo: keep the image in memory as a data URL.
+      return new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result));
+        r.onerror = () => reject(r.error);
+        r.readAsDataURL(file);
+      });
+    },
+    removeClientLogo: async () => later(undefined),
+    clientLogoUrls: async (paths) => later(Object.fromEntries(paths.map((p) => [p, p]))),
     listClientLogs: async () => later(clone(s.logs).sort((a, b) => b.occurred_at.localeCompare(a.occurred_at))),
     async createClientLog(input) {
       const now = iso(new Date());

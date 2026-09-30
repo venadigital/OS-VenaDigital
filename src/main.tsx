@@ -12,7 +12,21 @@ import './stay.css';
 
 initTheme();
 applyAccent(storedAccent());
-registerSW({ immediate: true });
+// The installed app (iPhone, Mac) can stay open for days: look for a new version every
+// hour and whenever it comes back to the foreground. autoUpdate then reloads into it.
+registerSW({
+  immediate: true,
+  onRegisteredSW(_url, registration) {
+    if (!registration) return;
+    const check = () => {
+      if (navigator.onLine) void registration.update().catch(() => undefined);
+    };
+    setInterval(check, 60 * 60_000);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') check();
+    });
+  },
+});
 
 const queryClient = new QueryClient({
   defaultOptions: {

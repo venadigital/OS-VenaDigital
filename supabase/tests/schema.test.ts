@@ -306,3 +306,20 @@ describe('clientes', () => {
     expect(left.rows).toHaveLength(0);
   });
 });
+
+describe('clientes · logos y palabras clave', () => {
+  it('keeps client logos in a private bucket, one folder per user, and defaults keywords to empty', async () => {
+    const bucket = await db.query(`select public from storage.buckets where id = 'clients'`);
+    expect(bucket.rows).toEqual([{ public: false }]);
+    const path = `${USER_A}/logo.webp`;
+    await as(USER_A, 'authenticated', () => db.query(`insert into storage.objects (bucket_id, name) values ('clients', $1)`, [path]));
+    expect((await as(USER_B, 'authenticated', () => db.query(`select name from storage.objects where bucket_id = 'clients'`))).rows).toHaveLength(0);
+    await expect(
+      as(USER_B, 'authenticated', () => db.query(`insert into storage.objects (bucket_id, name) values ('clients', $1)`, [`${USER_A}/intruso.webp`])),
+    ).rejects.toThrow();
+    const c = await as(USER_A, 'authenticated', () =>
+      db.query<{ ai_keywords: string[]; logo_path: string | null }>(`insert into public.clients (name, logo_path) values ('Con logo', $1) returning ai_keywords, logo_path`, [path]),
+    );
+    expect(c.rows[0]).toEqual({ ai_keywords: [], logo_path: path });
+  });
+});

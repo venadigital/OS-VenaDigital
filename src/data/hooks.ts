@@ -24,6 +24,7 @@ export const qk = {
   collectorTokens: ['collector-tokens'] as const,
   clients: ['clients'] as const,
   clientLogs: ['client-logs'] as const,
+  clientLogos: (paths: string[]) => ['client-logos', ...paths] as const,
   invoices: ['invoices'] as const,
   taskEntries: (ids: string[]) => ['entries', 'tasks', ...ids] as const,
   calendarStatus: ['calendar', 'status'] as const,
@@ -62,6 +63,10 @@ export const useRunning = () => {
 export const useClients = () => {
   const api = useApi();
   return useQuery({ queryKey: qk.clients, queryFn: () => api.listClients() });
+};
+export const useClientLogos = (paths: string[]) => {
+  const api = useApi();
+  return useQuery({ queryKey: qk.clientLogos(paths), queryFn: () => api.clientLogoUrls(paths), enabled: paths.length > 0, staleTime: 50 * 60_000 });
 };
 export const useClientLogs = () => {
   const api = useApi();

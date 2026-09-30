@@ -61,6 +61,10 @@ export interface Api {
   createClient(input: ClientInput & { name: string }): Promise<Client>;
   updateClient(id: string, patch: ClientInput): Promise<void>;
   deleteClient(id: string): Promise<void>;
+  /** Stores a client photo or logo; returns its path. */
+  uploadClientLogo(file: Blob): Promise<string>;
+  removeClientLogo(path: string): Promise<void>;
+  clientLogoUrls(paths: string[]): Promise<Record<string, string>>;
   /** Interactions of every client, newest first. */
   listClientLogs(): Promise<ClientLog[]>;
   createClientLog(input: ClientLogInput & { client_id: string; title: string }): Promise<ClientLog>;

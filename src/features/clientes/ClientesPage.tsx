@@ -7,8 +7,9 @@ import { Button, Card, Empty, Segmented, Skeleton } from '@/components/ui';
 import type { ClientStatus } from '@/data/types';
 import { norm } from '@/lib/text';
 import { fromDayKey } from '@/lib/time';
+import { ClientAvatar } from './ClientAvatar';
 import { ClientDialog } from './dialogs';
-import { AGREEMENT_LABEL, dayLabel, HEALTH_COLOR, HEALTH_LABEL, hm, hoursGauge, initials, invoiceState, monthBilling, logKindLabel, money, relDays, STATUS_LABEL, useClientsData, type ClientSummary, type HoursGauge } from './model';
+import { AGREEMENT_LABEL, dayLabel, HEALTH_COLOR, HEALTH_LABEL, hm, hoursGauge, invoiceState, monthBilling, logKindLabel, money, relDays, STATUS_LABEL, useClientsData, type ClientSummary, type HoursGauge } from './model';
 import './clientes.css';
 
 type Filter = 'todos' | ClientStatus;
@@ -138,10 +139,6 @@ export function ClientesPage() {
   );
 }
 
-export function avatarStyle(color?: string) {
-  return { background: color ? `color-mix(in srgb, ${color} 38%, var(--color-surface))` : 'var(--stay-lilac)' };
-}
-
 function ClientCard({ s, now }: { s: ClientSummary; now: Date }) {
   const { client } = s;
   const off = client.status !== 'activo';
@@ -161,7 +158,7 @@ function ClientCard({ s, now }: { s: ClientSummary; now: Date }) {
   return (
     <Link to={`/clientes/${client.id}`} className={off ? 'cl-card is-off' : 'cl-card'}>
       <div className="flex items-center gap-2.5">
-        <span className="cl-avatar" style={avatarStyle(s.project?.color)}>{initials(client.name)}</span>
+        <ClientAvatar client={client} color={s.project?.color} />
         <span className="min-w-0 flex-1">
           <span className={`block truncate text-[16px] font-medium ${off ? 'text-ink-2' : 'text-ink'}`}>{client.name}</span>
           <span className="cl-cap block truncate">{off ? `${STATUS_LABEL[client.status]} · ${AGREEMENT_LABEL[client.agreement].toLowerCase()}` : caption}</span>

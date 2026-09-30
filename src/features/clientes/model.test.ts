@@ -25,6 +25,8 @@ const client = (patch: Partial<Client> = {}): Client => ({
   included_hours: 30,
   extra_hour_rate: 180_000,
   estimated_hours: null,
+  ai_keywords: [],
+  logo_path: null,
   billing_day: 1,
   payment_terms_days: 15,
   created_at: iso(1),
@@ -182,5 +184,42 @@ describe('clientes · barra de horas e iniciales', () => {
     const project = client({ agreement: 'proyecto', included_hours: null, estimated_hours: 20 });
     expect(issuesFor(project, { ...base, totalMinutes: 21 * 60 }).map((i) => i.text)).toEqual(['Proyecto por encima de lo estimado: 21 h de 20 h']);
     expect(issuesFor(project, { ...base, totalMinutes: 19 * 60 })).toEqual([]);
+  });
+});
+
+describe('clientes · carpetas de IA', () => {
+  const project = (id: string, name: string, folder: string | null = null) => ({ id, name, color: '#000', archived: false, sort: 0, folder, created_at: iso(1) });
+  const projects = [project('pd', '👩🏽 Diana Boldizar'), project('pp', '🧠 Pinares'), project('pc', '🎾 CDAF'), project('po', 'OS Vena Digital')];
+  const diana = client({ id: 'd', name: '👩🏽 Diana Boldizar', project_id: 'pd' });
+  const pinares = client({ id: 'p', name: '🧠 Pinares Mind Health', project_id: 'pp' });
+  const cdaf = client({ id: 'c', name: '🎾 CDAF', project_id: 'pc' });
+
+  it('takes the first meaningful word of the name as the default keyword', async () => {
+    const { defaultKeywords, parseKeywords } = await import('./model');
+    expect(defaultKeywords('👩🏽 Diana Boldizar')).toEqual(['Diana']);
+    expect(defaultKeywords('🧠 Pinares Mind Health')).toEqual(['Pinares']);
+    expect(defaultKeywords('🎾 CDAF')).toEqual(['CDAF']);
+    expect(defaultKeywords('La Clínica del Sur')).toEqual(['Clínica']);
+    expect(parseKeywords('Diana, Danluwi ,, diana ;Pinates')).toEqual(['Diana', 'Danluwi', 'Pinates']);
+  });
+
+  it('assigns real folder names to their client', async () => {
+    const { clientForFolder } = await import('./model');
+    const who = (folder: string) => clientForFolder(folder, [diana, pinares, cdaf], projects)?.id ?? null;
+    for (const f of ['Diana Boldizar', 'diana_chatgpt', 'Portada libro Diana', 'Quiz_Landing_Diana', 'DANLUWI - DIANA', 'DIANA PROPUESTA 2']) expect(who(f)).toBe('d');
+    for (const f of ['Pinares', 'Planeacion_Pinares', 'CRM_Pinares']) expect(who(f)).toBe('p');
+    expect(who('Centro de Control CDAF')).toBe('c');
+    for (const f of ['Danluwi', 'Pinates prueba', 'Daniela_Parra', 'OS Vena Digital', 'Guiones']) expect(who(f)).toBeNull();
+  });
+
+  it('uses the extra keywords and prefers the longest match', async () => {
+    const { clientForFolder } = await import('./model');
+    const d2 = { ...diana, ai_keywords: ['Diana', 'Danluwi'] };
+    const p2 = { ...pinares, ai_keywords: ['Pinares', 'Pinates'] };
+    expect(clientForFolder('Danluwi', [d2, p2], projects)?.id).toBe('d');
+    expect(clientForFolder('Pinates prueba', [d2, p2], projects)?.id).toBe('p');
+    const general = client({ id: 'g', name: 'Diana', project_id: null, ai_keywords: ['Diana'] });
+    const specific = client({ id: 's', name: 'Libro', project_id: null, ai_keywords: ['Libro Diana'] });
+    expect(clientForFolder('Portada libro Diana', [general, specific], [])?.id).toBe('s');
   });
 });

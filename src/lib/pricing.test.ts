@@ -57,3 +57,13 @@ describe('projectForFolder', () => {
     expect(projectForFolder('Contenidos', [project('Contenidos', 'Guiones')])).toBeUndefined();
   });
 });
+
+describe('projectForFolder with emoji names', () => {
+  it('matches a folder to a project whose name carries an emoji', async () => {
+    const { projectForFolder } = await import('./pricing');
+    const p = { id: 'x', name: '👩🏽 Diana Boldizar', color: '#000', archived: false, sort: 0, created_at: '' };
+    expect(projectForFolder('Diana Boldizar', [p])?.id).toBe('x');
+    expect(projectForFolder('diana_boldizar', [p])?.id).toBe('x');
+    expect(projectForFolder('Diana', [p])).toBeUndefined();
+  });
+});

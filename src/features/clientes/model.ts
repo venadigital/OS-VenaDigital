@@ -7,6 +7,8 @@ import { useClientLogs, useClients, useEntries, useInvoices, useNow, useTaskEntr
 import type { Agreement, Client, ClientLog, ClientStatus, ContactChannel, Currency, Invoice, LogKind, Project, Task, TimeEntry } from '@/data/types';
 import { useTimeData } from '@/features/tiempo/model';
 import { dayKey, fromDayKey, overlapMinutes, rangeFor } from '@/lib/time';
+import { projectForFolder } from '@/lib/pricing';
+import { foldName, plainName } from '@/lib/text';
 
 // ---------------------------------------------------------------- labels
 export const STATUS_LABEL: Record<ClientStatus, string> = { activo: 'Activo', pausa: 'En pausa', cerrado: 'Cerrado', prospecto: 'Prospecto' };
@@ -386,3 +388,45 @@ export function parseAmount(raw: string): number | null {
 
 /** Amount as it shows in an input ("4.200.000", "1.250,5"). */
 export const amountInput = (n: number | null | undefined) => (n == null ? '' : grouped.format(n));
+
+// ---------------------------------------------------------------- IA por cliente
+/** "👩🏽 Diana Boldizar" → ["Diana"], "🧠 Pinares Mind Health" → ["Pinares"], "🎾 CDAF" → ["CDAF"]. */
+export function defaultKeywords(name: string): string[] {
+  const words = plainName(name).split(' ').filter(Boolean);
+  const main = words.find((w) => w.length > 2 && !/^(de|del|la|las|los|el|y|the|and)$/i.test(w));
+  return main ? [main] : words.slice(0, 1);
+}
+
+export const keywordsOf = (c: Pick<Client, 'ai_keywords' | 'name'>) => (c.ai_keywords.length ? c.ai_keywords : defaultKeywords(c.name));
+
+/** "Diana, Danluwi ,  " → ["Diana", "Danluwi"] (no repeats, at most 20). */
+export function parseKeywords(raw: string): string[] {
+  const out: string[] = [];
+  for (const k of raw.split(/[,;\n]/).map((x) => x.trim()).filter(Boolean)) {
+    if (!out.some((o) => foldName(o) === foldName(k))) out.push(k.slice(0, 60));
+  }
+  return out.slice(0, 20);
+}
+
+/**
+ * The client an AI work folder belongs to: the folder linked to its Tiempo project,
+ * a folder named like that project, or else the client whose keyword appears in the
+ * folder name (the longest keyword wins when two match).
+ */
+export function clientForFolder(folder: string, clients: Client[], projects: Project[]): Client | undefined {
+  if (!folder) return undefined;
+  const project = projectForFolder(folder, projects);
+  if (project) {
+    const owner = clients.find((c) => c.project_id === project.id);
+    if (owner) return owner;
+  }
+  const f = foldName(folder);
+  let best: { client: Client; len: number } | undefined;
+  for (const c of clients) {
+    for (const k of keywordsOf(c)) {
+      const kw = foldName(k);
+      if (kw.length >= 3 && f.includes(kw) && (!best || kw.length > best.len)) best = { client: c, len: kw.length };
+    }
+  }
+  return best?.client;
+}

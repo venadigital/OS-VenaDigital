@@ -1,12 +1,14 @@
 // Clientes: create/edit a client, an interaction, an invoice and a client task.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { Button, Dialog, Field, Input, Select, Textarea } from '@/components/ui';
 import { qk, useApiMutation } from '@/data/hooks';
 import type { Agreement, Client, ClientInput, ClientLog, ClientStatus, ContactChannel, Currency, Invoice, LogKind, Project, Task } from '@/data/types';
 import { nextColor } from '@/lib/palette';
 import { dayKey } from '@/lib/time';
-import { AGREEMENT_LABEL, amountInput, CHANNEL_LABEL, defaultDueDate, LOG_KINDS, parseAmount, STATUS_LABEL } from './model';
+import { useToast } from '@/components/Toast';
+import { AGREEMENT_LABEL, amountInput, CHANNEL_LABEL, defaultDueDate, defaultKeywords, LOG_KINDS, parseAmount, parseKeywords, STATUS_LABEL } from './model';
+import { ClientAvatar, prepareLogo } from './ClientAvatar';
 
 const NEW_PROJECT = '__new__';
 const blank = (s: string) => (s.trim() ? s.trim() : null);
@@ -29,9 +31,29 @@ export function ClientDialog({
 }) {
   const [f, setF] = useState(() => formOf(client));
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setF((x) => ({ ...x, [k]: v }));
+  // Photo or logo: a new image waiting to upload, or the current one removed.
+  const [logo, setLogo] = useState<{ blob: Blob; preview: string } | null>(null);
+  const [logoRemoved, setLogoRemoved] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const toast = useToast();
   useEffect(() => {
-    if (open) setF(formOf(client));
+    if (!open) return;
+    setF(formOf(client));
+    setLogo(null);
+    setLogoRemoved(false);
   }, [open, client]);
+  useEffect(() => () => { if (logo) URL.revokeObjectURL(logo.preview); }, [logo]);
+
+  const pickLogo = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const blob = await prepareLogo(file);
+      setLogo({ blob, preview: URL.createObjectURL(blob) });
+      setLogoRemoved(false);
+    } catch (err) {
+      toast(`No se pudo leer la imagen: ${err instanceof Error ? err.message : String(err)}`, 'error');
+    }
+  };
 
   // Projects free to link: not archived and not taken by another client.
   const taken = new Set(clients.filter((c) => c.id !== client?.id && c.project_id).map((c) => c.project_id));
@@ -44,8 +66,14 @@ export function ClientDialog({
         const p = await api.createProject({ name: v.name.trim().slice(0, 80), color: nextColor(projects.map((x) => x.color)) });
         project_id = p.id;
       }
+      let logo_path = client?.logo_path ?? null;
+      if (logo) logo_path = await api.uploadClientLogo(logo.blob);
+      else if (logoRemoved) logo_path = null;
+      const keywords = parseKeywords(v.keywords);
       const input: ClientInput & { name: string } = {
         name: v.name.trim(),
+        logo_path,
+        ai_keywords: keywords.length ? keywords : defaultKeywords(v.name),
         status: v.status,
         project_id,
         contact_name: blank(v.contact_name),
@@ -68,6 +96,8 @@ export function ClientDialog({
       };
       if (client) {
         await api.updateClient(client.id, input);
+        // The replaced or removed image is no longer needed.
+        if (client.logo_path && client.logo_path !== logo_path) await api.removeClientLogo(client.logo_path).catch(() => undefined);
         return { ...client, ...input } as Client;
       }
       return api.createClient(input);
@@ -93,6 +123,34 @@ export function ClientDialog({
       }
     >
       <div className="cl-form-grid">
+        <div className="is-wide flex items-center gap-4">
+          <ClientAvatar
+            client={{ name: f.name || '?', logo_path: logoRemoved ? null : (client?.logo_path ?? null) }}
+            src={logo?.preview}
+            large
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => fileRef.current?.click()}>
+              {logo || (client?.logo_path && !logoRemoved) ? 'Cambiar foto o logo' : 'Elegir foto o logo'}
+            </Button>
+            {(logo || (client?.logo_path && !logoRemoved)) && (
+              <Button size="sm" variant="ghost" onClick={() => { setLogo(null); setLogoRemoved(true); }}>
+                Quitar
+              </Button>
+            )}
+          </div>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            aria-label="Foto o logo del cliente"
+            onChange={(e) => {
+              void pickLogo(e.target.files?.[0]);
+              e.target.value = '';
+            }}
+          />
+        </div>
         <div className="is-wide">
           <Field label="Nombre del cliente">
             <Input value={f.name} maxLength={120} onChange={(e) => set('name', e.target.value)} placeholder="Ej. Clínica Andina" />
@@ -188,6 +246,13 @@ export function ClientDialog({
           </>
         )}
 
+        <div className="cl-form-section is-wide">Consumo de IA</div>
+        <div className="is-wide">
+          <Field label="Palabras clave de carpetas" hint="Separadas por coma. Toda carpeta de Claude Code o Codex cuyo nombre contenga una de ellas suma al costo de IA de este cliente.">
+            <Input value={f.keywords} maxLength={600} onChange={(e) => set('keywords', e.target.value)} placeholder={defaultKeywords(f.name).join(', ') || 'Ej. Diana, Danluwi'} />
+          </Field>
+        </div>
+
         <div className="is-wide">
           <Field label="Notas">
             <Textarea value={f.notes} maxLength={4000} onChange={(e) => set('notes', e.target.value)} placeholder="Contexto, acuerdos especiales, cómo le gusta trabajar…" />
@@ -217,6 +282,7 @@ type Form = {
   included_hours: string;
   extra_hour_rate: string;
   estimated_hours: string;
+  keywords: string;
   billing_day: string;
   payment_terms_days: string;
 };
@@ -241,6 +307,7 @@ function formOf(c?: Client): Form {
     included_hours: amountInput(c?.included_hours),
     extra_hour_rate: amountInput(c?.extra_hour_rate),
     estimated_hours: amountInput(c?.estimated_hours),
+    keywords: c ? (c.ai_keywords.length ? c.ai_keywords : defaultKeywords(c.name)).join(', ') : '',
     billing_day: c?.billing_day ? String(c.billing_day) : '',
     payment_terms_days: String(c?.payment_terms_days ?? 15),
   };

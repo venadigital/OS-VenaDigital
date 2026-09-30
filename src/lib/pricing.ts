@@ -1,6 +1,6 @@
 // Token → USD at API prices. Prices are editable rows; cost is computed on read.
 import type { AiAccount, ModelPrice, ModelPriceInput, Project, UsageRow, UsageSession } from '@/data/types';
-import { norm } from './text';
+import { foldName } from './text';
 
 type Rates = Omit<ModelPriceInput, 'model'>;
 
@@ -226,7 +226,8 @@ export function sessionCost(s: UsageSession, prices: ModelPrice[]): { cost: numb
 /** Tiempo project linked to a work folder: explicit link first, then same name. */
 export function projectForFolder(folder: string, projects: Project[]): Project | undefined {
   if (!folder) return undefined;
-  return projects.find((p) => p.folder === folder) ?? projects.find((p) => !p.folder && norm(p.name) === norm(folder));
+  const f = foldName(folder);
+  return projects.find((p) => p.folder === folder) ?? projects.find((p) => !p.folder && foldName(p.name) === f);
 }
 
 export function sessionAccountKey(s: Pick<UsageSession, 'source' | 'account'>, accounts: AiAccount[]): string {
