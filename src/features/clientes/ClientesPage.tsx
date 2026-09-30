@@ -56,7 +56,6 @@ export function ClientesPage() {
             <>
               <span>{count('activo')} {count('activo') === 1 ? 'activo' : 'activos'}</span>
               {count('pausa') > 0 && <><span>·</span><span>{count('pausa')} en pausa</span></>}
-              {attention.length > 0 && <><span>·</span><span className="cl-amber-ink">{attention.length} {attention.length === 1 ? 'necesita' : 'necesitan'} atención</span></>}
             </>
           ) : undefined
         }
@@ -93,7 +92,6 @@ export function ClientesPage() {
             <Card as="section" className="cl-attention cl-lilac">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-[15px] font-medium">Necesitan atención</h2>
-                <span className="cl-cap">Entregas vencidas, facturas vencidas, retainer excedido o sin contacto en 14 días</span>
               </div>
               <div className="cl-attention-grid">
                 {attention.slice(0, 6).map((s) => (
@@ -113,7 +111,6 @@ export function ClientesPage() {
           <section className="flex flex-col gap-3.5" aria-label="Lista de clientes">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-[15px] font-medium">{filter === 'todos' ? 'Todos los clientes' : options.find((o) => o.value === filter)?.label}</h2>
-              <span className="cl-cap">Ordenados por atención · horas del mes en curso</span>
             </div>
             {visible.length === 0 ? (
               <Empty title="Nada por aquí">Ningún cliente coincide con el filtro o la búsqueda.</Empty>

@@ -206,7 +206,6 @@ export function LogTab({ s, now }: { s: ClientSummary; now: Date }) {
             <div className="cl-kv"><span>Promedio entre contactos</span><span className="tnum">{avgGap == null ? '—' : avgGap <= 1 ? '1 día' : `${avgGap} días`}</span></div>
             <div className="cl-kv"><span>Canal preferido</span><span>{client.channel ? CHANNEL_LABEL[client.channel] : '—'}</span></div>
           </div>
-          <p className="cl-cap">Las notas no cuentan como contacto. Tras 14 días sin contacto, el cliente pasa a «Necesitan atención».</p>
         </Card>
       </div>
 

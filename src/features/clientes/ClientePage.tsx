@@ -353,7 +353,6 @@ function Summary({ s, now, from, to, projects, clients, onEdit }: { s: ClientSum
               ))}
             </div>
           )}
-          <p className="cl-cap">Cuenta cada carpeta cuyo nombre contiene {keywords.map((k) => `«${k}»`).join(', ')}, o la carpeta unida a su proyecto de Tiempo.</p>
         </Card>
 
         {client.notes && (

@@ -86,7 +86,6 @@ export function TasksTab({ s, now, clients }: { s: ClientSummary; now: Date; fro
               <Dot color={s.project.color} />
               <span className="truncate text-[17px] font-medium">Proyecto en Tiempo: {s.project.name}</span>
             </span>
-            <span className="cl-cap">Un cliente, un proyecto. Las horas de sus tareas se suman aquí solas.</span>
           </span>
         </div>
         <div className="cl-stat"><span className="cl-cap">Este mes</span><b>{hm(s.monthMinutes)}</b></div>
@@ -112,7 +111,6 @@ export function TasksTab({ s, now, clients }: { s: ClientSummary; now: Date; fro
           onChange={setFilter}
         />
         <div className="flex items-center gap-3">
-          <span className="cl-cap hidden md:inline">Una tarea con fecha es un entregable: sale en el Resumen y en Inicio</span>
           <Button variant="primary" icon={<Plus size={16} />} onClick={() => setDialog({ open: true })}>
             Nueva tarea
           </Button>
