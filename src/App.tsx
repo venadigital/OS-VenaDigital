@@ -10,6 +10,8 @@ import { ConsumoPage } from '@/features/consumo/ConsumoPage';
 import { TablerosPage } from '@/features/tableros/TablerosPage';
 import { NotasPage } from '@/features/notas/NotasPage';
 import { CalendarioPage } from '@/features/calendario/CalendarioPage';
+import { ClientesPage } from '@/features/clientes/ClientesPage';
+import { ClientePage } from '@/features/clientes/ClientePage';
 import { AjustesPage } from '@/features/ajustes/AjustesPage';
 
 // Excalidraw is heavy: load the editor only when a board is opened.
@@ -30,6 +32,8 @@ function AppRoutes() {
         <Route index element={<HomePage />} />
         <Route path="tiempo" element={<TiempoPage />} />
         <Route path="calendario" element={<CalendarioPage />} />
+        <Route path="clientes" element={<ClientesPage />} />
+        <Route path="clientes/:id" element={<ClientePage />} />
         <Route path="consumo" element={<ConsumoPage />} />
         <Route path="tableros" element={<TablerosPage />} />
         <Route path="notas" element={<NotasPage />} />

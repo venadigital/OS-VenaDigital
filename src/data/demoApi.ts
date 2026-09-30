@@ -5,7 +5,10 @@ import type { AccountInput, Api } from './api';
 import type {
   AiAccount,
   Board,
+  Client,
+  ClientLog,
   CollectorStatus,
+  Invoice,
   CollectorToken,
   ModelPrice,
   Note,
@@ -21,6 +24,7 @@ import { SERIES } from '@/lib/palette';
 import { dayKey } from '@/lib/time';
 import { sketchDataUrl } from './demoSketches';
 import { DEMO_CALENDARS, seedCalendar } from './demoCalendar';
+import { seedClients } from './demoClients';
 
 let seq = 0;
 const uid = () => `demo-${Date.now().toString(36)}-${++seq}`;
@@ -39,6 +43,9 @@ type Store = {
   sessions: UsageSession[];
   status: CollectorStatus[];
   tokens: CollectorToken[];
+  clients: Client[];
+  logs: ClientLog[];
+  invoices: Invoice[];
 };
 
 function seed(now: Date): Store {
@@ -102,6 +109,8 @@ function seed(now: Date): Store {
       at = addMinutes(at, min + (k === 2 ? 60 : 10));
     });
   }
+
+  const clientData = seedClients(now, uid, { projects, tasks, entries });
 
   const note = (daysAgo: number, n: Partial<Note> & Pick<Note, 'type'>): Note => ({
     id: uid(),
@@ -188,7 +197,7 @@ function seed(now: Date): Store {
 
   // Sessions per work folder (Claude Code / Codex conversations).
   const sessions: UsageSession[] = [];
-  const folders = ['OS Vena Digital', 'Academia IA', 'Contenidos Vena Digital', 'Podcast'];
+  const folders = ['OS Vena Digital', 'Academia IA', 'Clínica Andina', 'Contenidos Vena Digital', 'Podcast', 'Estudio Mora'];
   const counts = (f: number, base: [number, number, number, number]) => ({
     input: Math.round(base[0] * f),
     output: Math.round(base[1] * f),
@@ -239,6 +248,7 @@ function seed(now: Date): Store {
     sessions,
     status: [{ machine: 'MacBook Pro', last_seen_at: iso(subMinutes(now, 3)), current_account: 'personal@ejemplo.com', version: '1.0.0' }],
     tokens: [{ id: uid(), label: 'MacBook Pro', created_at: created, last_used_at: iso(subMinutes(now, 3)), revoked_at: null }],
+    ...clientData,
   };
 }
 
@@ -283,11 +293,12 @@ export function createDemoApi(): Api {
       s.entries = s.entries.filter((e) => !taskIds.has(e.task_id));
       s.tasks = s.tasks.filter((t) => t.project_id !== id);
       s.projects = s.projects.filter((p) => p.id !== id);
+      for (const c of s.clients) if (c.project_id === id) c.project_id = null;
       return later(undefined);
     },
     listTasks: async () => later(clone(s.tasks)),
     async createTask(input) {
-      const t: Task = { id: uid(), archived: false, created_at: iso(new Date()), ...input };
+      const t: Task = { id: uid(), archived: false, due_date: null, created_at: iso(new Date()), ...input };
       s.tasks.push(t);
       return later(clone(t));
     },
@@ -303,6 +314,10 @@ export function createDemoApi(): Api {
     async listEntries(from, to) {
       const list = s.entries.filter((e) => new Date(e.started_at) < to && (!e.ended_at || new Date(e.ended_at) > from));
       return later(clone(list).sort((a, b) => b.started_at.localeCompare(a.started_at)));
+    },
+    listTaskEntries: async (taskIds) => {
+      const ids = new Set(taskIds);
+      return later(clone(s.entries.filter((e) => ids.has(e.task_id))));
     },
     runningEntry: async () => later(clone(s.entries.find((e) => !e.ended_at) ?? null)),
     async startTimer(taskId) {
@@ -331,6 +346,83 @@ export function createDemoApi(): Api {
     subscribeTimer(onChange) {
       timerListeners.add(onChange);
       return () => timerListeners.delete(onChange);
+    },
+
+    // ---------- Clientes ----------
+    listClients: async () => later(clone(s.clients).sort((a, b) => a.name.localeCompare(b.name, 'es'))),
+    async createClient(input) {
+      const now = iso(new Date());
+      const c: Client = {
+        status: 'activo',
+        project_id: null,
+        contact_name: null,
+        contact_role: null,
+        company: null,
+        email: null,
+        phone: null,
+        channel: null,
+        city: null,
+        since: null,
+        notes: '',
+        agreement: 'retainer',
+        currency: 'COP',
+        fee: 0,
+        included_hours: null,
+        extra_hour_rate: null,
+        billing_day: null,
+        payment_terms_days: 15,
+        ...input,
+        id: uid(),
+        created_at: now,
+        updated_at: now,
+      };
+      if (c.project_id && s.clients.some((x) => x.project_id === c.project_id)) throw new Error('ese proyecto ya pertenece a otro cliente');
+      s.clients.push(c);
+      return later(clone(c));
+    },
+    async updateClient(id, patch) {
+      if (patch.project_id && s.clients.some((x) => x.id !== id && x.project_id === patch.project_id)) throw new Error('ese proyecto ya pertenece a otro cliente');
+      Object.assign(s.clients.find((c) => c.id === id) ?? {}, patch, { updated_at: iso(new Date()) });
+      return later(undefined);
+    },
+    async deleteClient(id) {
+      s.clients = s.clients.filter((c) => c.id !== id);
+      s.logs = s.logs.filter((l) => l.client_id !== id);
+      s.invoices = s.invoices.filter((f) => f.client_id !== id);
+      return later(undefined);
+    },
+    listClientLogs: async () => later(clone(s.logs).sort((a, b) => b.occurred_at.localeCompare(a.occurred_at))),
+    async createClientLog(input) {
+      const now = iso(new Date());
+      const l: ClientLog = { kind: 'nota', body: '', occurred_at: now, ...input, id: uid(), created_at: now };
+      s.logs.push(l);
+      return later(clone(l));
+    },
+    async updateClientLog(id, patch) {
+      Object.assign(s.logs.find((l) => l.id === id) ?? {}, patch);
+      return later(undefined);
+    },
+    async deleteClientLog(id) {
+      s.logs = s.logs.filter((l) => l.id !== id);
+      return later(undefined);
+    },
+    listInvoices: async () =>
+      later(clone(s.invoices).sort((a, b) => b.issued_on.localeCompare(a.issued_on) || b.number.localeCompare(a.number))),
+    async createInvoice(input) {
+      if (s.invoices.some((f) => f.number === input.number)) throw new Error(`ya existe una factura con el número ${input.number}`);
+      const now = iso(new Date());
+      const f: Invoice = { concept: '', issued_on: dayKey(new Date()), due_on: null, amount: 0, currency: 'COP', paid_on: null, ...input, id: uid(), created_at: now, updated_at: now };
+      s.invoices.push(f);
+      return later(clone(f));
+    },
+    async updateInvoice(id, patch) {
+      if (patch.number && s.invoices.some((f) => f.id !== id && f.number === patch.number)) throw new Error(`ya existe una factura con el número ${patch.number}`);
+      Object.assign(s.invoices.find((f) => f.id === id) ?? {}, patch, { updated_at: iso(new Date()) });
+      return later(undefined);
+    },
+    async deleteInvoice(id) {
+      s.invoices = s.invoices.filter((f) => f.id !== id);
+      return later(undefined);
     },
 
     // ---------- Notas ----------

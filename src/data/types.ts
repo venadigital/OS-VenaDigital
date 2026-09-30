@@ -16,6 +16,8 @@ export type Task = {
   project_id: string;
   name: string;
   archived: boolean;
+  /** Delivery date (yyyy-mm-dd): the task is a client deliverable. */
+  due_date?: string | null;
   created_at: string;
 };
 
@@ -213,3 +215,68 @@ export type CalendarEventInput = {
 };
 
 export type SeriesScope = 'this' | 'all';
+
+// ---------- Clientes ----------
+export type ClientStatus = 'activo' | 'pausa' | 'cerrado' | 'prospecto';
+export type Agreement = 'retainer' | 'proyecto' | 'horas';
+export type Currency = 'COP' | 'USD' | 'EUR';
+export type ContactChannel = 'whatsapp' | 'correo' | 'llamada' | 'reunion';
+
+export type Client = {
+  id: string;
+  name: string;
+  status: ClientStatus;
+  /** The one Tiempo project whose tasks belong to this client. */
+  project_id: string | null;
+  contact_name: string | null;
+  contact_role: string | null;
+  company: string | null;
+  email: string | null;
+  phone: string | null;
+  channel: ContactChannel | null;
+  city: string | null;
+  since: string | null;
+  notes: string;
+  agreement: Agreement;
+  currency: Currency;
+  /** Retainer: monthly fee. Proyecto: total value. Horas: hourly rate. */
+  fee: number;
+  included_hours: number | null;
+  extra_hour_rate: number | null;
+  billing_day: number | null;
+  payment_terms_days: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ClientInput = Partial<Omit<Client, 'id' | 'created_at' | 'updated_at'>>;
+
+export type LogKind = 'reunion' | 'llamada' | 'correo' | 'decision' | 'entrega' | 'nota';
+
+export type ClientLog = {
+  id: string;
+  client_id: string;
+  kind: LogKind;
+  title: string;
+  body: string;
+  occurred_at: string;
+  created_at: string;
+};
+
+export type ClientLogInput = Partial<Omit<ClientLog, 'id' | 'created_at'>>;
+
+export type Invoice = {
+  id: string;
+  client_id: string;
+  number: string;
+  concept: string;
+  issued_on: string;
+  due_on: string | null;
+  amount: number;
+  currency: Currency;
+  paid_on: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type InvoiceInput = Partial<Omit<Invoice, 'id' | 'created_at' | 'updated_at'>>;

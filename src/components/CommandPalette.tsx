@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarPlus, CornerDownLeft, Moon, NotebookPen, Play, Search, Settings2, Shapes, Sun } from 'lucide-react';
-import { useBoards, useNotes, useStartTimer } from '@/data/hooks';
+import { CalendarPlus, CornerDownLeft, Moon, NotebookPen, Play, Search, Settings2, Shapes, Sun, UserPlus, Users } from 'lucide-react';
+import { useBoards, useClients, useNotes, useStartTimer } from '@/data/hooks';
 import { useTimeData } from '@/features/tiempo/model';
 import { NAV } from './Shell';
 import { cx, Dialog, Dot } from './ui';
@@ -22,6 +22,7 @@ export function CommandPalette() {
   const navigate = useNavigate();
   const notes = useNotes();
   const boards = useBoards();
+  const clients = useClients();
   const { tasks, projectById } = useTimeData();
   const start = useStartTimer();
   const { theme } = useTheme();
@@ -59,6 +60,7 @@ export function CommandPalette() {
       { id: 'act:task', group: 'Crear', label: 'Nueva tarea', icon: <Play size={16} />, run: go('/tiempo?nueva=1') },
       { id: 'act:event', group: 'Crear', label: 'Nuevo evento', icon: <CalendarPlus size={16} />, run: go('/calendario?nuevo=1') },
       { id: 'act:board', group: 'Crear', label: 'Nuevo tablero', icon: <Shapes size={16} />, run: go('/tableros?nuevo=1') },
+      { id: 'act:client', group: 'Crear', label: 'Nuevo cliente', icon: <UserPlus size={16} />, run: go('/clientes?nuevo=1') },
       theme === 'dark'
         ? { id: 'act:theme', group: 'Apariencia', label: 'Usar modo claro', icon: <Sun size={16} />, run: toggleTheme }
         : { id: 'act:theme', group: 'Apariencia', label: 'Usar modo oscuro', icon: <Moon size={16} />, run: toggleTheme },
@@ -67,6 +69,10 @@ export function CommandPalette() {
     if (!tq) return base;
     const match = (s: string | null | undefined) => (s ? norm(s).includes(tq) : false);
     const found: Item[] = [
+      ...(clients.data ?? [])
+        .filter((c) => match(c.name) || match(c.contact_name) || match(c.company))
+        .slice(0, 6)
+        .map((c) => ({ id: `client:${c.id}`, group: 'Clientes', label: c.name, hint: c.contact_name ?? undefined, icon: <Users size={16} />, run: go(`/clientes/${c.id}`) })),
       ...tasks
         .filter((t) => !t.archived && match(t.name))
         .slice(0, 6)
@@ -97,7 +103,7 @@ export function CommandPalette() {
         })),
     ];
     return [...base.filter((i) => match(i.label)), ...found];
-  }, [q, tasks, boards.data, notes.data, projectById, navigate, start, theme]);
+  }, [q, tasks, boards.data, notes.data, clients.data, projectById, navigate, start, theme]);
 
   if (!open) return null;
 

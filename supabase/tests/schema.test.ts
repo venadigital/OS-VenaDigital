@@ -253,3 +253,56 @@ describe('calendario', () => {
     ).rejects.toThrow(/permission denied/);
   });
 });
+
+describe('clientes', () => {
+  it('links one Tiempo project per client and keeps tasks with their delivery date', async () => {
+    const ids = await as(USER_A, 'authenticated', async () => {
+      const p = await db.query<{ id: string }>(`insert into public.projects (name) values ('Clínica Andina') returning id`);
+      const c = await db.query<{ id: string; fee: string; status: string }>(
+        `insert into public.clients (name, project_id, fee, included_hours) values ('Clínica Andina', $1, 4200000, 30) returning id, fee, status`,
+        [p.rows[0].id],
+      );
+      expect(c.rows[0]).toMatchObject({ fee: '4200000.00', status: 'activo' });
+      const t = await db.query<{ due_date: string }>(`insert into public.tasks (project_id, name, due_date) values ($1, 'Landing', '2026-10-02') returning due_date::text`, [p.rows[0].id]);
+      expect(t.rows[0].due_date).toBe('2026-10-02');
+      await expect(db.query(`insert into public.clients (name, project_id) values ('Otro', $1)`, [p.rows[0].id])).rejects.toThrow(/duplicate key/);
+      return { project: p.rows[0].id, client: c.rows[0].id };
+    });
+
+    // Deleting the project leaves the client without one.
+    await as(USER_A, 'authenticated', () => db.query(`delete from public.projects where id = $1`, [ids.project]));
+    const after = await as(USER_A, 'authenticated', () => db.query<{ project_id: string | null }>(`select project_id from public.clients where id = $1`, [ids.client]));
+    expect(after.rows[0].project_id).toBeNull();
+  });
+
+  it('keeps logs and invoices private and refuses links to rows of another user', async () => {
+    const a = await as(USER_A, 'authenticated', async () => {
+      const c = await db.query<{ id: string }>(`insert into public.clients (name) values ('Taller Norte') returning id`);
+      await db.query(`insert into public.client_logs (client_id, kind, title) values ($1, 'reunion', 'Kickoff')`, [c.rows[0].id]);
+      await db.query(`insert into public.client_invoices (client_id, number, amount, issued_on, due_on) values ($1, '2026-001', 100, '2026-09-01', '2026-09-16')`, [c.rows[0].id]);
+      await expect(db.query(`insert into public.client_invoices (client_id, number) values ($1, '2026-001')`, [c.rows[0].id])).rejects.toThrow(/duplicate key/);
+      await expect(
+        db.query(`insert into public.client_invoices (client_id, number, issued_on, due_on) values ($1, '2026-002', '2026-09-10', '2026-09-01')`, [c.rows[0].id]),
+      ).rejects.toThrow(/client_invoices_dates/);
+      const p = await db.query<{ id: string }>(`insert into public.projects (name) values ('Privado') returning id`);
+      return { client: c.rows[0].id, project: p.rows[0].id };
+    });
+
+    await as(USER_B, 'authenticated', async () => {
+      for (const table of ['clients', 'client_logs', 'client_invoices']) {
+        expect((await db.query(`select * from public.${table}`)).rows).toHaveLength(0);
+      }
+      // Another user's client or project can't be attached to B's rows.
+      await expect(db.query(`insert into public.client_logs (client_id, title) values ($1, 'intruso')`, [a.client])).rejects.toThrow();
+      await expect(db.query(`insert into public.client_invoices (client_id, number) values ($1, 'X-1')`, [a.client])).rejects.toThrow();
+      await expect(db.query(`insert into public.clients (name, project_id) values ('Robo', $1)`, [a.project])).rejects.toThrow();
+      // B can reuse A's invoice number: numbering is per user.
+      const mine = await db.query<{ id: string }>(`insert into public.clients (name) values ('Mío') returning id`);
+      await db.query(`insert into public.client_invoices (client_id, number) values ($1, '2026-001')`, [mine.rows[0].id]);
+    });
+
+    await as(USER_A, 'authenticated', () => db.query(`delete from public.clients where id = $1`, [a.client]));
+    const left = await db.query(`select 1 from public.client_logs where client_id = $1 union all select 1 from public.client_invoices where client_id = $1`, [a.client]);
+    expect(left.rows).toHaveLength(0);
+  });
+});

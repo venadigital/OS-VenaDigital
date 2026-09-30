@@ -5,7 +5,10 @@ import type {
   AiAccount,
   Board,
   BoardSummary,
+  Client,
+  ClientLog,
   CollectorStatus,
+  Invoice,
   CollectorToken,
   LinkPreview,
   ModelPrice,
@@ -23,6 +26,12 @@ function check<T>(res: { data: T | null; error: { message: string } | null }): T
 }
 
 const num = (v: unknown) => (typeof v === 'number' ? v : Number(v ?? 0));
+const numOrNull = (v: unknown) => (v == null ? null : num(v));
+
+// Postgres numeric comes back as a string.
+const toClient = (r: Record<string, unknown>): Client =>
+  ({ ...r, fee: num(r.fee), included_hours: numOrNull(r.included_hours), extra_hour_rate: numOrNull(r.extra_hour_rate) }) as Client;
+const toInvoice = (r: Record<string, unknown>): Invoice => ({ ...r, amount: num(r.amount) }) as Invoice;
 
 export function createSupabaseApi(sb: SupabaseClient): Api {
   const userId = async () => {
@@ -85,6 +94,16 @@ export function createSupabaseApi(sb: SupabaseClient): Api {
         .limit(5000);
       return check(res) as TimeEntry[];
     },
+    async listTaskEntries(taskIds) {
+      if (!taskIds.length) return [];
+      const res = await sb
+        .from('time_entries')
+        .select('id, task_id, started_at, ended_at')
+        .in('task_id', taskIds)
+        .order('started_at', { ascending: false })
+        .limit(20000);
+      return check(res) as TimeEntry[];
+    },
     async runningEntry() {
       const res = await sb.from('time_entries').select('id, task_id, started_at, ended_at').is('ended_at', null).maybeSingle();
       return check(res) as TimeEntry | null;
@@ -109,6 +128,49 @@ export function createSupabaseApi(sb: SupabaseClient): Api {
       return () => {
         void sb.removeChannel(channel);
       };
+    },
+
+    // ---------- Clientes ----------
+    async listClients() {
+      return (check(await sb.from('clients').select('*').order('name')) as Record<string, unknown>[]).map(toClient);
+    },
+    async createClient(input) {
+      return toClient(check(await sb.from('clients').insert(input).select().single()) as Record<string, unknown>);
+    },
+    async updateClient(id, patch) {
+      check(await sb.from('clients').update(patch).eq('id', id));
+    },
+    async deleteClient(id) {
+      check(await sb.from('clients').delete().eq('id', id));
+    },
+    async listClientLogs() {
+      return check(await sb.from('client_logs').select('*').order('occurred_at', { ascending: false }).limit(5000)) as ClientLog[];
+    },
+    async createClientLog(input) {
+      return check(await sb.from('client_logs').insert(input).select().single()) as ClientLog;
+    },
+    async updateClientLog(id, patch) {
+      check(await sb.from('client_logs').update(patch).eq('id', id));
+    },
+    async deleteClientLog(id) {
+      check(await sb.from('client_logs').delete().eq('id', id));
+    },
+    async listInvoices() {
+      const res = await sb.from('client_invoices').select('*').order('issued_on', { ascending: false }).order('number', { ascending: false }).limit(5000);
+      return (check(res) as Record<string, unknown>[]).map(toInvoice);
+    },
+    async createInvoice(input) {
+      const res = await sb.from('client_invoices').insert(input).select().single();
+      if (res.error?.code === '23505') throw new Error(`ya existe una factura con el número ${input.number}`);
+      return toInvoice(check(res) as Record<string, unknown>);
+    },
+    async updateInvoice(id, patch) {
+      const res = await sb.from('client_invoices').update(patch).eq('id', id);
+      if (res.error?.code === '23505') throw new Error(`ya existe una factura con el número ${patch.number}`);
+      check(res);
+    },
+    async deleteInvoice(id) {
+      check(await sb.from('client_invoices').delete().eq('id', id));
     },
 
     // ---------- Notas ----------

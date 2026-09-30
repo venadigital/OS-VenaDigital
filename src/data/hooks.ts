@@ -22,6 +22,10 @@ export const qk = {
   accounts: ['accounts'] as const,
   collectorStatus: ['collector-status'] as const,
   collectorTokens: ['collector-tokens'] as const,
+  clients: ['clients'] as const,
+  clientLogs: ['client-logs'] as const,
+  invoices: ['invoices'] as const,
+  taskEntries: (ids: string[]) => ['entries', 'tasks', ...ids] as const,
   calendarStatus: ['calendar', 'status'] as const,
   calendars: ['calendar', 'calendars'] as const,
   calendarEvents: (from: Date, to: Date, ids: string[]) => ['calendar', 'events', from.getTime(), to.getTime(), ...ids] as const,
@@ -54,6 +58,23 @@ export const useEntries = (from: Date, to: Date) => {
 export const useRunning = () => {
   const api = useApi();
   return useQuery({ queryKey: qk.running, queryFn: () => api.runningEntry(), refetchInterval: 60_000 });
+};
+export const useClients = () => {
+  const api = useApi();
+  return useQuery({ queryKey: qk.clients, queryFn: () => api.listClients() });
+};
+export const useClientLogs = () => {
+  const api = useApi();
+  return useQuery({ queryKey: qk.clientLogs, queryFn: () => api.listClientLogs() });
+};
+export const useInvoices = () => {
+  const api = useApi();
+  return useQuery({ queryKey: qk.invoices, queryFn: () => api.listInvoices() });
+};
+/** All-time entries of these tasks (for per-task totals). */
+export const useTaskEntries = (taskIds: string[]) => {
+  const api = useApi();
+  return useQuery({ queryKey: qk.taskEntries(taskIds), queryFn: () => api.listTaskEntries(taskIds), enabled: taskIds.length > 0 });
 };
 export const useNotes = () => {
   const api = useApi();

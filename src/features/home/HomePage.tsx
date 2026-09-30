@@ -13,6 +13,7 @@ import { NoteCard } from '@/features/notas/NoteCard';
 import { totalsByProject, useRunningTimer, useTimeData } from '@/features/tiempo/model';
 import { useConsumo } from '@/features/consumo/model';
 import { TodayAgendaCard } from '@/features/calendario/TodayAgendaCard';
+import { ClientsTodayCard } from '@/features/clientes/ClientsTodayCard';
 import type { Note, NoteInput } from '@/data/types';
 
 export function HomePage() {
@@ -35,6 +36,7 @@ export function HomePage() {
         <TodayAgendaCard now={now} />
         <PendingCard now={now} />
       </div>
+      <ClientsTodayCard />
       <section className="home-summary" aria-label="Resumen de actividad">
         <h2 className="section-title">Tu actividad, de un vistazo</h2>
         <div className="home-summary-grid"><TodayCard now={now} /><AiCard now={now} /></div>

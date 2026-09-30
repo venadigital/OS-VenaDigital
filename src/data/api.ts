@@ -2,6 +2,12 @@
 import type {
   AiAccount,
   Board,
+  Client,
+  ClientInput,
+  ClientLog,
+  ClientLogInput,
+  Invoice,
+  InvoiceInput,
   BoardScene,
   BoardSummary,
   CollectorStatus,
@@ -35,8 +41,8 @@ export interface Api {
   updateProject(id: string, patch: Partial<Pick<Project, 'name' | 'color' | 'archived' | 'sort' | 'folder'>>): Promise<void>;
   deleteProject(id: string): Promise<void>;
   listTasks(): Promise<Task[]>;
-  createTask(input: { project_id: string; name: string }): Promise<Task>;
-  updateTask(id: string, patch: Partial<Pick<Task, 'name' | 'archived' | 'project_id'>>): Promise<void>;
+  createTask(input: { project_id: string; name: string; due_date?: string | null }): Promise<Task>;
+  updateTask(id: string, patch: Partial<Pick<Task, 'name' | 'archived' | 'project_id' | 'due_date'>>): Promise<void>;
   deleteTask(id: string): Promise<void>;
   /** Entries overlapping [from, to). */
   listEntries(from: Date, to: Date): Promise<TimeEntry[]>;
@@ -45,8 +51,26 @@ export interface Api {
   stopTimer(): Promise<void>;
   updateEntry(id: string, patch: { started_at?: string; ended_at?: string | null; task_id?: string }): Promise<void>;
   deleteEntry(id: string): Promise<void>;
+  /** Every entry of these tasks (all time), for per-task totals. */
+  listTaskEntries(taskIds: string[]): Promise<TimeEntry[]>;
   /** Live updates for the timer across devices; returns an unsubscribe function. */
   subscribeTimer(onChange: () => void): () => void;
+
+  // Clientes
+  listClients(): Promise<Client[]>;
+  createClient(input: ClientInput & { name: string }): Promise<Client>;
+  updateClient(id: string, patch: ClientInput): Promise<void>;
+  deleteClient(id: string): Promise<void>;
+  /** Interactions of every client, newest first. */
+  listClientLogs(): Promise<ClientLog[]>;
+  createClientLog(input: ClientLogInput & { client_id: string; title: string }): Promise<ClientLog>;
+  updateClientLog(id: string, patch: ClientLogInput): Promise<void>;
+  deleteClientLog(id: string): Promise<void>;
+  /** Invoices of every client, newest first. */
+  listInvoices(): Promise<Invoice[]>;
+  createInvoice(input: InvoiceInput & { client_id: string; number: string }): Promise<Invoice>;
+  updateInvoice(id: string, patch: InvoiceInput): Promise<void>;
+  deleteInvoice(id: string): Promise<void>;
 
   // Notas
   listNotes(): Promise<Note[]>;
