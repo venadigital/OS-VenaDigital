@@ -1,7 +1,8 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApi } from '@/data/ApiContext';
 import { qk } from '@/data/hooks';
-import type { NoteInput, NoteType } from '@/data/types';
+import type { LinkPreview, NoteInput, NoteType } from '@/data/types';
 import { useToast } from '@/components/Toast';
 import { domainOf } from '@/lib/format';
 
@@ -18,9 +19,39 @@ export const typeMeta = (t: NoteType) => NOTE_TYPES.find((x) => x.value === t) ?
 const URL_RE = /^https?:\/\/\S+$/i;
 export const isUrl = (s: string) => URL_RE.test(s.trim());
 
+/** A URL anywhere in the text (the first one), and the text around it as the comment. */
+export function splitLink(text: string): { url: string; comment: string } | null {
+  const m = /https?:\/\/[^\s]+/i.exec(text);
+  if (!m) return null;
+  const url = m[0].replace(/[.,;:)\]]+$/, '');
+  const comment = (text.slice(0, m.index) + ' ' + text.slice(m.index + m[0].length)).replace(/\s+/g, ' ').trim();
+  return { url, comment };
+}
+
+/** The value once it has stopped changing for `ms`. */
+export function useSettled<T>(value: T, ms = 400): T {
+  const [settled, setSettled] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setSettled(value), ms);
+    return () => clearTimeout(t);
+  }, [value, ms]);
+  return settled;
+}
+
+/** Site/title/image of a URL, kept for the session so saving doesn't fetch it twice. */
+export function useLinkPreview(url: string | null) {
+  const api = useApi();
+  return useQuery({
+    queryKey: ['link-preview', url],
+    queryFn: () => api.linkPreview(url!).catch(() => ({}) as LinkPreview),
+    enabled: Boolean(url),
+    staleTime: Infinity,
+  });
+}
+
 /** Fills link fields for a URL (title/description/image when the server can fetch them). */
-export async function linkFields(api: ReturnType<typeof useApi>, url: string): Promise<NoteInput> {
-  const preview = await api.linkPreview(url).catch(() => ({}) as Awaited<ReturnType<typeof api.linkPreview>>);
+export async function linkFields(api: ReturnType<typeof useApi>, url: string, known?: LinkPreview): Promise<NoteInput> {
+  const preview = known ?? (await api.linkPreview(url).catch(() => ({}) as LinkPreview));
   return {
     url,
     link_site: preview.site ?? domainOf(url),
@@ -30,19 +61,29 @@ export async function linkFields(api: ReturnType<typeof useApi>, url: string): P
   };
 }
 
-/** Saves free text (or a pasted URL) as a note. */
+export type Capture = {
+  text: string;
+  type: NoteType;
+  image?: File | null;
+  /** The URL found in the text, when it should become a link note. */
+  link?: { url: string; preview?: LinkPreview } | null;
+};
+
+/** Saves what the capture bar holds as a note. */
 export function useQuickCapture() {
   const api = useApi();
   const qc = useQueryClient();
   const toast = useToast();
-  return async (text: string, type?: NoteType) => {
+  return async ({ text, type, image, link }: Capture) => {
     const value = text.trim();
-    if (!value) return false;
+    if (!value && !image) return false;
     try {
-      if (isUrl(value)) {
-        await api.createNote({ type: 'link', body: '', ...(await linkFields(api, value)) });
+      if (link) {
+        const body = splitLink(value)?.comment ?? '';
+        await api.createNote({ type: 'link', body, ...(await linkFields(api, link.url, link.preview)) });
       } else {
-        await api.createNote({ type: type && type !== 'link' ? type : 'nota', body: value });
+        const image_path = image ? await api.uploadNoteImage(image) : undefined;
+        await api.createNote({ type: type !== 'link' ? type : 'nota', body: value, ...(image_path ? { image_path } : {}) });
       }
       await qc.invalidateQueries({ queryKey: qk.notes });
       toast('Guardado en Notas');

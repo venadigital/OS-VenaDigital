@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { CornerDownLeft, ImagePlus, NotebookPen, Pin, Plus, Search, X } from 'lucide-react';
+import { CornerDownLeft, Globe, ImagePlus, NotebookPen, Pin, Plus, Search, X } from 'lucide-react';
 import { Page, PageHeader } from '@/components/Shell';
 import { Button, cx, Dialog, Dot, Empty, Field, Input, Skeleton, Textarea } from '@/components/ui';
 import { norm } from '@/lib/text';
@@ -9,7 +9,8 @@ import { qk, useApiMutation, useNoteImages, useNotes } from '@/data/hooks';
 import type { Note, NoteInput, NoteType } from '@/data/types';
 import { useToast } from '@/components/Toast';
 import { NoteCard } from './NoteCard';
-import { isUrl, linkFields, NOTE_TYPES, typeMeta, useQuickCapture } from './model';
+import { isUrl, linkFields, NOTE_TYPES, splitLink, typeMeta, useLinkPreview, useQuickCapture, useSettled } from './model';
+import { domainOf } from '@/lib/format';
 
 type Filter = 'all' | NoteType;
 
@@ -18,13 +19,13 @@ export function NotasPage() {
   const notesQ = useNotes();
   const [filter, setFilter] = useState<Filter>(() => new URLSearchParams(window.location.search).get('pendientes') ? 'hacer' : 'all');
   const [query, setQuery] = useState('');
-  const [editing, setEditing] = useState<Note | 'new' | null>(null);
+  const [editing, setEditing] = useState<Note | NoteDraft | null>(null);
   const [params, setParams] = useSearchParams();
   const notes = notesQ.data ?? [];
 
   useEffect(() => {
     if (params.get('nueva')) {
-      setEditing('new');
+      setEditing({ draft: true, type: filter === 'all' ? 'nota' : filter, body: '' });
       setParams({}, { replace: true });
     }
     const id = params.get('nota');
@@ -33,7 +34,7 @@ export function NotasPage() {
       if (n) setEditing(n);
       setParams({}, { replace: true });
     }
-  }, [params, notes, setParams]);
+  }, [params, notes, setParams, filter]);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { all: notes.length };
@@ -91,7 +92,7 @@ export function NotasPage() {
       />
 
       <div className="flex flex-col gap-4">
-        <CaptureBar defaultType={filter === 'all' ? 'nota' : filter} />
+        <CaptureBar defaultType={filter === 'all' ? 'nota' : filter} onMore={setEditing} />
         <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
           <Chip on={filter === 'all'} onClick={() => setFilter('all')} label="Todas" count={counts.all} />
           {NOTE_TYPES.map((t) => (
@@ -144,7 +145,7 @@ export function NotasPage() {
         </>
       )}
 
-      <NoteDialog note={editing} defaultType={filter === 'all' ? 'nota' : filter} onClose={() => setEditing(null)} imageUrl={editing && editing !== 'new' && editing.image_path ? images[editing.image_path] : undefined} />
+      <NoteDialog note={editing} onClose={() => setEditing(null)} imageUrl={editing && !isDraft(editing) && editing.image_path ? images[editing.image_path] : undefined} />
     </Page>
   );
 }
@@ -167,19 +168,56 @@ function Chip({ on, onClick, label, count, dot }: { on: boolean; onClick: () => 
   );
 }
 
-export function CaptureBar({ defaultType = 'nota', placeholder }: { defaultType?: NoteType; placeholder?: string }) {
+/** What the capture bar hands to the full form ("Más opciones"). */
+export type NoteDraft = { draft: true; type: NoteType; body: string; url?: string; image?: File | null };
+
+const IMAGE_TYPES = 'image/png,image/jpeg,image/webp,image/gif';
+
+/** The chosen file when it is an image the app accepts; otherwise explains why not. */
+function acceptImage(f: File | undefined, toast: ReturnType<typeof useToast>): File | null {
+  if (!f) return null;
+  if (f.size > 5 * 1024 * 1024) {
+    toast('La imagen pesa más de 5 MB', 'error');
+    return null;
+  }
+  return f;
+}
+
+export function CaptureBar({ defaultType = 'nota', placeholder, onMore }: { defaultType?: NoteType; placeholder?: string; onMore?: (draft: NoteDraft) => void }) {
+  const toast = useToast();
   const [text, setText] = useState('');
   const [type, setType] = useState<NoteType>(defaultType);
+  const [image, setImage] = useState<File | null>(null);
+  // Set when the × of the link card is pressed: the URL stays as plain text.
+  const [asText, setAsText] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const capture = useQuickCapture();
   useEffect(() => setType(defaultType), [defaultType]);
-  const link = isUrl(text);
+
+  // A link note carries no image, so a URL only counts while nothing is attached.
+  const found = image ? null : splitLink(text);
+  const url = found && found.url !== asText ? found.url : null;
+  const preview = useLinkPreview(useSettled(url));
+  const thumb = useMemo(() => (image ? URL.createObjectURL(image) : null), [image]);
+  useEffect(() => () => {
+    if (thumb) URL.revokeObjectURL(thumb);
+  }, [thumb]);
+
+  const reset = () => {
+    setText('');
+    setImage(null);
+    setAsText(null);
+    if (fileRef.current) fileRef.current.value = '';
+  };
+  const filled = Boolean(text.trim() || image);
 
   const submit = async () => {
-    if (!text.trim() || busy) return;
+    if (!filled || busy) return;
     setBusy(true);
     try {
-      if (await capture(text, type)) setText('');
+      const link = url ? { url, preview: preview.data && (preview.data.title || preview.data.site) ? preview.data : undefined } : null;
+      if (await capture({ text, type, image, link })) reset();
     } finally { setBusy(false); }
   };
 
@@ -189,56 +227,121 @@ export function CaptureBar({ defaultType = 'nota', placeholder }: { defaultType?
         e.preventDefault();
         void submit();
       }}
-      className="capture-bar flex h-12 items-center gap-3 rounded-xl border border-line bg-plane pr-2 pl-4 focus-within:border-line-2 focus-within:bg-surface"
+      className="capture-bar flex flex-col rounded-xl border border-line bg-plane focus-within:border-line-2 focus-within:bg-surface"
     >
-      <span className="capture-icon"><Plus size={19} /></span>
-      <input
-        value={text}
-        disabled={busy}
-        onChange={(e) => setText(e.target.value)}
-        placeholder={placeholder ?? 'Escribe algo, pega un link o anota un pendiente…'}
-        className="min-w-0 flex-1 bg-transparent text-[14.5px] text-ink outline-none placeholder:text-ink-4"
-        aria-label="Captura rápida"
-      />
-      <div className="capture-type flex items-center gap-2">
-        {link ? (
-          <span className="flex items-center gap-1.5 text-[12.5px] text-ink-3">
-            <Dot color={typeMeta('link').dot} size={7} /> Link
+      <div className="capture-row flex items-center gap-3">
+        <span className="capture-icon"><Plus size={19} /></span>
+        <input
+          value={text}
+          disabled={busy}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={image ? 'Escribe algo (opcional)…' : (placeholder ?? 'Escribe algo, pega un link o anota un pendiente…')}
+          className="min-w-0 flex-1 bg-transparent text-[14.5px] text-ink outline-none placeholder:text-ink-4"
+          aria-label="Captura rápida"
+        />
+        <div className="capture-type flex items-center gap-2">
+          {url ? (
+            <span className="flex items-center gap-1.5 text-[12.5px] text-ink-3">
+              <Dot color={typeMeta('link').dot} size={7} /> Link
+            </span>
+          ) : (
+            <>
+              <input ref={fileRef} type="file" accept={IMAGE_TYPES} className="hidden" onChange={(e) => setImage(acceptImage(e.target.files?.[0], toast) ?? image)} />
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                aria-label={image ? 'Cambiar imagen' : 'Agregar imagen'}
+                title={image ? 'Cambiar imagen' : 'Agregar imagen'}
+                className={cx('capture-image flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-ink-3 hover:bg-fill hover:text-ink', image && 'is-set')}
+              >
+                <ImagePlus size={17} />
+              </button>
+              <select
+                value={type}
+                onChange={(e) => setType(e.target.value as NoteType)}
+                className="h-7 rounded-lg border border-line-2 bg-surface px-2 text-[12.5px] font-medium text-ink-2 outline-none"
+                aria-label="Tipo de nota"
+              >
+                {NOTE_TYPES.filter((t) => t.value !== 'link').map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
+        </div>
+        <button
+          type="submit"
+          disabled={!filled || busy}
+          className="capture-submit flex h-8 items-center gap-1.5 rounded-lg px-2 text-[12px] text-ink-3 disabled:opacity-50"
+          aria-label="Guardar"
+        >
+          <span className="flex h-5 w-6 items-center justify-center rounded-[5px] border border-line-2 bg-surface">
+            <CornerDownLeft size={12} className="text-ink-2" />
           </span>
-        ) : (
-          <select
-            value={type}
-            onChange={(e) => setType(e.target.value as NoteType)}
-            className="h-7 rounded-lg border border-line-2 bg-surface px-2 text-[12.5px] font-medium text-ink-2 outline-none"
-            aria-label="Tipo de nota"
-          >
-            {NOTE_TYPES.filter((t) => t.value !== 'link').map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-        )}
+          <span>{busy ? 'Guardando…' : 'Guardar'}</span>
+        </button>
       </div>
-      <button
-        type="submit"
-        disabled={!text.trim() || busy}
-        className="capture-submit flex h-8 items-center gap-1.5 rounded-lg px-2 text-[12px] text-ink-3 disabled:opacity-50"
-        aria-label="Guardar"
-      >
-        <span className="flex h-5 w-6 items-center justify-center rounded-[5px] border border-line-2 bg-surface">
-          <CornerDownLeft size={12} className="text-ink-2" />
-        </span>
-        <span>{busy ? 'Guardando…' : 'Guardar'}</span>
-      </button>
+      {(url || image || (onMore && filled)) && (
+        <div className="capture-extra flex items-start gap-3">
+          {url && (
+            <div className="flex min-w-0 max-w-[420px] items-center gap-2.5 rounded-[10px] border border-line bg-surface py-1.5 pr-1.5 pl-2">
+              {preview.data?.image ? (
+                <img src={preview.data.image} alt="" referrerPolicy="no-referrer" className="h-8 w-8 shrink-0 rounded-[7px] object-cover" />
+              ) : (
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[7px] bg-fill text-ink-3"><Globe size={15} /></span>
+              )}
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate text-[13px] font-medium text-ink">{preview.data?.title || domainOf(url)}</span>
+                <span className="truncate text-xs text-ink-3">{preview.data?.title ? (preview.data.site || domainOf(url)) : url}</span>
+              </span>
+              <button type="button" onClick={() => setAsText(url)} aria-label="Guardar como texto" title="Guardar como texto" className="ml-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-ink-3 hover:bg-fill hover:text-ink">
+                <X size={13} />
+              </button>
+            </div>
+          )}
+          {image && thumb && (
+            <div className="relative shrink-0">
+              <img src={thumb} alt="" className="h-16 w-16 rounded-[10px] object-cover" />
+              <button
+                type="button"
+                onClick={() => {
+                  setImage(null);
+                  if (fileRef.current) fileRef.current.value = '';
+                }}
+                aria-label="Quitar imagen"
+                className="absolute -top-1.5 -right-1.5 flex h-[22px] w-[22px] items-center justify-center rounded-full border border-line bg-surface text-ink-2 shadow-sm"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          )}
+          {image && <span className="truncate pt-1 text-xs text-ink-3">{image.name}</span>}
+          {onMore && filled && (
+            <button
+              type="button"
+              onClick={() => {
+                onMore({ draft: true, type: url ? 'link' : type, body: url ? (found?.comment ?? '') : text, url: url ?? undefined, image });
+                reset();
+              }}
+              className="capture-more ml-auto shrink-0 self-center text-xs text-ink-3 underline-offset-4 hover:text-ink hover:underline"
+            >
+              Más opciones
+            </button>
+          )}
+        </div>
+      )}
     </form>
   );
 }
 
-function NoteDialog({ note, onClose, imageUrl, defaultType }: { note: Note | 'new' | null; onClose: () => void; imageUrl?: string; defaultType: NoteType }) {
+const isDraft = (n: Note | NoteDraft | null): n is NoteDraft => Boolean(n && 'draft' in n);
+
+function NoteDialog({ note, onClose, imageUrl }: { note: Note | NoteDraft | null; onClose: () => void; imageUrl?: string }) {
   const api = useApi();
   const toast = useToast();
-  const isNew = note === 'new';
+  const isNew = isDraft(note);
   const [type, setType] = useState<NoteType>('nota');
   const [body, setBody] = useState('');
   const [url, setUrl] = useState('');
@@ -251,16 +354,16 @@ function NoteDialog({ note, onClose, imageUrl, defaultType }: { note: Note | 'ne
 
   useEffect(() => {
     if (!note) return;
-    const n = note === 'new' ? null : note;
-    setType(n?.type ?? defaultType);
-    setBody(n?.body ?? '');
-    setUrl(n?.url ?? '');
+    const n = isDraft(note) ? null : note;
+    setType(note.type);
+    setBody(note.body);
+    setUrl(note.url ?? '');
     setLinkTitle(n?.link_title ?? '');
     setDue(n?.due_date ?? '');
     setPinned(n?.pinned ?? false);
-    setFile(null);
+    setFile(isDraft(note) ? (note.image ?? null) : null);
     setRemoveImage(false);
-  }, [note, defaultType]);
+  }, [note]);
 
   const save = useApiMutation(
     async (api2, _: void) => {
@@ -268,7 +371,7 @@ function NoteDialog({ note, onClose, imageUrl, defaultType }: { note: Note | 'ne
       if (type === 'link') {
         const clean = url.trim();
         if (!isUrl(clean)) throw new Error('El link debe empezar por http:// o https://');
-        const existing = note !== 'new' && note ? note : null;
+        const existing = note && !isDraft(note) ? note : null;
         const fields = existing && existing.url === clean ? {} : await linkFields(api2, clean);
         patch = { ...patch, ...fields, url: clean, link_title: linkTitle.trim() || (fields.link_title ?? existing?.link_title ?? null) };
       } else {
@@ -276,7 +379,7 @@ function NoteDialog({ note, onClose, imageUrl, defaultType }: { note: Note | 'ne
       }
       if (file) patch.image_path = await api2.uploadNoteImage(file);
       else if (removeImage) patch.image_path = null;
-      if (note === 'new') await api2.createNote(patch);
+      if (isDraft(note)) await api2.createNote(patch);
       else if (note) await api2.updateNote(note.id, patch);
     },
     [qk.notes],
@@ -369,15 +472,11 @@ function NoteDialog({ note, onClose, imageUrl, defaultType }: { note: Note | 'ne
           <input
             ref={fileRef}
             type="file"
-            accept="image/png,image/jpeg,image/webp,image/gif"
+            accept={IMAGE_TYPES}
             className="hidden"
             onChange={(e) => {
-              const f = e.target.files?.[0];
+              const f = acceptImage(e.target.files?.[0], toast);
               if (!f) return;
-              if (f.size > 5 * 1024 * 1024) {
-                toast('La imagen pesa más de 5 MB', 'error');
-                return;
-              }
               setFile(f);
               setRemoveImage(false);
             }}
