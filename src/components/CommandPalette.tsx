@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CalendarPlus, CornerDownLeft, Moon, NotebookPen, Play, Search, Settings2, Shapes, Sun, UserPlus, Users } from 'lucide-react';
 import { useBoards, useClients, useNotes, useStartTimer } from '@/data/hooks';
 import { useTimeData } from '@/features/tiempo/model';
-import { NAV } from './Shell';
+import { useNav } from './Shell';
 import { cx, Dialog, Dot } from './ui';
 import { norm } from '@/lib/text';
 import { toggleTheme, useTheme } from '@/lib/theme';
@@ -26,6 +26,7 @@ export function CommandPalette() {
   const { tasks, projectById } = useTimeData();
   const start = useStartTimer();
   const { theme } = useTheme();
+  const nav = useNav();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -54,7 +55,7 @@ export function CommandPalette() {
   const items = useMemo<Item[]>(() => {
     const go = (to: string) => () => navigate(to);
     const base: Item[] = [
-      ...NAV.map((n) => ({ id: `nav:${n.to}`, group: 'Ir a', label: n.label, icon: <n.icon size={16} />, run: go(n.to) })),
+      ...nav.map((n) => ({ id: `nav:${n.to}`, group: 'Ir a', label: n.label, icon: <n.icon size={16} />, run: go(n.to) })),
       { id: 'nav:ajustes', group: 'Ir a', label: 'Ajustes', icon: <Settings2 size={16} />, run: go('/ajustes') },
       { id: 'act:note', group: 'Crear', label: 'Nueva nota', icon: <NotebookPen size={16} />, run: go('/notas?nueva=1') },
       { id: 'act:task', group: 'Crear', label: 'Nueva tarea', icon: <Play size={16} />, run: go('/tiempo?nueva=1') },
@@ -103,7 +104,7 @@ export function CommandPalette() {
         })),
     ];
     return [...base.filter((i) => match(i.label)), ...found];
-  }, [q, tasks, boards.data, notes.data, clients.data, projectById, navigate, start, theme]);
+  }, [q, tasks, boards.data, notes.data, clients.data, projectById, navigate, start, theme, nav]);
 
   if (!open) return null;
 

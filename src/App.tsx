@@ -13,6 +13,7 @@ import { CalendarioPage } from '@/features/calendario/CalendarioPage';
 import { ClientesPage } from '@/features/clientes/ClientesPage';
 import { ClientePage } from '@/features/clientes/ClientePage';
 import { AjustesPage } from '@/features/ajustes/AjustesPage';
+import { DescargarPage } from '@/features/descargar/DescargarPage';
 
 // Excalidraw is heavy: load the editor only when a board is opened.
 const BoardEditor = lazy(() => import('@/features/tableros/BoardEditor'));
@@ -37,6 +38,7 @@ function AppRoutes() {
         <Route path="consumo" element={<ConsumoPage />} />
         <Route path="tableros" element={<TablerosPage />} />
         <Route path="notas" element={<NotasPage />} />
+        <Route path="descargar" element={<DescargarPage />} />
         <Route path="ajustes" element={<AjustesPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

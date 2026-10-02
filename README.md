@@ -10,6 +10,7 @@ Sistema operativo personal de trabajo de Vena Digital. Funciona en el navegador 
 | **Consumo IA** | Tokens de Claude Code y Codex convertidos a USD a precio de API, por día, cuenta y modelo. Compara con lo que pagas en suscripciones. Precios editables. |
 | **Tableros** | Pizarras con [Excalidraw](https://github.com/excalidraw/excalidraw) (MIT). Varios tableros, guardado automático y exportación a PNG. |
 | **Notas** | Muro de post-its: por hacer, por investigar, links (con vista previa), notas e inspiración (con imágenes). |
+| **Descargar** | Pega un enlace de YouTube, Instagram, TikTok o X, elige video, audio o imágenes y la calidad, y baja el archivo. Solo en el Mac: depende de un servicio local y no aparece en el celular. |
 
 La propuesta visual está en [`design/`](design/): los mockups se generan con `node design/build/index.mjs`.
 
@@ -101,13 +102,25 @@ La app no habla directo con Google: lo hace la Edge Function [`google-calendar`]
 
 Permisos que se piden: ver y editar eventos (`calendar.events`) y leer la lista de calendarios (`calendar.calendarlist.readonly`).
 
+## 7. Servicio de descargas (en tu Mac)
+
+La sección **Descargar** le habla a un servicio que corre en tu Mac ([`downloader/`](downloader/README.md)). La extracción la hacen motores de código abierto ([yt-dlp](https://github.com/yt-dlp/yt-dlp) y [gallery-dl](https://github.com/mikf/gallery-dl)) detrás de una API propia, así que se pueden cambiar sin tocar el OS. Los archivos son temporales y se borran solos.
+
+```bash
+cd downloader
+npm run service:install     # instala y deja el servicio arrancando solo al iniciar sesión (volver a correrlo actualiza)
+npm run service:uninstall   # lo quita del todo
+```
+
+Necesita Node ≥ 22.18, ffmpeg y [uv](https://docs.astral.sh/uv/). Los motores se actualizan solos cada semana. La primera vez que abras el OS en Chrome, acepta el permiso para acceder a apps de este dispositivo: sin él, la sección no aparece.
+
 ## Estructura
 
 ```
 src/
   components/      shell (menú, barra inferior, búsqueda ⌘K) y kit de UI
   data/            API: Supabase y modo demo con la misma interfaz, hooks de React Query
-  features/        home · tiempo · calendario · consumo · tableros · notas · ajustes · auth
+  features/        home · tiempo · calendario · consumo · tableros · notas · descargar · ajustes · auth
   lib/             formato es-CO, rangos de fechas, precios y cálculo de costos
 supabase/
   migrations/      esquema, RLS y funciones
@@ -115,6 +128,7 @@ supabase/
   setup.sql        todo en un archivo para el SQL Editor
   tests/           pruebas del esquema con PGlite
 collector/         colector local de Claude Code + Codex
+downloader/        servicio local de descargas (yt-dlp, gallery-dl; Cobalt opcional)
 design/            mockups de la propuesta visual
 ```
 

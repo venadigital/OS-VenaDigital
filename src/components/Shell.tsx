@@ -1,6 +1,6 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useMemo, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { CalendarDays, Home, Moon, NotebookPen, Search, Settings2, Shapes, Sparkles, Square, Sun, Timer, Users } from 'lucide-react';
+import { CalendarDays, Download, Home, Moon, NotebookPen, Search, Settings2, Shapes, Sparkles, Square, Sun, Timer, Users } from 'lucide-react';
 import { useAccount } from '@/data/ApiContext';
 import { useBoards, useTimerSync } from '@/data/hooks';
 import { useRunningTimer } from '@/features/tiempo/model';
@@ -10,6 +10,7 @@ import { CommandPalette, openPalette } from './CommandPalette';
 import { cx, IconButton, LiveDot } from './ui';
 import { toggleTheme, useTheme } from '@/lib/theme';
 import { leaveDemo } from '@/data/ApiContext';
+import { useDownloaderStatus } from '@/features/descargar/service';
 
 export const NAV = [
   { to: '/', label: 'Inicio', short: 'Inicio', icon: Home },
@@ -19,7 +20,15 @@ export const NAV = [
   { to: '/consumo', label: 'Consumo IA', short: 'Consumo', icon: Sparkles },
   { to: '/tableros', label: 'Tableros', short: 'Tableros', icon: Shapes },
   { to: '/notas', label: 'Notas', short: 'Notas', icon: NotebookPen },
+  // Only on a computer where the local download service answers; never on the phone.
+  { to: '/descargar', label: 'Descargar', short: 'Descargar', icon: Download, needsDownloader: true },
 ];
+
+/** Navigation for this device: sections that depend on the Mac's services hide when they can't work. */
+export function useNav() {
+  const { available } = useDownloaderStatus();
+  return useMemo(() => NAV.filter((n) => !('needsDownloader' in n) || available), [available]);
+}
 
 export function Shell() {
   const loc = useLocation();
@@ -62,6 +71,7 @@ function Sidebar({ showTimer }: { showTimer: boolean }) {
   const { user } = useAccount();
   const boards = useBoards();
   const recent = (boards.data ?? []).slice(0, 3);
+  const nav = useNav();
   return (
     <aside className="os-sidebar sticky top-0 hidden h-dvh w-60 shrink-0 flex-col gap-[18px] border-r border-line bg-plane px-2.5 pt-3 pb-3.5 md:flex">
       <Link to="/" className="os-brand flex h-9 items-center gap-2.5 rounded-lg px-2 hover:bg-fill">
@@ -74,7 +84,7 @@ function Sidebar({ showTimer }: { showTimer: boolean }) {
           <span className="flex-1 text-left">Buscar</span>
           <span className="font-mono text-[11px] text-ink-3">⌘K</span>
         </button>
-        {NAV.map((n) => (
+        {nav.map((n) => (
           <SideLink key={n.to} to={n.to} icon={<n.icon size={18} strokeWidth={1.75} />}>
             {n.label}
           </SideLink>
@@ -166,11 +176,12 @@ function SidebarTimer() {
 }
 
 function MobileNav({ showTimer }: { showTimer: boolean }) {
+  const nav = useNav();
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 md:hidden">
       {showTimer && <MiniTimer />}
       <nav aria-label="Navegación móvil" className="os-mobile-nav flex border-t border-line bg-page px-2" style={{ paddingBottom: 'var(--safe-bottom)' }}>
-        {NAV.map((n) => (
+        {nav.map((n) => (
           <NavLink
             key={n.to}
             to={n.to}

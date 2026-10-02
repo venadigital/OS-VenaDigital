@@ -1,0 +1,19 @@
+{
+  "name": "vena-downloader",
+  "private": true,
+  "type": "module",
+  "description": "Servicio local de descargas de Vena OS: API propia + motores intercambiables (yt-dlp, gallery-dl, Cobalt). Corre en el Mac.",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "start": "node src/server.ts",
+    "test": "node --test 'test/*.unit.ts'",
+    "typecheck": "../node_modules/.bin/tsc -p tsconfig.json",
+    "engines:install": "uv venv .engines --python 3.12 && VIRTUAL_ENV=.engines uv pip install 'yt-dlp[default]' gallery-dl",
+    "engines:update": "VIRTUAL_ENV=.engines uv pip install -U 'yt-dlp[default]' gallery-dl",
+    "engines:versions": ".engines/bin/yt-dlp --version && .engines/bin/gallery-dl --version",
+    "service:install": "bash scripts/install-mac.sh",
+    "service:uninstall": "bash scripts/uninstall-mac.sh"
+  }
+}
