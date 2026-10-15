@@ -4,7 +4,7 @@ import { ArrowUpRight, ChartNoAxesColumnIncreasing, ChevronRight, Circle, Circle
 import { Page, PageHeader } from '@/components/Shell';
 import { Button, Card, cx, Dot, Label, LiveDot, Pill, Skeleton } from '@/components/ui';
 import { useAccount } from '@/data/ApiContext';
-import { qk, useApiMutation, useBoards, useEntries, useNoteImages, useNotes, useNow, useStartTimer, useStopTimer } from '@/data/hooks';
+import { qk, useApiMutation, useBoards, useClients, useEntries, useNoteImages, useNotes, useNow, useStartTimer, useStopTimer } from '@/data/hooks';
 import { clock, dur, greeting, hhmm, longDate, monthName, ratio, relativeDay, usd } from '@/lib/format';
 import { dayKey, rangeFor } from '@/lib/time';
 import { useWorkspaceView } from '@/lib/workspaceView';
@@ -14,7 +14,8 @@ import { totalsByProject, useRunningTimer, useTimeData } from '@/features/tiempo
 import { useConsumo } from '@/features/consumo/model';
 import { TodayAgendaCard } from '@/features/calendario/TodayAgendaCard';
 import { ClientsTodayCard } from '@/features/clientes/ClientsTodayCard';
-import type { Note, NoteInput } from '@/data/types';
+import { dueLabel, pendingItems, type PendingItem } from './pending';
+import type { NoteInput } from '@/data/types';
 
 export function HomePage() {
   const { user } = useAccount();
@@ -133,19 +134,25 @@ function TimerCard() {
 
 function PendingCard({ now }: { now: Date }) {
   const notes = useNotes();
+  const { tasks, projectById, loading } = useTimeData();
+  const clients = useClients().data ?? [];
   const today = dayKey(now);
   const navigate = useNavigate();
-  const [completed, setCompleted] = useState<Note | null>(null);
-  const update = useApiMutation((api, v: {id: string; done: boolean}) => api.updateNote(v.id, { done: v.done }), [qk.notes]);
-  const pending = (notes.data ?? []).filter(n => n.type === 'hacer' && !n.done)
-    .sort((a,b) => (a.due_date ?? '9999').localeCompare(b.due_date ?? '9999') || Number(b.pinned) - Number(a.pinned));
+  const [completed, setCompleted] = useState<PendingItem | null>(null);
+  const update = useApiMutation((api, v: {item: PendingItem; done: boolean}) => v.item.kind === 'nota' ? api.updateNote(v.item.id, { done: v.done }) : api.updateTask(v.item.id, { archived: v.done }), [qk.notes, qk.tasks]);
+  const pending = pendingItems(notes.data ?? [], tasks, projectById, now);
+  const open = (item: PendingItem) => {
+    if (item.kind === 'nota') return navigate(`/notas?nota=${item.id}`);
+    const client = clients.find(c => c.project_id === item.project?.id);
+    navigate(client ? `/clientes/${client.id}?tab=tareas` : '/tiempo');
+  };
   return <Card className="pending-card">
     <div className="section-heading"><h2 className="metric-label"><span className="icon-tile"><CircleCheck size={18}/></span>Pendientes a mano <span className="count-badge">{pending.length}</span></h2><Link to="/notas?pendientes=1" className="text-link">Ver todos <ArrowUpRight size={15}/></Link></div>
-    {notes.isLoading ? <Skeleton className="h-28"/> : pending.length ? <div className="pending-list">{pending.slice(0,3).map(n => <div key={n.id} className="pending-row">
-      <button type="button" className="pending-check" aria-label={`Completar: ${n.body}`} disabled={update.isPending} onClick={() => update.mutate({id:n.id, done:true}, {onSuccess: () => setCompleted(n)})}><Circle size={21}/></button>
-      <button type="button" className="pending-content" onClick={() => navigate(`/notas?nota=${n.id}`)}><span>{n.body}</span><small className={n.due_date && n.due_date < today ? 'text-crit' : ''}>{n.due_date ? n.due_date < today ? `Vencido · ${n.due_date}` : n.due_date === today ? 'Para hoy' : `Para el ${n.due_date}` : 'Sin fecha'}{n.pinned ? ' · Fijada' : ''}</small></button>
+    {notes.isLoading || loading ? <Skeleton className="h-28"/> : pending.length ? <div className="pending-list">{pending.slice(0,4).map(item => <div key={item.key} className="pending-row">
+      <button type="button" className="pending-check" aria-label={`Completar: ${item.title}`} disabled={update.isPending} onClick={() => update.mutate({item, done:true}, {onSuccess: () => setCompleted(item)})}><Circle size={21}/></button>
+      <button type="button" className="pending-content" onClick={() => open(item)}><span>{item.title}</span><small className={item.due && item.due < today ? 'text-crit' : ''}>{dueLabel(item.due, now)}{item.project ? ` · ${item.project.name}` : ''}{item.pinned ? ' · Fijada' : ''}</small></button>
     </div>)}</div> : <p className="text-ink-3">No tienes pendientes. Puedes capturar uno arriba.</p>}
-    {completed && <div className="completion-feedback" role="status"><span>Completado: {completed.body.slice(0,50)}{completed.body.length > 50 ? '…' : ''}</span><button type="button" disabled={update.isPending} onClick={() => update.mutate({id:completed.id,done:false},{onSuccess:()=>setCompleted(null)})}>Deshacer</button></div>}
+    {completed && <div className="completion-feedback" role="status"><span>Completado: {completed.title.slice(0,50)}{completed.title.length > 50 ? '…' : ''}</span><button type="button" disabled={update.isPending} onClick={() => update.mutate({item:completed,done:false},{onSuccess:()=>setCompleted(null)})}>Deshacer</button></div>}
     <Link to="/notas?nueva=1&pendientes=1" className="text-link mt-auto"><Plus size={15}/> Añadir pendiente</Link>
   </Card>;
 }
