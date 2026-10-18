@@ -96,7 +96,8 @@
 .cl-project { display: flex; flex-direction: row; align-items: center; gap: 28px; padding: 22px 24px; flex-wrap: wrap; }
 .cl-stat { display: flex; flex-direction: column; gap: 2px; }
 .cl-stat b { font-size: 22px; font-weight: 500; letter-spacing: -.6px; line-height: 1.2; font-variant-numeric: tabular-nums; }
-.cl-table-wrap { overflow-x: auto; padding: 8px 24px 12px; }
+/* relative: keeps the hidden "Acciones" label inside the scroller, so phones do not zoom out. */
+.cl-table-wrap { position: relative; overflow-x: auto; padding: 8px 24px 12px; }
 .cl-table { border-collapse: collapse; width: 100%; min-width: 640px; }
 .cl-table th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .025em; color: var(--color-ink-3); font-weight: 500; padding: 14px 12px 12px 0; border-bottom: 1px solid var(--color-line); white-space: nowrap; }
 .cl-table td { padding: 13px 12px 13px 0; border-bottom: 1px solid var(--color-rule); font-size: 14px; vertical-align: middle; }

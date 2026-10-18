@@ -18,6 +18,8 @@ export type Task = {
   archived: boolean;
   /** Delivery date (yyyy-mm-dd): the task is a client deliverable. */
   due_date?: string | null;
+  /** When it was marked done; set and cleared by the database with `archived`. */
+  completed_at?: string | null;
   created_at: string;
 };
 

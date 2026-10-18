@@ -1,14 +1,15 @@
-// Clientes: create/edit a client, an interaction, an invoice and a client task.
-import { useEffect, useRef, useState } from 'react';
-import { format } from 'date-fns';
+// Clientes: create/edit a client, an interaction, an invoice and a client task; export tasks to Excel.
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { format, startOfMonth } from 'date-fns';
 import { Button, Dialog, Field, Input, Select, Textarea } from '@/components/ui';
-import { qk, useApiMutation } from '@/data/hooks';
+import { qk, useApiMutation, useTaskEntries } from '@/data/hooks';
 import type { Agreement, Client, ClientInput, ClientLog, ClientStatus, ContactChannel, Currency, Invoice, LogKind, Project, Task } from '@/data/types';
 import { nextColor } from '@/lib/palette';
 import { dayKey } from '@/lib/time';
 import { useToast } from '@/components/Toast';
 import { AGREEMENT_LABEL, amountInput, CHANNEL_LABEL, defaultDueDate, defaultKeywords, LOG_KINDS, parseAmount, parseKeywords, STATUS_LABEL } from './model';
 import { ClientAvatar, prepareLogo } from './ClientAvatar';
+import { deliverFile, exportFileName, exportRows, exportTasksXlsx } from './export';
 
 const NEW_PROJECT = '__new__';
 const blank = (s: string) => (s.trim() ? s.trim() : null);
@@ -561,6 +562,71 @@ export function ClientTaskDialog({ open, onClose, projectId, task }: { open: boo
           Hecha (se archiva en Tiempo)
         </label>
       )}
+    </Dialog>
+  );
+}
+
+// ---------------------------------------------------------------- exportar tareas
+export function ExportTasksDialog({ open, onClose, client, tasks }: { open: boolean; onClose: () => void; client: Client; tasks: Task[] }) {
+  const toast = useToast();
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const today = new Date();
+    setFrom(dayKey(startOfMonth(today)));
+    setTo(dayKey(today));
+  }, [open]);
+
+  const ids = useMemo(() => tasks.map((t) => t.id).sort(), [tasks]);
+  const entries = useTaskEntries(ids);
+  const valid = Boolean(from && to && from <= to);
+  const rows = useMemo(
+    () => (valid && (entries.data || !ids.length) ? exportRows(tasks, entries.data ?? [], from, to, new Date()) : null),
+    [valid, entries.data, ids.length, tasks, from, to],
+  );
+
+  const download = async () => {
+    if (!rows) return;
+    setBusy(true);
+    try {
+      const blob = await exportTasksXlsx(client.name, from, to, rows);
+      await deliverFile(blob, exportFileName(client.name, from, to));
+      onClose();
+    } catch {
+      toast('No se pudo crear el Excel', 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title="Descargar tareas en Excel"
+      dismissible
+      footer={
+        <>
+          <Button onClick={onClose}>Cancelar</Button>
+          <Button variant="primary" disabled={!rows?.length || busy} onClick={download}>
+            {busy ? 'Creando…' : 'Descargar'}
+          </Button>
+        </>
+      }
+    >
+      <div className="cl-form-grid">
+        <Field label="Desde">
+          <Input type="date" value={from} max={to || undefined} onChange={(e) => setFrom(e.target.value)} />
+        </Field>
+        <Field label="Hasta">
+          <Input type="date" value={to} min={from || undefined} onChange={(e) => setTo(e.target.value)} />
+        </Field>
+      </div>
+      {from && to && !valid && <p className="text-[13px] text-crit">La fecha final va después de la inicial.</p>}
+      {rows && rows.length === 0 && <p className="text-[13px] text-ink-3">No hay tareas en ese período.</p>}
+      {rows && rows.length > 0 && <p className="text-[13px] text-ink-2">{rows.length === 1 ? '1 tarea' : `${rows.length} tareas`}</p>}
     </Dialog>
   );
 }

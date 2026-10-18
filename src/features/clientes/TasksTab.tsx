@@ -2,7 +2,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { addMonths, differenceInCalendarDays, startOfMonth } from 'date-fns';
-import { Play, Plus, Square, Timer } from 'lucide-react';
+import { Download, Play, Plus, Square, Timer } from 'lucide-react';
 import { Button, Card, Dot, Empty, IconButton, LiveDot, Menu, Segmented } from '@/components/ui';
 import { qk, useApiMutation, useStartTimer, useStopTimer, useTaskEntries } from '@/data/hooks';
 import type { Client, Task } from '@/data/types';
@@ -10,7 +10,7 @@ import { clock } from '@/lib/format';
 import { nextColor } from '@/lib/palette';
 import { fromDayKey } from '@/lib/time';
 import { useRunningTimer, useTimeData } from '@/features/tiempo/model';
-import { ClientTaskDialog } from './dialogs';
+import { ClientTaskDialog, ExportTasksDialog } from './dialogs';
 import { dayLabel, hm, minutesByTask, relDays, type ClientSummary } from './model';
 
 /** Minutes per task this month and all time, plus each task's last session. */
@@ -35,6 +35,7 @@ type Filter = 'abiertas' | 'entrega' | 'hechas' | 'todas';
 export function TasksTab({ s, now, clients }: { s: ClientSummary; now: Date; from: Date; to: Date; clients: Client[] }) {
   const [filter, setFilter] = useState<Filter>('abiertas');
   const [dialog, setDialog] = useState<{ open: boolean; task?: Task }>({ open: false });
+  const [exporting, setExporting] = useState(false);
   const totals = useTaskTotals(s, now);
   const { timer } = useRunningTimer();
   const start = useStartTimer();
@@ -111,6 +112,9 @@ export function TasksTab({ s, now, clients }: { s: ClientSummary; now: Date; fro
           onChange={setFilter}
         />
         <div className="flex items-center gap-3">
+          <Button icon={<Download size={16} />} onClick={() => setExporting(true)}>
+            Excel
+          </Button>
           <Button variant="primary" icon={<Plus size={16} />} onClick={() => setDialog({ open: true })}>
             Nueva tarea
           </Button>
@@ -211,6 +215,7 @@ export function TasksTab({ s, now, clients }: { s: ClientSummary; now: Date; fro
         )}
       </Card>
 
+      <ExportTasksDialog open={exporting} onClose={() => setExporting(false)} client={s.client} tasks={s.tasks} />
       <ClientTaskDialog open={dialog.open} onClose={() => setDialog({ open: false })} projectId={s.project.id} task={dialog.task} />
     </>
   );

@@ -323,3 +323,26 @@ describe('clientes · logos y palabras clave', () => {
     expect(c.rows[0]).toEqual({ ai_keywords: [], logo_path: path });
   });
 });
+
+describe('tareas · fecha de terminado', () => {
+  it('stamps completed_at when a task is marked done, keeps it on later edits and clears it on reopen', async () => {
+    await as(USER_A, 'authenticated', async () => {
+      const p = await db.query<{ id: string }>(`insert into public.projects (name) values ('Exportar') returning id`);
+      const t = await db.query<{ id: string; completed_at: string | null }>(`insert into public.tasks (project_id, name) values ($1, 'Informe') returning id, completed_at`, [p.rows[0].id]);
+      expect(t.rows[0].completed_at).toBeNull();
+      const id = t.rows[0].id;
+      const stamp = async () => (await db.query<{ completed_at: string | null }>(`select completed_at::text from public.tasks where id = $1`, [id])).rows[0].completed_at;
+
+      await db.query(`update public.tasks set archived = true where id = $1`, [id]);
+      const done = await stamp();
+      expect(done).not.toBeNull();
+      await db.query(`update public.tasks set archived = true, name = 'Informe final' where id = $1`, [id]);
+      expect(await stamp()).toBe(done);
+      await db.query(`update public.tasks set archived = false where id = $1`, [id]);
+      expect(await stamp()).toBeNull();
+
+      const born = await db.query<{ completed_at: string | null }>(`insert into public.tasks (project_id, name, archived) values ($1, 'Ya hecha', true) returning completed_at`, [p.rows[0].id]);
+      expect(born.rows[0].completed_at).not.toBeNull();
+    });
+  });
+});

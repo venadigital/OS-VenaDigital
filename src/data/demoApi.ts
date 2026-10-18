@@ -303,7 +303,13 @@ export function createDemoApi(): Api {
       return later(clone(t));
     },
     async updateTask(id, patch) {
-      Object.assign(s.tasks.find((t) => t.id === id) ?? {}, patch);
+      const t = s.tasks.find((x) => x.id === id);
+      if (t) {
+        // Same rule as the database trigger: stamp on done, clear on reopen.
+        if (patch.archived === true && !t.archived) t.completed_at = iso(new Date());
+        if (patch.archived === false) t.completed_at = null;
+        Object.assign(t, patch);
+      }
       return later(undefined);
     },
     async deleteTask(id) {
