@@ -25,4 +25,7 @@ DirectoryIndex index.html
 
 <IfModule mod_mime.c>
   AddType application/manifest+json .webmanifest
+  # PDF.js (Documentos): su worker es un módulo .mjs y el navegador solo lo carga como JavaScript.
+  AddType text/javascript .mjs
+  AddType application/wasm .wasm
 </IfModule>
