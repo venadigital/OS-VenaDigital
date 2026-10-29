@@ -1,6 +1,6 @@
 import { useEffect, useMemo, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { CalendarDays, Download, Home, Moon, NotebookPen, Search, Settings2, Shapes, Sparkles, Square, Sun, Timer, Users } from 'lucide-react';
+import { CalendarDays, Download, FileText, Home, Moon, NotebookPen, Search, Settings2, Shapes, Sparkles, Square, Sun, Timer, Users } from 'lucide-react';
 import { useAccount } from '@/data/ApiContext';
 import { useBoards, useTimerSync } from '@/data/hooks';
 import { useRunningTimer } from '@/features/tiempo/model';
@@ -19,6 +19,7 @@ export const NAV = [
   { to: '/clientes', label: 'Clientes', short: 'Clientes', icon: Users },
   { to: '/consumo', label: 'Consumo IA', short: 'Consumo', icon: Sparkles },
   { to: '/tableros', label: 'Tableros', short: 'Tableros', icon: Shapes },
+  { to: '/documentos', label: 'Documentos', short: 'Docs', icon: FileText },
   { to: '/notas', label: 'Notas', short: 'Notas', icon: NotebookPen },
   // Only on a computer where the local download service answers; never on the phone.
   { to: '/descargar', label: 'Descargar', short: 'Descargar', icon: Download, needsDownloader: true },

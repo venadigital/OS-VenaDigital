@@ -324,6 +324,28 @@ describe('clientes · logos y palabras clave', () => {
   });
 });
 
+describe('documentos', () => {
+  it('keeps PDFs in a private bucket and annotations visible only to their owner', async () => {
+    const bucket = await db.query(`select public, allowed_mime_types from storage.buckets where id = 'documents'`);
+    expect(bucket.rows).toEqual([{ public: false, allowed_mime_types: ['application/pdf'] }]);
+    const path = `${USER_A}/doc-1.pdf`;
+    await as(USER_A, 'authenticated', () => db.query(`insert into storage.objects (bucket_id, name) values ('documents', $1)`, [path]));
+    expect((await as(USER_B, 'authenticated', () => db.query(`select name from storage.objects where bucket_id = 'documents'`))).rows).toHaveLength(0);
+    await expect(
+      as(USER_B, 'authenticated', () => db.query(`insert into storage.objects (bucket_id, name) values ('documents', $1)`, [`${USER_A}/intruso.pdf`])),
+    ).rejects.toThrow();
+
+    const d = await as(USER_A, 'authenticated', () =>
+      db.query<{ annotations: unknown; page_count: number }>(
+        `insert into public.documents (name, file_path, page_count) values ('Contrato', $1, 3) returning annotations, page_count`,
+        [path],
+      ),
+    );
+    expect(d.rows[0]).toEqual({ annotations: {}, page_count: 3 });
+    expect((await as(USER_B, 'authenticated', () => db.query(`select id from public.documents`))).rows).toHaveLength(0);
+  });
+});
+
 describe('tareas · fecha de terminado', () => {
   it('stamps completed_at when a task is marked done, keeps it on later edits and clears it on reopen', async () => {
     await as(USER_A, 'authenticated', async () => {

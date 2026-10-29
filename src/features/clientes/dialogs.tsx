@@ -9,7 +9,8 @@ import { dayKey } from '@/lib/time';
 import { useToast } from '@/components/Toast';
 import { AGREEMENT_LABEL, amountInput, CHANNEL_LABEL, defaultDueDate, defaultKeywords, LOG_KINDS, parseAmount, parseKeywords, STATUS_LABEL } from './model';
 import { ClientAvatar, prepareLogo } from './ClientAvatar';
-import { deliverFile, exportFileName, exportRows, exportTasksXlsx } from './export';
+import { exportFileName, exportRows, exportTasksXlsx } from './export';
+import { deliverFile } from '@/lib/deliverFile';
 
 const NEW_PROJECT = '__new__';
 const blank = (s: string) => (s.trim() ? s.trim() : null);

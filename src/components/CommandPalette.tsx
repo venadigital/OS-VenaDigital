@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarPlus, CornerDownLeft, Moon, NotebookPen, Play, Search, Settings2, Shapes, Sun, UserPlus, Users } from 'lucide-react';
-import { useBoards, useClients, useNotes, useStartTimer } from '@/data/hooks';
+import { CalendarPlus, CornerDownLeft, FileText, FileUp, Moon, NotebookPen, Play, Search, Settings2, Shapes, Sun, UserPlus, Users } from 'lucide-react';
+import { useBoards, useClients, useDocuments, useNotes, useStartTimer } from '@/data/hooks';
 import { useTimeData } from '@/features/tiempo/model';
 import { useNav } from './Shell';
 import { cx, Dialog, Dot } from './ui';
@@ -22,6 +22,7 @@ export function CommandPalette() {
   const navigate = useNavigate();
   const notes = useNotes();
   const boards = useBoards();
+  const documents = useDocuments();
   const clients = useClients();
   const { tasks, projectById } = useTimeData();
   const start = useStartTimer();
@@ -62,6 +63,7 @@ export function CommandPalette() {
       { id: 'act:event', group: 'Crear', label: 'Nuevo evento', icon: <CalendarPlus size={16} />, run: go('/calendario?nuevo=1') },
       { id: 'act:board', group: 'Crear', label: 'Nuevo tablero', icon: <Shapes size={16} />, run: go('/tableros?nuevo=1') },
       { id: 'act:client', group: 'Crear', label: 'Nuevo cliente', icon: <UserPlus size={16} />, run: go('/clientes?nuevo=1') },
+      { id: 'act:document', group: 'Crear', label: 'Subir PDF', icon: <FileUp size={16} />, run: go('/documentos?subir=1') },
       theme === 'dark'
         ? { id: 'act:theme', group: 'Apariencia', label: 'Usar modo claro', icon: <Sun size={16} />, run: toggleTheme }
         : { id: 'act:theme', group: 'Apariencia', label: 'Usar modo oscuro', icon: <Moon size={16} />, run: toggleTheme },
@@ -92,6 +94,10 @@ export function CommandPalette() {
         .filter((b) => match(b.name))
         .slice(0, 6)
         .map((b) => ({ id: `board:${b.id}`, group: 'Tableros', label: b.name, icon: <Shapes size={16} />, run: go(`/tableros/${b.id}`) })),
+      ...(documents.data ?? [])
+        .filter((d) => match(d.name))
+        .slice(0, 6)
+        .map((d) => ({ id: `doc:${d.id}`, group: 'Documentos', label: d.name, icon: <FileText size={16} />, run: go(`/documentos/${d.id}`) })),
       ...(notes.data ?? [])
         .filter((n) => match(n.body) || match(n.link_title) || match(n.url))
         .slice(0, 8)
@@ -104,7 +110,7 @@ export function CommandPalette() {
         })),
     ];
     return [...base.filter((i) => match(i.label)), ...found];
-  }, [q, tasks, boards.data, notes.data, clients.data, projectById, navigate, start, theme, nav]);
+  }, [q, tasks, boards.data, documents.data, notes.data, clients.data, projectById, navigate, start, theme, nav]);
 
   if (!open) return null;
 

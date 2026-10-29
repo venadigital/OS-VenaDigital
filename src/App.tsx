@@ -14,9 +14,12 @@ import { ClientesPage } from '@/features/clientes/ClientesPage';
 import { ClientePage } from '@/features/clientes/ClientePage';
 import { AjustesPage } from '@/features/ajustes/AjustesPage';
 import { DescargarPage } from '@/features/descargar/DescargarPage';
+import { DocumentosPage } from '@/features/documentos/DocumentosPage';
 
 // Excalidraw is heavy: load the editor only when a board is opened.
 const BoardEditor = lazy(() => import('@/features/tableros/BoardEditor'));
+// PDF.js too: only when a document is opened.
+const DocumentViewer = lazy(() => import('@/features/documentos/DocumentViewer'));
 
 function AppRoutes() {
   return (
@@ -29,6 +32,14 @@ function AppRoutes() {
           </Suspense>
         }
       />
+      <Route
+        path="/documentos/:id"
+        element={
+          <Suspense fallback={<FullScreenMessage>Abriendo documento…</FullScreenMessage>}>
+            <DocumentViewer />
+          </Suspense>
+        }
+      />
       <Route element={<Shell />}>
         <Route index element={<HomePage />} />
         <Route path="tiempo" element={<TiempoPage />} />
@@ -37,6 +48,7 @@ function AppRoutes() {
         <Route path="clientes/:id" element={<ClientePage />} />
         <Route path="consumo" element={<ConsumoPage />} />
         <Route path="tableros" element={<TablerosPage />} />
+        <Route path="documentos" element={<DocumentosPage />} />
         <Route path="notas" element={<NotasPage />} />
         <Route path="descargar" element={<DescargarPage />} />
         <Route path="ajustes" element={<AjustesPage />} />

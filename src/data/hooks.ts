@@ -16,6 +16,8 @@ export const qk = {
   noteImages: (paths: string[]) => ['note-images', ...paths] as const,
   boards: ['boards'] as const,
   board: (id: string) => ['board', id] as const,
+  documents: ['documents'] as const,
+  document: (id: string) => ['document', id] as const,
   usage: (from: string, to: string) => ['usage', from, to] as const,
   sessions: (from: Date, to: Date) => ['sessions', from.getTime(), to.getTime()] as const,
   prices: ['prices'] as const,
@@ -101,6 +103,14 @@ export const useBoards = () => {
 export const useBoard = (id: string) => {
   const api = useApi();
   return useQuery({ queryKey: qk.board(id), queryFn: () => api.getBoard(id), staleTime: Infinity, gcTime: 0 });
+};
+export const useDocuments = () => {
+  const api = useApi();
+  return useQuery({ queryKey: qk.documents, queryFn: () => api.listDocuments() });
+};
+export const useDocument = (id: string) => {
+  const api = useApi();
+  return useQuery({ queryKey: qk.document(id), queryFn: () => api.getDocument(id), staleTime: Infinity, gcTime: 0 });
 };
 export const useUsage = (from: Date, to: Date) => {
   const api = useApi();

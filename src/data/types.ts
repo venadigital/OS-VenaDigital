@@ -71,6 +71,48 @@ export type BoardScene = {
   skeleton?: unknown[];
 };
 
+export type DocSummary = {
+  id: string;
+  name: string;
+  /** The untouched PDF in Storage: <user_id>/<id>.pdf */
+  file_path: string;
+  file_size: number;
+  page_count: number;
+  thumbnail: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Doc = DocSummary & {
+  annotations: DocAnnotations;
+};
+
+/**
+ * Marks drawn over a PDF, per page (0-based index). Coordinates are in page units:
+ * the page at scale 1 as shown on screen (rotation applied), origin top-left.
+ */
+export type DocAnnotations = {
+  v?: 1;
+  pages?: Record<string, Annotation[]>;
+};
+
+/** x, y, pressure (0–1). */
+export type InkPoint = [number, number, number];
+
+export type ShapeKind = 'rect' | 'ellipse' | 'line' | 'arrow';
+
+export type Annotation =
+  /** Pen: variable width; `pressure` is true when it came from a stylus. */
+  | { id: string; type: 'ink'; color: string; width: number; points: InkPoint[]; pressure?: boolean }
+  /** Freehand highlighter: flat, translucent. */
+  | { id: string; type: 'marker'; color: string; width: number; points: InkPoint[] }
+  | { id: string; type: ShapeKind; color: string; width: number; x1: number; y1: number; x2: number; y2: number }
+  | { id: string; type: 'text'; color: string; size: number; x: number; y: number; text: string }
+  /** Highlight over the PDF's own text lines: [x, y, w, h] per line. */
+  | { id: string; type: 'texthl'; color: string; rects: [number, number, number, number][] }
+  /** Margin note pinned to a point. */
+  | { id: string; type: 'note'; color: string; x: number; y: number; text: string };
+
 export type Provider = 'anthropic' | 'openai';
 
 export type AiAccount = {

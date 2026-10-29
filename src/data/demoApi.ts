@@ -10,6 +10,7 @@ import type {
   CollectorStatus,
   Invoice,
   CollectorToken,
+  Doc,
   ModelPrice,
   Note,
   NoteInput,
@@ -25,6 +26,7 @@ import { dayKey } from '@/lib/time';
 import { sketchDataUrl } from './demoSketches';
 import { DEMO_CALENDARS, seedCalendar } from './demoCalendar';
 import { seedClients } from './demoClients';
+import { buildDemoPdf } from './demoDocument';
 
 let seq = 0;
 const uid = () => `demo-${Date.now().toString(36)}-${++seq}`;
@@ -37,6 +39,7 @@ type Store = {
   entries: TimeEntry[];
   notes: Note[];
   boards: Board[];
+  documents: Doc[];
   accounts: AiAccount[];
   prices: ModelPrice[];
   usage: UsageRow[];
@@ -242,6 +245,27 @@ function seed(now: Date): Store {
     entries,
     notes,
     boards,
+    documents: [
+      {
+        id: 'demo-doc-propuesta',
+        name: 'Propuesta Academia IA',
+        file_path: DEMO_PDF,
+        file_size: 4200,
+        page_count: 3,
+        thumbnail: null,
+        created_at: iso(subDays(now, 3)),
+        updated_at: iso(subDays(now, 1)),
+        annotations: {
+          v: 1,
+          pages: {
+            '0': [
+              { id: 'demo-hl', type: 'texthl', color: '#ffd43b', rects: [[63, 120, 425, 15]] },
+              { id: 'demo-note', type: 'note', color: '#ffd43b', x: 520, y: 118, text: 'Confirmar con el cliente si son 6 u 8 sesiones.' },
+            ],
+          },
+        },
+      },
+    ],
     accounts,
     prices,
     usage,
@@ -265,12 +289,15 @@ const ARCH_SKELETON = [
   { type: 'rectangle', x: 470, y: 360, width: 230, height: 110, backgroundColor: '#ffec99', label: { text: '¿Qué más medimos?', fontFamily: 2 } },
 ];
 
+const DEMO_PDF = 'demo/propuesta.pdf';
+
 const later = <T>(v: T) => new Promise<T>((r) => setTimeout(() => r(v), 60));
 
 export function createDemoApi(): Api {
   const s = seed(new Date());
   const cal = { connected: true, events: seedCalendar(new Date()) };
   const boardFiles = new Map<string, Blob>(); // "<board id>/<file id>"
+  const docFiles = new Map<string, Blob>(); // file_path → PDF
   const timerListeners = new Set<() => void>();
   const notifyTimer = () => timerListeners.forEach((fn) => fn());
 
@@ -535,6 +562,42 @@ export function createDemoApi(): Api {
         const data = boardFiles.get(`${boardId}/${id}`);
         return data ? [{ id, data }] : [];
       }));
+    },
+
+    // ---------- Documentos ----------
+    listDocuments: async () =>
+      later(s.documents.map(({ annotations: _a, ...d }) => clone(d)).sort((a, b) => b.updated_at.localeCompare(a.updated_at))),
+    async getDocument(id) {
+      const d = s.documents.find((x) => x.id === id);
+      if (!d) throw new Error('Documento no encontrado');
+      return later(clone(d));
+    },
+    async createDocument(file, info) {
+      const now = iso(new Date());
+      const id = uid();
+      const d: Doc = { id, file_path: `demo/${id}.pdf`, file_size: file.size, annotations: {}, created_at: now, updated_at: now, ...info };
+      docFiles.set(d.file_path, file);
+      s.documents.push(d);
+      const { annotations: _a, ...summary } = d;
+      return later(clone(summary));
+    },
+    async updateDocument(id, patch) {
+      Object.assign(s.documents.find((d) => d.id === id) ?? {}, clone(patch), { updated_at: iso(new Date()) });
+      return later(undefined);
+    },
+    async deleteDocument(id) {
+      const d = s.documents.find((x) => x.id === id);
+      if (d) docFiles.delete(d.file_path);
+      s.documents = s.documents.filter((x) => x.id !== id);
+      return later(undefined);
+    },
+    async documentFile(doc) {
+      const stored = docFiles.get(doc.file_path);
+      if (stored) return stored;
+      if (doc.file_path !== DEMO_PDF) throw new Error('Documento no encontrado');
+      const built = await buildDemoPdf();
+      docFiles.set(DEMO_PDF, built);
+      return built;
     },
 
     // ---------- Consumo IA ----------

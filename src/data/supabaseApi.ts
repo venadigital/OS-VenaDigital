@@ -10,6 +10,8 @@ import type {
   CollectorStatus,
   Invoice,
   CollectorToken,
+  Doc,
+  DocSummary,
   LinkPreview,
   ModelPrice,
   Note,
@@ -32,6 +34,8 @@ const numOrNull = (v: unknown) => (v == null ? null : num(v));
 const toClient = (r: Record<string, unknown>): Client =>
   ({ ...r, fee: num(r.fee), included_hours: numOrNull(r.included_hours), extra_hour_rate: numOrNull(r.extra_hour_rate), estimated_hours: numOrNull(r.estimated_hours) }) as Client;
 const toInvoice = (r: Record<string, unknown>): Invoice => ({ ...r, amount: num(r.amount) }) as Invoice;
+
+const DOC_SUMMARY = 'id, name, file_path, file_size, page_count, thumbnail, created_at, updated_at';
 
 export function createSupabaseApi(sb: SupabaseClient): Api {
   const userId = async () => {
@@ -271,6 +275,46 @@ export function createSupabaseApi(sb: SupabaseClient): Api {
         }),
       );
       return found.flat();
+    },
+
+    // ---------- Documentos ----------
+    async listDocuments() {
+      const res = await sb.from('documents').select(DOC_SUMMARY).order('updated_at', { ascending: false });
+      return check(res) as DocSummary[];
+    },
+    async getDocument(id) {
+      const doc = check(await sb.from('documents').select('*').eq('id', id).single()) as Doc;
+      return { ...doc, file_size: num(doc.file_size) };
+    },
+    async createDocument(file, info) {
+      const id = crypto.randomUUID();
+      const path = `${await userId()}/${id}.pdf`;
+      const up = await sb.storage.from('documents').upload(path, file, { contentType: 'application/pdf', upsert: false });
+      if (up.error) throw new Error(up.error.message);
+      const res = await sb
+        .from('documents')
+        .insert({ id, file_path: path, file_size: file.size, ...info })
+        .select(DOC_SUMMARY)
+        .single();
+      if (res.error) {
+        await sb.storage.from('documents').remove([path]);
+        throw new Error(res.error.message);
+      }
+      return { ...(res.data as DocSummary), file_size: file.size };
+    },
+    async updateDocument(id, patch) {
+      check(await sb.from('documents').update(patch).eq('id', id));
+    },
+    async deleteDocument(id) {
+      const row = check(await sb.from('documents').select('file_path').eq('id', id).maybeSingle()) as { file_path: string } | null;
+      check(await sb.from('documents').delete().eq('id', id));
+      // A leftover file is harmless, so this never fails the delete.
+      if (row?.file_path) await sb.storage.from('documents').remove([row.file_path]).catch(() => undefined);
+    },
+    async documentFile(doc) {
+      const res = await sb.storage.from('documents').download(doc.file_path);
+      if (res.error || !res.data) throw new Error(res.error?.message ?? 'No se pudo descargar el PDF');
+      return res.data;
     },
 
     // ---------- Consumo IA ----------

@@ -18,6 +18,9 @@ import type {
   AttendeeStatus,
   SeriesScope,
   CollectorToken,
+  Doc,
+  DocAnnotations,
+  DocSummary,
   UsageSession,
   LinkPreview,
   ModelPrice,
@@ -95,6 +98,16 @@ export interface Api {
   uploadBoardFile(boardId: string, fileId: string, data: Blob): Promise<void>;
   /** The requested images that exist; missing ones are left out. */
   boardFiles(boardId: string, fileIds: string[]): Promise<{ id: string; data: Blob }[]>;
+
+  // Documentos
+  listDocuments(): Promise<DocSummary[]>;
+  getDocument(id: string): Promise<Doc>;
+  /** Stores the PDF untouched and creates its row. */
+  createDocument(file: Blob, info: { name: string; page_count: number; thumbnail: string | null }): Promise<DocSummary>;
+  updateDocument(id: string, patch: { name?: string; annotations?: DocAnnotations; thumbnail?: string | null }): Promise<void>;
+  deleteDocument(id: string): Promise<void>;
+  /** The original PDF. */
+  documentFile(doc: Pick<DocSummary, 'id' | 'file_path'>): Promise<Blob>;
 
   // Consumo IA
   /** Rows with fromDay <= day < toDay (yyyy-mm-dd). */

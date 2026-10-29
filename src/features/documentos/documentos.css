@@ -1,0 +1,125 @@
+/* Documentos: library cards and the PDF viewer with its marks. */
+
+/* ---------- Library ---------- */
+.doc-card-preview { display: flex; align-items: center; justify-content: center; background: var(--color-plane); }
+.doc-thumb { max-height: 100%; max-width: 100%; object-fit: contain; border-radius: 3px; background: #fff; box-shadow: 0 1px 2px rgb(var(--shade) / 0.1), 0 4px 14px rgb(var(--shade) / 0.08); }
+.doc-drop {
+  position: fixed; inset: 12px; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  border: 2px dashed var(--accent); border-radius: 20px; background: color-mix(in srgb, var(--color-page) 86%, transparent);
+  color: var(--color-ink-2); font-size: 15px; font-weight: 600; pointer-events: none; backdrop-filter: blur(2px);
+}
+
+/* ---------- Viewer ---------- */
+.doc-scroller {
+  position: absolute; inset: 0; overflow: auto; background: var(--color-fill);
+  touch-action: pan-x pan-y; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+}
+.doc-pages { display: flex; flex-direction: column; align-items: center; gap: 16px; width: max-content; min-width: 100%; }
+.doc-page {
+  position: relative; flex-shrink: 0; background: #fff; border-radius: 2px;
+  box-shadow: 0 1px 2px rgb(var(--shade) / 0.12), 0 6px 20px rgb(var(--shade) / 0.08);
+}
+.doc-canvas, .doc-canvas canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; border-radius: inherit; }
+.doc-marks { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; z-index: 2; pointer-events: none; }
+.doc-marks--drawing { pointer-events: auto; touch-action: none; }
+.doc-scroller.is-drawing .doc-page { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.doc-tool-pen .doc-marks, .doc-tool-marker .doc-marks, .doc-tool-shape .doc-marks { cursor: crosshair; }
+.doc-tool-text .doc-marks { cursor: text; }
+.doc-tool-note .doc-marks { cursor: copy; }
+.doc-tool-eraser .doc-marks { cursor: cell; }
+.doc-selection-handle { pointer-events: all; touch-action: none; cursor: move; }
+.doc-note-pin { cursor: pointer; }
+
+/* PDF.js text layer (from pdfjs-dist/web/pdf_viewer.css, trimmed). Selectable, invisible text over the page. */
+.doc-page .textLayer {
+  position: absolute; text-align: initial; inset: 0; overflow: clip; opacity: 1; line-height: 1; z-index: 1;
+  -webkit-text-size-adjust: none; text-size-adjust: none; forced-color-adjust: none; transform-origin: 0 0; caret-color: CanvasText;
+  --min-font-size: 1;
+  --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+  --min-font-size-inv: calc(1 / var(--min-font-size));
+}
+.doc-page .textLayer :is(span, br) { color: transparent; position: absolute; white-space: pre; cursor: text; transform-origin: 0% 0%; -webkit-user-select: text; user-select: text; }
+.doc-page .textLayer > :not(.markedContent), .doc-page .textLayer .markedContent span:not(.markedContent) {
+  z-index: 1; --font-height: 0; font-size: calc(var(--text-scale-factor) * var(--font-height));
+  --scale-x: 1; --rotate: 0deg; transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+}
+.doc-page .textLayer .markedContent { display: contents; }
+.doc-page .textLayer span[role="img"] { -webkit-user-select: none; user-select: none; cursor: default; }
+.doc-page .textLayer ::selection { background: color-mix(in srgb, var(--accent) 30%, transparent); color: transparent; }
+.doc-page .textLayer br::selection { background: transparent; }
+.doc-page .textLayer .endOfContent { display: block; position: absolute; inset: 100% 0 0; z-index: 0; cursor: default; -webkit-user-select: none; user-select: none; }
+.doc-page .textLayer:active .endOfContent { top: 0; }
+.doc-scroller.is-drawing .textLayer { pointer-events: none; }
+
+/* Text typed in place and margin notes. */
+.doc-text-editor {
+  position: absolute; z-index: 3; margin: 0; padding: 0; border: 0; resize: none; overflow: hidden; background: transparent;
+  outline: 1.5px dashed var(--accent); outline-offset: 3px; border-radius: 2px; transform-origin: 0 0; white-space: pre; word-break: keep-all;
+}
+.doc-note-editor {
+  position: absolute; z-index: 4; display: flex; flex-direction: column; gap: 8px; padding: 8px; border-radius: 14px;
+  background: var(--color-overlay); border: 1px solid var(--color-line-2); box-shadow: 0 12px 32px rgb(var(--shade) / 0.18);
+}
+.doc-note-editor textarea {
+  width: 100%; resize: none; border: 0; outline: none; border-radius: 9px; padding: 9px 10px; color: var(--color-ink);
+  font: 14px/1.45 var(--font-sans);
+}
+@media (pointer: coarse) { .doc-note-editor textarea, .doc-name { font-size: 16px !important; } }
+.doc-note-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+
+/* ---------- Dock ---------- */
+.doc-dock {
+  position: absolute; left: 50%; bottom: calc(14px + var(--safe-bottom)); transform: translateX(-50%); z-index: 20;
+  display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: calc(100vw - 16px); pointer-events: none;
+}
+.doc-dock > * { pointer-events: auto; }
+.doc-toolbar, .doc-stylebar {
+  display: flex; align-items: center; background: var(--color-overlay); border: 1px solid var(--color-line-2);
+  box-shadow: 0 10px 30px rgb(var(--shade) / 0.14), 0 1px 2px rgb(var(--shade) / 0.06);
+}
+.doc-toolbar { gap: 2px; padding: 5px; border-radius: 16px; }
+.doc-stylebar { gap: 8px; padding: 6px 10px; border-radius: 14px; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.doc-stylebar::-webkit-scrollbar { display: none; }
+.doc-tool {
+  display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 11px;
+  color: var(--color-ink-2); transition: background-color .12s ease, color .12s ease;
+}
+.doc-tool:hover { background: var(--color-fill); }
+.doc-tool[aria-pressed="true"] { background: var(--color-accent-soft); color: var(--accent); }
+.doc-mini {
+  display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; color: var(--color-ink-2); flex-shrink: 0;
+}
+.doc-mini:hover { background: var(--color-fill); }
+.doc-mini[aria-pressed="true"] { background: var(--color-fill-2); color: var(--color-ink); box-shadow: inset 0 0 0 1.5px var(--color-line-2); }
+.doc-width-dot { display: block; border-radius: 999px; background: currentColor; }
+.doc-sep { width: 1px; align-self: stretch; margin: 4px 0; background: var(--color-line); flex-shrink: 0; }
+.doc-swatch {
+  position: relative; width: 24px; height: 24px; border-radius: 999px; flex-shrink: 0; cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.12);
+}
+.doc-swatch[aria-pressed="true"], .doc-swatch.is-on { box-shadow: 0 0 0 2px var(--color-overlay), 0 0 0 3.5px var(--accent); }
+.doc-swatch--sm { width: 20px; height: 20px; }
+.doc-swatch--custom { background: conic-gradient(#e03131, #f08c00, #ffd43b, #2f9e44, #1971c2, #7048e8, #e64980, #e03131); overflow: hidden; }
+.doc-swatch--custom input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+.doc-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 9px; color: var(--color-ink-2); flex-shrink: 0; }
+.doc-icon-btn:hover { background: var(--color-fill); }
+.doc-icon-btn--danger { color: var(--color-crit); }
+.doc-icon-btn--accent { background: var(--accent); color: var(--on-accent); }
+.doc-icon-btn--accent:hover { background: var(--color-accent-strong); }
+.doc-highlight-btn {
+  display: inline-flex; align-items: center; gap: 7px; height: 38px; padding: 0 16px; border-radius: 999px;
+  background: var(--color-ink); color: var(--color-page); font-size: 14px; font-weight: 600;
+  box-shadow: 0 8px 24px rgb(var(--shade) / 0.25);
+}
+.doc-page-chip {
+  position: absolute; top: 10px; right: 10px; z-index: 15; padding: 4px 10px; border-radius: 999px; pointer-events: none;
+  background: color-mix(in srgb, var(--color-overlay) 92%, transparent); border: 1px solid var(--color-line); color: var(--color-ink-2);
+  font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+@media (max-width: 480px) {
+  .doc-tool { width: 38px; height: 40px; }
+  .doc-toolbar { padding: 4px; gap: 1px; }
+  /* Colors on one row, sizes on the next: no hidden options on a phone. */
+  .doc-stylebar { flex-wrap: wrap; justify-content: center; row-gap: 4px; overflow: visible; }
+  .doc-stylebar .doc-sep { display: none; }
+}
