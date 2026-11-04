@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Contenido del marco</title>
+    <style>
+      body { margin: 0; font: 18px/1.5 Helvetica, Arial, sans-serif; color: #1f1e1c; }
+      .fila { height: 200px; display: flex; align-items: center; padding: 0 48px; border-bottom: 2px solid #000; box-sizing: border-box; }
+      .fila:nth-child(odd) { background: #ebfbee; }
+      .fila:nth-child(even) { background: #fff0f6; }
+    </style>
+  </head>
+  <body>
+    <script>
+      for (let i = 1; i <= 16; i++) document.write(`<div class="fila"><strong>Bloque ${i}</strong>&nbsp;dentro del marco</div>`);
+    </script>
+  </body>
+</html>

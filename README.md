@@ -114,6 +114,10 @@ npm run service:uninstall   # lo quita del todo
 
 Necesita Node ≥ 22.18, ffmpeg y [uv](https://docs.astral.sh/uv/). Los motores se actualizan solos cada semana. La primera vez que abras el OS en Chrome, acepta el permiso para acceder a apps de este dispositivo: sin él, la sección no aparece.
 
+## 8. Extensión de Chrome
+
+Guarda en Documentos la página abierta en tu Chrome, para anotarla o como captura, incluidas las webs que no dejan entrar al servicio del Mac. Instalación y uso en [`extension/README.md`](extension/README.md).
+
 ## Estructura
 
 ```

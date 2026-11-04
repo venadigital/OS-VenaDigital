@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>App con panel</title>
+    <style>
+      /* Como Notion o Gmail: la página no se mueve, se desplaza un panel por dentro. */
+      html, body { margin: 0; height: 100%; overflow: hidden; font: 18px/1.5 Helvetica, Arial, sans-serif; }
+      .app { display: flex; height: 100%; }
+      nav { width: 220px; flex-shrink: 0; background: #1f1e1c; color: #fff; padding: 16px; box-sizing: border-box; overflow-y: auto; }
+      nav div { height: 900px; }
+      #principal { flex: 1; overflow-y: auto; }
+      .fila { height: 200px; display: flex; align-items: center; padding: 0 48px; border-bottom: 2px solid #000; box-sizing: border-box; background: #f3f0ff; }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <nav><div>Menú lateral: no debe salir</div></nav>
+      <div id="principal">
+        <script>
+          for (let i = 1; i <= 12; i++) document.write(`<div class="fila"><strong>Sección ${i}</strong>&nbsp;del panel</div>`);
+        </script>
+      </div>
+    </div>
+  </body>
+</html>

@@ -193,6 +193,11 @@ export async function composeCapture(layout: CaptureLayout, pages: PDFPageProxy[
     ctx.restore();
   }
 
+  return encodeCapture(canvas);
+}
+
+/** The finished canvas as a file and its thumbnail. The canvas is released. */
+export async function encodeCapture(canvas: HTMLCanvasElement): Promise<CaptureImage> {
   const large = canvas.width * canvas.height > PNG_PIXELS;
   const blob = await (large ? toBlob(canvas, 'image/jpeg', 0.92) : toBlob(canvas, 'image/png'));
   const image = { blob, width: canvas.width, height: canvas.height, thumbnail: thumbnailOf(canvas) };

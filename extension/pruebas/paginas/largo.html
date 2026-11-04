@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Página larga de prueba</title>
+    <style>
+      html { scroll-behavior: smooth; }
+      body { margin: 0; font: 18px/1.5 Helvetica, Arial, sans-serif; color: #1f1e1c; }
+      header { position: fixed; inset: 0 0 auto 0; height: 56px; background: #1864ab; color: #fff; display: flex; align-items: center; padding: 0 24px; z-index: 5; }
+      .bubble { position: fixed; right: 24px; bottom: 24px; width: 64px; height: 64px; border-radius: 50%; background: #2f9e44; z-index: 5; }
+      main { padding-top: 56px; }
+      .fila { height: 200px; display: flex; align-items: center; padding: 0 48px; border-bottom: 2px solid #000; box-sizing: border-box; }
+      .fila:nth-child(odd) { background: #fff4e6; }
+      .fila:nth-child(even) { background: #e7f5ff; }
+      /* Como muchas webs: entra deslizándose y se deshace al salir de pantalla. */
+      .sube { transform: translateY(40px); opacity: 0; transition: transform 0.4s, opacity 0.4s; }
+      .sube.visto { transform: none; opacity: 1; }
+    </style>
+  </head>
+  <body>
+    <header>Cabecera fija</header>
+    <div class="bubble" id="burbuja"></div>
+    <main id="filas"></main>
+    <script>
+      const main = document.getElementById('filas');
+      for (let i = 1; i <= 30; i++) {
+        const row = document.createElement('div');
+        row.className = 'fila';
+        row.innerHTML = `<div class="sube"><strong>Fila ${i}</strong> canción número ${i} de la página</div>`;
+        main.append(row);
+      }
+      const io = new IntersectionObserver((entries) => entries.forEach((e) => e.target.classList.toggle('visto', e.isIntersecting)), { threshold: 0.5 });
+      document.querySelectorAll('.sube').forEach((el) => io.observe(el));
+    </script>
+  </body>
+</html>

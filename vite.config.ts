@@ -88,6 +88,6 @@ export default defineConfig({
   define: { 'process.env.IS_PREACT': JSON.stringify('false') },
   build: { chunkSizeWarningLimit: 4000 },
   test: {
-    include: ['src/**/*.test.ts', 'supabase/tests/**/*.test.ts', 'collector/**/*.test.mjs'],
+    include: ['src/**/*.test.ts', 'supabase/tests/**/*.test.ts', 'collector/**/*.test.mjs', 'extension/**/*.test.mjs'],
   },
 });

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Vena OS</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <img src="../icons/icon-48.png" alt="" width="24" height="24" />
+      <span id="title">Vena OS</span>
+    </header>
+
+    <section id="actions">
+      <button id="annotate" class="primary" type="button">Anotar en el OS</button>
+      <button id="page" type="button">Capturar página completa</button>
+      <button id="visible" type="button">Capturar pantalla</button>
+    </section>
+
+    <section id="working" hidden>
+      <p>Capturando. Quédate en esta pestaña.</p>
+      <div class="bar"><div id="fill"></div></div>
+      <button id="cancel" type="button">Cancelar</button>
+    </section>
+
+    <section id="failed" hidden>
+      <p id="message" role="alert"></p>
+      <button id="dismiss" type="button">Entendido</button>
+    </section>
+
+    <script src="popup.js" type="module"></script>
+  </body>
+</html>

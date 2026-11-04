@@ -13,6 +13,7 @@ import { relativeDay } from '@/lib/format';
 import { norm } from '@/lib/text';
 import { deliverFile } from '@/lib/deliverFile';
 import { CapturesView } from './CapturesView';
+import { ExtensionInbox } from './ExtensionInbox';
 import { hostOf, isWebAddress } from './model';
 import { OpenWebDialog } from './OpenWebDialog';
 import './documentos.css';
@@ -242,6 +243,7 @@ export function DocumentosPage() {
       )}
       <RenameDialog doc={renaming} onClose={() => setRenaming(null)} />
       <OpenWebDialog open={openingWeb} onClose={() => setOpeningWeb(false)} />
+      <ExtensionInbox />
     </Page>
   );
 }
