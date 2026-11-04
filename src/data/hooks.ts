@@ -18,6 +18,7 @@ export const qk = {
   board: (id: string) => ['board', id] as const,
   documents: ['documents'] as const,
   document: (id: string) => ['document', id] as const,
+  captures: ['captures'] as const,
   usage: (from: string, to: string) => ['usage', from, to] as const,
   sessions: (from: Date, to: Date) => ['sessions', from.getTime(), to.getTime()] as const,
   prices: ['prices'] as const,
@@ -107,6 +108,10 @@ export const useBoard = (id: string) => {
 export const useDocuments = () => {
   const api = useApi();
   return useQuery({ queryKey: qk.documents, queryFn: () => api.listDocuments() });
+};
+export const useCaptures = () => {
+  const api = useApi();
+  return useQuery({ queryKey: qk.captures, queryFn: () => api.listCaptures() });
 };
 export const useDocument = (id: string) => {
   const api = useApi();

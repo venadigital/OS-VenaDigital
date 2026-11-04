@@ -79,12 +79,28 @@ export type DocSummary = {
   file_size: number;
   page_count: number;
   thumbnail: string | null;
+  /** The address it came from, when it is a web page and not an uploaded PDF. */
+  source_url: string | null;
   created_at: string;
   updated_at: string;
 };
 
 export type Doc = DocSummary & {
   annotations: DocAnnotations;
+};
+
+/** A saved screenshot of part of a document, with its marks drawn in. */
+export type Capture = {
+  id: string;
+  document_id: string | null;
+  name: string;
+  /** The image in Storage: <user_id>/<id>.png or .jpg */
+  file_path: string;
+  file_size: number;
+  width: number;
+  height: number;
+  thumbnail: string | null;
+  created_at: string;
 };
 
 /**

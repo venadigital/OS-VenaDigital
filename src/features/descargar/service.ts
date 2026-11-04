@@ -83,7 +83,37 @@ export const downloader = {
   cancel: (id: string) => call<Job>(`/api/jobs/${id}`, { method: 'DELETE' }),
   fileUrl: (id: string, index: number) => `${DOWNLOADER_URL}/api/jobs/${id}/files/${index}`,
   assetUrl: (path?: string) => (path ? `${DOWNLOADER_URL}${path}` : undefined),
+  captureWeb,
 };
+
+export type WebPage = { file: Blob; title: string; url: string; truncated: boolean };
+
+/** Asks the Mac to load a web page and hand it back as a PDF ready to annotate. */
+async function captureWeb(url: string, signal?: AbortSignal): Promise<WebPage> {
+  let res: Response;
+  try {
+    res = await fetch(`${DOWNLOADER_URL}/api/captures`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ url }),
+      signal,
+    });
+  } catch (err) {
+    if (signal?.aborted) throw err;
+    throw new DownloaderError('offline', 'El servicio no responde en este Mac.');
+  }
+  if (!res.ok) {
+    const data = (await res.json().catch(() => ({}))) as { error?: { code: string; message: string } };
+    throw new DownloaderError(data.error?.code ?? 'error', data.error?.message ?? 'No se pudo cargar la web.');
+  }
+  const header = (name: string) => decodeURIComponent(res.headers.get(name) ?? '');
+  return {
+    file: await res.blob(),
+    title: header('x-capture-title'),
+    url: header('x-capture-url') || url,
+    truncated: res.headers.get('x-capture-truncated') === 'true',
+  };
+}
 
 const DESKTOP = '(min-width: 768px) and (pointer: fine)';
 
@@ -102,16 +132,18 @@ function useIsDesktop(): boolean {
  * Whether this device can use the downloader: a computer (never a phone) where
  * the local service answers. Phones don't even try to reach it.
  */
-export function useDownloaderStatus(): { desktop: boolean; available: boolean; checking: boolean } {
+export function useDownloaderStatus(): { desktop: boolean; available: boolean; checking: boolean; capture: boolean } {
   const desktop = useIsDesktop();
   const q = useQuery({
     queryKey: ['downloader', 'health'],
     queryFn: async () => {
       try {
         const res = await fetch(`${DOWNLOADER_URL}/api/health`, { signal: AbortSignal.timeout(8000) });
-        return res.ok && Boolean(((await res.json()) as { ok?: boolean }).ok);
+        if (!res.ok) return { ok: false, capture: false };
+        const data = (await res.json()) as { ok?: boolean; capture?: boolean };
+        return { ok: Boolean(data.ok), capture: Boolean(data.capture) };
       } catch {
-        return false;
+        return { ok: false, capture: false };
       }
     },
     enabled: desktop,
@@ -120,5 +152,5 @@ export function useDownloaderStatus(): { desktop: boolean; available: boolean; c
     refetchInterval: 5 * 60_000,
     refetchOnWindowFocus: true,
   });
-  return { desktop, available: desktop && q.data === true, checking: desktop && q.isPending };
+  return { desktop, available: desktop && q.data?.ok === true, checking: desktop && q.isPending, capture: desktop && q.data?.capture === true };
 }

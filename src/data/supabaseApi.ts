@@ -11,6 +11,7 @@ import type {
   Invoice,
   CollectorToken,
   Doc,
+  Capture,
   DocSummary,
   LinkPreview,
   ModelPrice,
@@ -35,7 +36,7 @@ const toClient = (r: Record<string, unknown>): Client =>
   ({ ...r, fee: num(r.fee), included_hours: numOrNull(r.included_hours), extra_hour_rate: numOrNull(r.extra_hour_rate), estimated_hours: numOrNull(r.estimated_hours) }) as Client;
 const toInvoice = (r: Record<string, unknown>): Invoice => ({ ...r, amount: num(r.amount) }) as Invoice;
 
-const DOC_SUMMARY = 'id, name, file_path, file_size, page_count, thumbnail, created_at, updated_at';
+const DOC_SUMMARY = 'id, name, file_path, file_size, page_count, thumbnail, source_url, created_at, updated_at';
 
 export function createSupabaseApi(sb: SupabaseClient): Api {
   const userId = async () => {
@@ -314,6 +315,41 @@ export function createSupabaseApi(sb: SupabaseClient): Api {
     async documentFile(doc) {
       const res = await sb.storage.from('documents').download(doc.file_path);
       if (res.error || !res.data) throw new Error(res.error?.message ?? 'No se pudo descargar el PDF');
+      return res.data;
+    },
+
+    // ---------- Capturas ----------
+    async listCaptures() {
+      const res = await sb.from('captures').select('*').order('created_at', { ascending: false });
+      return (check(res) as Capture[]).map((c) => ({ ...c, file_size: num(c.file_size) }));
+    },
+    async createCapture(file, info) {
+      const id = crypto.randomUUID();
+      const path = `${await userId()}/${id}.${file.type === 'image/jpeg' ? 'jpg' : 'png'}`;
+      const up = await sb.storage.from('captures').upload(path, file, { contentType: file.type, upsert: false });
+      if (up.error) throw new Error(up.error.message);
+      const res = await sb
+        .from('captures')
+        .insert({ id, file_path: path, file_size: file.size, ...info })
+        .select('*')
+        .single();
+      if (res.error) {
+        await sb.storage.from('captures').remove([path]);
+        throw new Error(res.error.message);
+      }
+      return { ...(res.data as Capture), file_size: file.size };
+    },
+    async updateCapture(id, patch) {
+      check(await sb.from('captures').update(patch).eq('id', id));
+    },
+    async deleteCapture(id) {
+      const row = check(await sb.from('captures').select('file_path').eq('id', id).maybeSingle()) as { file_path: string } | null;
+      check(await sb.from('captures').delete().eq('id', id));
+      if (row?.file_path) await sb.storage.from('captures').remove([row.file_path]).catch(() => undefined);
+    },
+    async captureFile(capture) {
+      const res = await sb.storage.from('captures').download(capture.file_path);
+      if (res.error || !res.data) throw new Error(res.error?.message ?? 'No se pudo descargar la captura');
       return res.data;
     },
 

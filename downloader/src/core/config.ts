@@ -22,6 +22,13 @@ export interface Config {
   sweepEveryMs: number;
   policy: JobPolicy;
   routes: Routes;
+  capture: {
+    /** The Chrome that loads web pages for the document viewer. */
+    chrome: string;
+    /** Its own profile, apart from the everyday one: sign-ins made there stay there. */
+    profileDir: string;
+    timeoutMs: number;
+  };
   engines: {
     ytdlp: string;
     gallerydl: string;
@@ -60,6 +67,11 @@ export function loadConfig(): Config {
       orphanGraceMs: num('ORPHAN_GRACE_MIN', 5) * MIN,
     },
     routes: parseRoutes(env.ROUTES),
+    capture: {
+      chrome: env.CHROME_BIN ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+      profileDir: env.CAPTURE_PROFILE ?? path.join(os.homedir(), 'Library/Application Support/Vena Downloader/chrome-profile'),
+      timeoutMs: num('CAPTURE_TIMEOUT_SEC', 180) * 1000,
+    },
     engines: {
       enginesDir,
       ytdlp: env.YTDLP_BIN ?? path.join(enginesDir, 'bin/yt-dlp'),

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarPlus, CornerDownLeft, FileText, FileUp, Moon, NotebookPen, Play, Search, Settings2, Shapes, Sun, UserPlus, Users } from 'lucide-react';
+import { CalendarPlus, CornerDownLeft, FileText, FileUp, Globe, Moon, NotebookPen, Play, Search, Settings2, Shapes, Sun, UserPlus, Users } from 'lucide-react';
 import { useBoards, useClients, useDocuments, useNotes, useStartTimer } from '@/data/hooks';
+import { useDownloaderStatus } from '@/features/descargar/service';
 import { useTimeData } from '@/features/tiempo/model';
 import { useNav } from './Shell';
 import { cx, Dialog, Dot } from './ui';
@@ -28,6 +29,7 @@ export function CommandPalette() {
   const start = useStartTimer();
   const { theme } = useTheme();
   const nav = useNav();
+  const { capture } = useDownloaderStatus();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -64,6 +66,7 @@ export function CommandPalette() {
       { id: 'act:board', group: 'Crear', label: 'Nuevo tablero', icon: <Shapes size={16} />, run: go('/tableros?nuevo=1') },
       { id: 'act:client', group: 'Crear', label: 'Nuevo cliente', icon: <UserPlus size={16} />, run: go('/clientes?nuevo=1') },
       { id: 'act:document', group: 'Crear', label: 'Subir PDF', icon: <FileUp size={16} />, run: go('/documentos?subir=1') },
+      ...(capture ? [{ id: 'act:web', group: 'Crear', label: 'Abrir web', icon: <Globe size={16} />, run: go('/documentos?web=1') }] : []),
       theme === 'dark'
         ? { id: 'act:theme', group: 'Apariencia', label: 'Usar modo claro', icon: <Sun size={16} />, run: toggleTheme }
         : { id: 'act:theme', group: 'Apariencia', label: 'Usar modo oscuro', icon: <Moon size={16} />, run: toggleTheme },
@@ -110,7 +113,7 @@ export function CommandPalette() {
         })),
     ];
     return [...base.filter((i) => match(i.label)), ...found];
-  }, [q, tasks, boards.data, documents.data, notes.data, clients.data, projectById, navigate, start, theme, nav]);
+  }, [q, tasks, boards.data, documents.data, notes.data, clients.data, projectById, navigate, start, theme, nav, capture]);
 
   if (!open) return null;
 

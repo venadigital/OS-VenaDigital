@@ -14,6 +14,7 @@
     "engines:update": "VIRTUAL_ENV=.engines uv pip install -U 'yt-dlp[default]' gallery-dl",
     "engines:versions": ".engines/bin/yt-dlp --version && .engines/bin/gallery-dl --version",
     "service:install": "bash scripts/install-mac.sh",
-    "service:uninstall": "bash scripts/uninstall-mac.sh"
+    "service:uninstall": "bash scripts/uninstall-mac.sh",
+    "capture:login": "bash scripts/capture-login.sh"
   }
 }

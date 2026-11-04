@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Check, ChevronLeft, Download, FileDown, FileText, Hand, Highlighter, LoaderCircle, PenLine, Redo2, Trash2, Undo2, ZoomIn, ZoomOut } from 'lucide-react';
+import { Check, ChevronLeft, CircleAlert, Download, ExternalLink, FileDown, FileText, Globe, Hand, Highlighter, Images, LoaderCircle, PenLine, Redo2, Trash2, Undo2, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useApi } from '@/data/ApiContext';
 import { qk, useDocument } from '@/data/hooks';
@@ -9,7 +9,8 @@ import { Button, IconButton, Menu, type MenuItem } from '@/components/ui';
 import { useToast } from '@/components/Toast';
 import { deliverFile } from '@/lib/deliverFile';
 import { firstPageThumbnail, openPdf, pdfErrorMessage, type PDFDocumentProxy, type PDFPageProxy } from './pdf';
-import { DEFAULT_STYLES, DRAWING_TOOLS, mergeLineRects, pageMarks, translate, uid, withPage, type Box, type Tool, type ToolStyles } from './model';
+import { DEFAULT_STYLES, DRAWING_TOOLS, isWebAddress, mergeLineRects, pageMarks, spillMarks, translate, uid, withPage, type Box, type Tool, type ToolStyles } from './model';
+import { boundsOf, captureFileName, captureLayout, overlapOf, type CaptureImage, type Rect } from './capture';
 import { PdfPage, type Shared } from './PdfPage';
 import { TOOLS, ToolDock } from './Toolbar';
 import './documentos.css';
@@ -17,7 +18,13 @@ import './documentos.css';
 type Status = 'idle' | 'saving' | 'saved' | 'error';
 type PageInfo = { page: PDFPageProxy; width: number; height: number; transform: number[] };
 type Anchor = { index: number; px: number; py: number };
+/** The last screenshot: being made, or ready (and whether it reached the library). */
+type Shot = { working: true } | { working: false; image: CaptureImage; name: string; at: Date; saved: boolean };
 
+/** A dragged screenshot smaller than this was a stray click. */
+const MIN_MARQUEE = 8;
+/** How close to the viewer's edge a drag starts scrolling, in pixels. */
+const MARQUEE_EDGE = 48;
 const SAVE_DELAY = 1200;
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 5;
@@ -72,6 +79,8 @@ function Viewer({ doc }: { doc: Doc }) {
   const toast = useToast();
   const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
+  /** A web page is one sheet cut into stretches: no page numbers or gaps between them. */
+  const isWeb = Boolean(doc.source_url);
 
   // ---------- The PDF ----------
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
@@ -189,6 +198,7 @@ function Viewer({ doc }: { doc: Doc }) {
   }, [flush]);
 
   // ---------- Tools ----------
+  const [shot, setShot] = useState<Shot | null>(null);
   const [tool, setToolState] = useState<Tool>('select');
   const [shape, setShape] = useState<ShapeKind>('rect');
   const [styles, setStylesState] = useState<ToolStyles>(() => {
@@ -204,6 +214,7 @@ function Viewer({ doc }: { doc: Doc }) {
   const setTool = useCallback((t: Tool) => {
     setToolState(t);
     setSelected(null);
+    setShot(null);
     window.getSelection()?.removeAllRanges();
   }, []);
   const drawing = DRAWING_TOOLS.includes(tool);
@@ -508,6 +519,117 @@ function Viewer({ doc }: { doc: Doc }) {
     if (tool === 'texthl' && e.pointerType === 'mouse') setTimeout(highlightSelection, 0);
   };
 
+  // ---------- Screenshots ----------
+  const rectOf = (el: Element): Rect => {
+    const { left, top, width, height } = el.getBoundingClientRect();
+    return { left, top, width, height };
+  };
+  const takeCapture = async (region: Rect) => {
+    if (capturing.current) return;
+    const rects = pageEls().map((el) => ({ index: Number(el.dataset.page), ...rectOf(el) }));
+    const layout = captureLayout(rects, region, zoomRef.current);
+    if (!layout.parts.some((p) => p.sw && p.sh)) return;
+    capturing.current = true;
+    setShot({ working: true });
+    try {
+      const { composeCapture } = await import('./capture');
+      const image = await composeCapture(layout, pages.map((p) => p.page), marksRef.current);
+      const label = name.trim() || 'Captura';
+      let saved = true;
+      try {
+        await api.createCapture(image.blob, { document_id: doc.id, name: label, width: image.width, height: image.height, thumbnail: image.thumbnail });
+        void qc.invalidateQueries({ queryKey: qk.captures });
+      } catch (err) {
+        saved = false;
+        toast(`No se pudo guardar la captura: ${err instanceof Error ? err.message : String(err)}`, 'error');
+      }
+      setShot({ working: false, image, name: label, at: new Date(), saved });
+    } catch (err) {
+      setShot(null);
+      toast(`No se pudo crear la captura: ${err instanceof Error ? err.message : String(err)}`, 'error');
+    } finally {
+      capturing.current = false;
+    }
+  };
+  const captureVisible = () => {
+    const scroller = scrollRef.current;
+    const els = pageEls();
+    if (!scroller || !els.length) return;
+    const region = overlapOf(rectOf(scroller), boundsOf(els.map(rectOf)));
+    if (region) void takeCapture(region);
+  };
+  const captureAll = () => {
+    const els = pageEls();
+    if (els.length) void takeCapture(boundsOf(els.map(rectOf)));
+  };
+  const downloadShot = async () => {
+    if (!shot || shot.working) return;
+    try {
+      await deliverFile(shot.image.blob, captureFileName(shot.name, shot.image.blob, shot.at));
+    } catch (err) {
+      toast(`No se pudo descargar: ${err instanceof Error ? err.message : String(err)}`, 'error');
+    }
+  };
+
+  // The dragged region lives in the scroller's content, so it stays put while the page scrolls.
+  const [marquee, setMarquee] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
+  const capturing = useRef(false);
+  const marqueeDrag = useRef<{ pointer: number; x0: number; y0: number; cx: number; cy: number; frame: number } | null>(null);
+  const toContent = (cx: number, cy: number) => {
+    const s = scrollRef.current!;
+    const r = s.getBoundingClientRect();
+    return { x: Math.min(Math.max(cx, r.left), r.right) - r.left + s.scrollLeft, y: Math.min(Math.max(cy, r.top), r.bottom) - r.top + s.scrollTop };
+  };
+  const cancelMarquee = () => {
+    if (marqueeDrag.current) cancelAnimationFrame(marqueeDrag.current.frame);
+    marqueeDrag.current = null;
+    setMarquee(null);
+  };
+  const followMarquee = () => {
+    const d = marqueeDrag.current;
+    const s = scrollRef.current;
+    if (!d || !s) return;
+    if (shared.gesture) return cancelMarquee(); // a second finger: it is a pan or a pinch
+    const r = s.getBoundingClientRect();
+    const push = (at: number, low: number, high: number) => (at < low + MARQUEE_EDGE ? at - low - MARQUEE_EDGE : at > high - MARQUEE_EDGE ? at - high + MARQUEE_EDGE : 0) * 0.35;
+    s.scrollTop += push(d.cy, r.top, r.bottom);
+    s.scrollLeft += push(d.cx, r.left, r.right);
+    const p = toContent(d.cx, d.cy);
+    setMarquee({ x0: d.x0, y0: d.y0, x1: p.x, y1: p.y });
+    d.frame = requestAnimationFrame(followMarquee);
+  };
+  const onMarqueeDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (tool !== 'capture' || marqueeDrag.current) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    // With a pencil around, or with two fingers, touches move the page.
+    if (e.pointerType === 'touch' && (shared.penMode || shared.touches.size > 1 || shared.gesture)) return;
+    if (!(e.target as Element).closest('.doc-pages')) return; // the scrollbar
+    if (e.pointerType === 'pen') shared.onPen();
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const p = toContent(e.clientX, e.clientY);
+    marqueeDrag.current = { pointer: e.pointerId, x0: p.x, y0: p.y, cx: e.clientX, cy: e.clientY, frame: requestAnimationFrame(followMarquee) };
+    setMarquee({ x0: p.x, y0: p.y, x1: p.x, y1: p.y });
+  };
+  const onMarqueeMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = marqueeDrag.current;
+    if (!d || d.pointer !== e.pointerId) return;
+    d.cx = e.clientX;
+    d.cy = e.clientY;
+  };
+  const onMarqueeUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const d = marqueeDrag.current;
+    const s = scrollRef.current;
+    if (!d || !s || d.pointer !== e.pointerId) return;
+    const p = toContent(e.clientX, e.clientY);
+    const r = s.getBoundingClientRect();
+    cancelMarquee();
+    const width = Math.abs(p.x - d.x0);
+    const height = Math.abs(p.y - d.y0);
+    if (width < MIN_MARQUEE || height < MIN_MARQUEE) return;
+    void takeCapture({ left: Math.min(p.x, d.x0) - s.scrollLeft + r.left, top: Math.min(p.y, d.y0) - s.scrollTop + r.top, width, height });
+  };
+
   // ---------- Keyboard ----------
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -543,7 +665,8 @@ function Viewer({ doc }: { doc: Doc }) {
         return;
       }
       if (e.key === 'Escape') {
-        if (selected) setSelected(null);
+        if (marqueeDrag.current) cancelMarquee();
+        else if (selected) setSelected(null);
         else setTool('select');
         return;
       }
@@ -574,7 +697,8 @@ function Viewer({ doc }: { doc: Doc }) {
     try {
       void flush();
       const { exportAnnotatedPdf } = await import('./exportPdf');
-      const blob = await exportAnnotatedPdf(await pdf.getData(), marksRef.current, pages.map((p) => p.transform));
+      const marksOut = isWeb ? spillMarks(marksRef.current, pages.map((p) => p.height)) : marksRef.current;
+      const blob = await exportAnnotatedPdf(await pdf.getData(), marksOut, pages.map((p) => p.transform));
       await deliverFile(blob, `${name} (anotado).pdf`);
     } catch (err) {
       toast(`No se pudo preparar el PDF: ${err instanceof Error ? err.message : String(err)}`, 'error');
@@ -599,6 +723,9 @@ function Viewer({ doc }: { doc: Doc }) {
   };
 
   const menu: MenuItem[] = [
+    ...(isWebAddress(doc.source_url)
+      ? [{ label: 'Abrir web original', icon: <ExternalLink size={14} />, onSelect: () => void window.open(doc.source_url as string, '_blank', 'noopener') }]
+      : []),
     { label: 'Descargar PDF anotado', icon: <Download size={14} />, onSelect: () => void downloadAnnotated() },
     { label: 'Descargar original', icon: <FileDown size={14} />, onSelect: () => void downloadOriginal() },
     ...(touchDevice() && pen.seen
@@ -628,7 +755,7 @@ function Viewer({ doc }: { doc: Doc }) {
             <span className="hidden sm:inline">Documentos</span>
           </Link>
           <div className="hidden h-5 w-px bg-line sm:block" />
-          <FileText size={16} className="hidden shrink-0 text-ink-2 sm:block" />
+          {isWeb ? <Globe size={16} className="hidden shrink-0 text-ink-2 sm:block" /> : <FileText size={16} className="hidden shrink-0 text-ink-2 sm:block" />}
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -641,7 +768,7 @@ function Viewer({ doc }: { doc: Doc }) {
           <SaveStatus status={status} />
         </div>
         <div className="flex shrink-0 items-center gap-1 md:gap-2">
-          {pages.length > 0 && (
+          {pages.length > 0 && !isWeb && (
             <div className="hidden items-center gap-1 text-[13px] text-ink-3 md:flex">
               <PageInput current={current + 1} total={pages.length} onGo={goToPage} />
             </div>
@@ -674,7 +801,17 @@ function Viewer({ doc }: { doc: Doc }) {
       </header>
 
       <div className="relative min-h-0 flex-1">
-        <div ref={scrollRef} className={`doc-scroller${drawing ? ' is-drawing' : ''}`} onPointerUp={onScrollerPointerUp}>
+        <div
+          ref={scrollRef}
+          className={`doc-scroller${drawing ? ' is-drawing' : ''}`}
+          onPointerDown={onMarqueeDown}
+          onPointerMove={onMarqueeMove}
+          onPointerUp={(e) => {
+            onScrollerPointerUp(e);
+            onMarqueeUp(e);
+          }}
+          onPointerCancel={cancelMarquee}
+        >
           {loadError ? (
             <div className="flex h-full items-center justify-center p-6 text-center text-[14px] text-ink-3">{loadError}</div>
           ) : !pages.length ? (
@@ -682,7 +819,7 @@ function Viewer({ doc }: { doc: Doc }) {
               <LoaderCircle size={16} className="animate-spin" /> Abriendo PDF…
             </div>
           ) : (
-            <div className="doc-pages" style={pageStyle}>
+            <div className={`doc-pages${isWeb ? ' doc-pages--web' : ''}`} style={pageStyle}>
               {pages.map((p, i) => (
                 <PdfPage
                   key={i}
@@ -705,8 +842,14 @@ function Viewer({ doc }: { doc: Doc }) {
               ))}
             </div>
           )}
+          {marquee && (
+            <div
+              className="doc-marquee"
+              style={{ left: Math.min(marquee.x0, marquee.x1), top: Math.min(marquee.y0, marquee.y1), width: Math.abs(marquee.x1 - marquee.x0), height: Math.abs(marquee.y1 - marquee.y0) }}
+            />
+          )}
         </div>
-        {pages.length > 0 && (
+        {pages.length > 0 && !isWeb && (
           <div className="doc-page-chip md:hidden">
             {current + 1} / {pages.length}
           </div>
@@ -722,6 +865,8 @@ function Viewer({ doc }: { doc: Doc }) {
             onStyles={setStyles}
             onSelectedChange={changeSelected}
             onDeleteSelected={deleteSelected}
+            onCaptureVisible={captureVisible}
+            onCaptureAll={captureAll}
             extra={
               showHighlightButton ? (
                 <button
@@ -732,11 +877,45 @@ function Viewer({ doc }: { doc: Doc }) {
                 >
                   <Highlighter size={16} /> Resaltar
                 </button>
+              ) : shot ? (
+                <CaptureTray shot={shot} onDownload={() => void downloadShot()} onClose={() => setShot(null)} />
               ) : null
             }
           />
         )}
       </div>
+    </div>
+  );
+}
+
+function CaptureTray({ shot, onDownload, onClose }: { shot: Shot; onDownload: () => void; onClose: () => void }) {
+  if (shot.working) {
+    return (
+      <div className="doc-capture-tray" role="status">
+        <span className="doc-capture-tray-label">
+          <LoaderCircle size={15} className="animate-spin" /> Creando captura…
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div className="doc-capture-tray" role="status">
+      <img src={shot.image.thumbnail} alt="" />
+      <span className="doc-capture-tray-label">
+        {shot.saved ? <Check size={15} className="text-good" /> : <CircleAlert size={15} className="text-crit" />}
+        {shot.saved ? 'Guardada' : 'Sin guardar'}
+      </span>
+      <button type="button" className="doc-icon-btn" aria-label="Descargar captura" title="Descargar" onClick={onDownload}>
+        <Download size={16} />
+      </button>
+      {shot.saved && (
+        <Link to="/documentos?vista=capturas" className="doc-icon-btn" aria-label="Ver capturas" title="Ver capturas">
+          <Images size={16} />
+        </Link>
+      )}
+      <button type="button" className="doc-icon-btn" aria-label="Cerrar" title="Cerrar" onClick={onClose}>
+        <X size={16} />
+      </button>
     </div>
   );
 }

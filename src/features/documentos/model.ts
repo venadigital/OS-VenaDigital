@@ -4,7 +4,7 @@
 import { getStroke } from 'perfect-freehand';
 import type { Annotation, DocAnnotations, InkPoint, ShapeKind } from '@/data/types';
 
-export type Tool = 'select' | 'pen' | 'marker' | 'texthl' | 'eraser' | 'text' | 'shape' | 'note';
+export type Tool = 'select' | 'pen' | 'marker' | 'texthl' | 'eraser' | 'text' | 'shape' | 'note' | 'capture';
 export type Box = { x: number; y: number; w: number; h: number };
 
 export const INK_COLORS = ['#1f1e1c', '#e03131', '#f08c00', '#2f9e44', '#1971c2', '#7048e8', '#e64980', '#868e96'];
@@ -41,7 +41,7 @@ export const DEFAULT_STYLES: ToolStyles = {
 };
 
 /** Tools that draw with the pointer (the page takes touches instead of scrolling). */
-export const DRAWING_TOOLS: Tool[] = ['pen', 'marker', 'eraser', 'text', 'shape', 'note'];
+export const DRAWING_TOOLS: Tool[] = ['pen', 'marker', 'eraser', 'text', 'shape', 'note', 'capture'];
 
 export const uid = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `a${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`);
 export const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -295,6 +295,48 @@ export function translate(a: Annotation, dx: number, dy: number): Annotation {
     case 'texthl':
       return { ...a, rects: a.rects.map(([x, y, w, h]) => [r2(x + dx), r2(y + dy), w, h] as [number, number, number, number]) };
   }
+}
+
+// ---------- Web pages ----------
+
+/** Whether a stored address is safe to open as a link. */
+export const isWebAddress = (url: string | null | undefined): url is string => Boolean(url && /^https?:\/\//i.test(url));
+
+/** The site's name, for labels. */
+export function hostOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
+}
+
+/**
+ * A web page is one continuous sheet cut into PDF pages, so a stroke can cross a cut. On
+ * screen it just overflows its page; a PDF clips it, so each neighbouring page it reaches
+ * also gets a copy, moved into that page's coordinates. Notes stay put: they would double.
+ */
+export function spillMarks(a: DocAnnotations, heights: number[]): DocAnnotations {
+  const pages: Record<string, Annotation[]> = {};
+  for (const [key, list] of Object.entries(a.pages ?? {})) pages[key] = [...list];
+  for (const [key, list] of Object.entries(a.pages ?? {})) {
+    const start = Number(key);
+    for (const m of list) {
+      if (m.type === 'note') continue;
+      const b = bbox(m);
+      let dy = 0;
+      for (let p = start; p + 1 < heights.length && b.y + b.h + dy > heights[p]; p++) {
+        dy -= heights[p];
+        (pages[p + 1] ??= []).push(translate(m, 0, dy));
+      }
+      dy = 0;
+      for (let p = start; p > 0 && b.y + dy < 0; p--) {
+        dy += heights[p - 1];
+        (pages[p - 1] ??= []).push(translate(m, 0, dy));
+      }
+    }
+  }
+  return { v: 1, pages };
 }
 
 // ---------- Text highlight ----------

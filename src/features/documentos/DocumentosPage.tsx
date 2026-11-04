@@ -1,16 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { FileDown, FileText, FileUp, LoaderCircle, Pencil, Search, Trash2, X } from 'lucide-react';
+import { ExternalLink, FileDown, FileText, FileUp, Globe, LoaderCircle, Pencil, Search, Trash2, X } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Page, PageHeader } from '@/components/Shell';
-import { Button, Dialog, Empty, Field, Input, Menu, Select, Skeleton } from '@/components/ui';
+import { Button, Dialog, Empty, Field, Input, Menu, Segmented, Select, Skeleton } from '@/components/ui';
 import { useApi } from '@/data/ApiContext';
-import { qk, useApiMutation, useDocuments } from '@/data/hooks';
+import { qk, useApiMutation, useCaptures, useDocuments } from '@/data/hooks';
 import type { DocSummary } from '@/data/types';
 import { useToast } from '@/components/Toast';
+import { useDownloaderStatus } from '@/features/descargar/service';
 import { relativeDay } from '@/lib/format';
 import { norm } from '@/lib/text';
 import { deliverFile } from '@/lib/deliverFile';
+import { CapturesView } from './CapturesView';
+import { hostOf, isWebAddress } from './model';
+import { OpenWebDialog } from './OpenWebDialog';
 import './documentos.css';
 
 /** Supabase's limit for one file on this plan. */
@@ -27,6 +31,14 @@ export function DocumentosPage() {
   const { upload, uploading } = useUploadDocument();
   const api = useApi();
   const toast = useToast();
+  const { capture } = useDownloaderStatus();
+  const capturesQ = useCaptures();
+  const [openingWeb, setOpeningWeb] = useState(false);
+  const view = params.get('vista') === 'capturas' ? 'capturas' : 'documentos';
+  const setView = (next: 'documentos' | 'capturas') => {
+    setQuery('');
+    setParams(next === 'capturas' ? { vista: 'capturas' } : {}, { replace: true });
+  };
 
   useEffect(() => {
     if (params.has('subir')) {
@@ -34,6 +46,12 @@ export function DocumentosPage() {
       fileInput.current?.click();
     }
   }, [params, setParams]);
+  useEffect(() => {
+    if (params.has('web') && capture) {
+      setParams({}, { replace: true });
+      setOpeningWeb(true);
+    }
+  }, [params, setParams, capture]);
 
   const pick = (files: FileList | null) => {
     const file = files?.[0];
@@ -75,6 +93,11 @@ export function DocumentosPage() {
     return [...list].sort((a, b) => (sort === 'name' ? a.name.localeCompare(b.name, 'es') : b.updated_at.localeCompare(a.updated_at)));
   }, [docsQ.data, query, sort]);
   const total = docsQ.data?.length ?? 0;
+  const captureCount = capturesQ.data?.length ?? 0;
+  const matchesQuery = (name: string) => {
+    const q = norm(query.trim());
+    return !q || norm(name).includes(q);
+  };
 
   const downloadOriginal = async (d: DocSummary) => {
     try {
@@ -87,17 +110,24 @@ export function DocumentosPage() {
   return (
     <Page>
       <PageHeader
-        eyebrow={`${total} ${total === 1 ? 'documento' : 'documentos'}`}
+        eyebrow={view === 'capturas' ? `${captureCount} ${captureCount === 1 ? 'captura' : 'capturas'}` : `${total} ${total === 1 ? 'documento' : 'documentos'}`}
         title="Documentos"
         right={
-          <Button
-            variant="primary"
-            icon={uploading ? <LoaderCircle size={16} className="animate-spin" /> : <FileUp size={16} />}
-            disabled={uploading}
-            onClick={() => fileInput.current?.click()}
-          >
-            {uploading ? 'Subiendo…' : 'Subir PDF'}
-          </Button>
+          <>
+            {capture && (
+              <Button icon={<Globe size={16} />} onClick={() => setOpeningWeb(true)}>
+                Abrir web
+              </Button>
+            )}
+            <Button
+              variant="primary"
+              icon={uploading ? <LoaderCircle size={16} className="animate-spin" /> : <FileUp size={16} />}
+              disabled={uploading}
+              onClick={() => fileInput.current?.click()}
+            >
+              {uploading ? 'Subiendo…' : 'Subir PDF'}
+            </Button>
+          </>
         }
       />
       <input
@@ -110,15 +140,23 @@ export function DocumentosPage() {
           e.target.value = '';
         }}
       />
-      {total > 0 && (
-        <div className="collection-toolbar board-toolbar">
+      <div className="collection-toolbar board-toolbar">
+        <Segmented
+          value={view}
+          onChange={setView}
+          options={[
+            { value: 'documentos', label: 'Documentos' },
+            { value: 'capturas', label: 'Capturas' },
+          ]}
+        />
+        {(view === 'capturas' ? captureCount : total) > 0 && (
           <label className="collection-search flex h-[34px] w-full items-center gap-2 rounded-lg bg-fill px-2.5 text-ink-3 sm:w-56">
             <Search size={16} />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar documentos"
-              aria-label="Buscar documentos"
+              placeholder={view === 'capturas' ? 'Buscar capturas' : 'Buscar documentos'}
+              aria-label={view === 'capturas' ? 'Buscar capturas' : 'Buscar documentos'}
               className="min-w-0 flex-1 bg-transparent text-[13.5px] text-ink outline-none placeholder:text-ink-4"
             />
             {query && (
@@ -127,16 +165,20 @@ export function DocumentosPage() {
               </button>
             )}
           </label>
+        )}
+        {view === 'documentos' && total > 0 && (
           <div className="w-36">
             <Select aria-label="Ordenar documentos" value={sort} onChange={(e) => setSort(e.target.value as 'recent' | 'name')} className="h-[34px] rounded-lg text-[13.5px]">
               <option value="recent">Recientes</option>
               <option value="name">Por nombre</option>
             </Select>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {docsQ.isLoading ? (
+      {view === 'capturas' ? (
+        <CapturesView query={matchesQuery} />
+      ) : docsQ.isLoading ? (
         <div className="board-collection board-collection--grid">
           {Array.from({ length: 3 }, (_, i) => (
             <Skeleton key={i} className="h-64" />
@@ -168,13 +210,16 @@ export function DocumentosPage() {
               <div className="board-info flex items-center justify-between gap-2 px-4 pt-3 pb-3.5">
                 <Link to={`/documentos/${d.id}`} className="flex min-w-0 flex-col gap-0.5">
                   <span className="truncate text-[14.5px] font-semibold text-ink">{d.name}</span>
-                  <span className="text-[12.5px] text-ink-3">
-                    {d.page_count} {d.page_count === 1 ? 'página' : 'páginas'} · {relativeDay(new Date(d.updated_at)).toLowerCase()}
+                  <span className="truncate text-[12.5px] text-ink-3">
+                    {d.source_url ? hostOf(d.source_url) : `${d.page_count} ${d.page_count === 1 ? 'página' : 'páginas'}`} · {relativeDay(new Date(d.updated_at)).toLowerCase()}
                   </span>
                 </Link>
                 <Menu
                   items={[
                     { label: 'Renombrar', icon: <Pencil size={14} />, onSelect: () => setRenaming(d) },
+                    ...(isWebAddress(d.source_url)
+                      ? [{ label: 'Abrir web original', icon: <ExternalLink size={14} />, onSelect: () => void window.open(d.source_url as string, '_blank', 'noopener') }]
+                      : []),
                     { label: 'Descargar original', icon: <FileDown size={14} />, onSelect: () => void downloadOriginal(d) },
                     {
                       label: 'Borrar',
@@ -196,6 +241,7 @@ export function DocumentosPage() {
         </div>
       )}
       <RenameDialog doc={renaming} onClose={() => setRenaming(null)} />
+      <OpenWebDialog open={openingWeb} onClose={() => setOpeningWeb(false)} />
     </Page>
   );
 }

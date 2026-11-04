@@ -9,6 +9,10 @@
   color: var(--color-ink-2); font-size: 15px; font-weight: 600; pointer-events: none; backdrop-filter: blur(2px);
 }
 
+.doc-capture-thumb { width: 100%; height: 100%; object-fit: cover; object-position: top; border-radius: 4px; }
+.doc-capture-view { display: flex; justify-content: center; max-height: 72dvh; overflow: auto; border-radius: 10px; background: var(--color-plane); }
+.doc-capture-view img { display: block; max-width: 100%; height: auto; align-self: flex-start; }
+
 /* ---------- Viewer ---------- */
 .doc-scroller {
   position: absolute; inset: 0; overflow: auto; background: var(--color-fill);
@@ -20,10 +24,17 @@
   box-shadow: 0 1px 2px rgb(var(--shade) / 0.12), 0 6px 20px rgb(var(--shade) / 0.08);
 }
 .doc-canvas, .doc-canvas canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; border-radius: inherit; }
+/* A web page is one continuous sheet: its stretches meet with no gap or shadow. */
+.doc-pages--web { gap: 0; }
+.doc-pages--web .doc-page { box-shadow: none; border-radius: 0; }
 .doc-marks { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; z-index: 2; pointer-events: none; }
 .doc-marks--drawing { pointer-events: auto; touch-action: none; }
 .doc-scroller.is-drawing .doc-page { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
-.doc-tool-pen .doc-marks, .doc-tool-marker .doc-marks, .doc-tool-shape .doc-marks { cursor: crosshair; }
+.doc-tool-pen .doc-marks, .doc-tool-marker .doc-marks, .doc-tool-shape .doc-marks, .doc-tool-capture .doc-marks { cursor: crosshair; }
+.doc-marquee {
+  position: absolute; z-index: 10; pointer-events: none; border: 1.5px solid var(--accent); border-radius: 2px;
+  box-shadow: 0 0 0 100vmax rgb(0 0 0 / 0.28);
+}
 .doc-tool-text .doc-marks { cursor: text; }
 .doc-tool-note .doc-marks { cursor: copy; }
 .doc-tool-eraser .doc-marks { cursor: cell; }
@@ -111,6 +122,17 @@
   background: var(--color-ink); color: var(--color-page); font-size: 14px; font-weight: 600;
   box-shadow: 0 8px 24px rgb(var(--shade) / 0.25);
 }
+.doc-text-btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: 8px; flex-shrink: 0;
+  color: var(--color-ink-2); font-size: 13px; font-weight: 500;
+}
+.doc-text-btn:hover { background: var(--color-fill); }
+.doc-capture-tray {
+  display: flex; align-items: center; gap: 8px; padding: 6px; border-radius: 14px; font-size: 13px; font-weight: 500; color: var(--color-ink-2);
+  background: var(--color-overlay); border: 1px solid var(--color-line-2); box-shadow: 0 10px 30px rgb(var(--shade) / 0.14), 0 1px 2px rgb(var(--shade) / 0.06);
+}
+.doc-capture-tray img { width: 56px; height: 40px; object-fit: cover; object-position: top; border-radius: 8px; background: var(--color-plane); }
+.doc-capture-tray-label { display: inline-flex; align-items: center; gap: 6px; padding: 0 4px; white-space: nowrap; }
 .doc-page-chip {
   position: absolute; top: 10px; right: 10px; z-index: 15; padding: 4px 10px; border-radius: 999px; pointer-events: none;
   background: color-mix(in srgb, var(--color-overlay) 92%, transparent); border: 1px solid var(--color-line); color: var(--color-ink-2);

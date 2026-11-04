@@ -1,7 +1,7 @@
 // Floating tool dock of the PDF viewer: the tools, and above them the colors and sizes of
 // the tool in hand (or of the selected mark).
 import type { ReactNode } from 'react';
-import { Circle, Eraser, Highlighter, MousePointer2, MoveUpRight, PenLine, Slash, Square, StickyNote, TextSelect, Trash2, Type } from 'lucide-react';
+import { Camera, Circle, Eraser, Highlighter, Maximize, MousePointer2, MoveUpRight, PenLine, ScrollText, Slash, Square, StickyNote, TextSelect, Trash2, Type } from 'lucide-react';
 import type { Annotation, ShapeKind } from '@/data/types';
 import { cx } from '@/components/ui';
 import { HIGHLIGHT_COLORS, INK_COLORS, MARKER_WIDTHS, NOTE_COLORS, PEN_WIDTHS, SHAPE_WIDTHS, TEXT_SIZES, type Tool, type ToolStyles } from './model';
@@ -18,6 +18,7 @@ export const TOOLS: { id: Tool; label: string; key: string }[] = [
   { id: 'text', label: 'Texto', key: 'T' },
   { id: 'shape', label: 'Formas', key: 'R' },
   { id: 'note', label: 'Nota', key: 'N' },
+  { id: 'capture', label: 'Captura', key: 'C' },
 ];
 
 function ToolIcon({ tool, shape }: { tool: Tool; shape: ShapeKind }) {
@@ -41,6 +42,8 @@ function ToolIcon({ tool, shape }: { tool: Tool; shape: ShapeKind }) {
     }
     case 'note':
       return <StickyNote {...p} />;
+    case 'capture':
+      return <Camera {...p} />;
   }
 }
 
@@ -54,10 +57,12 @@ type DockProps = {
   onStyles: (s: ToolStyles) => void;
   onSelectedChange: (patch: { color?: string; width?: number; size?: number }) => void;
   onDeleteSelected: () => void;
+  onCaptureVisible: () => void;
+  onCaptureAll: () => void;
   extra?: ReactNode;
 };
 
-export function ToolDock({ tool, shape, styles, selected, onTool, onShape, onStyles, onSelectedChange, onDeleteSelected, extra }: DockProps) {
+export function ToolDock({ tool, shape, styles, selected, onTool, onShape, onStyles, onSelectedChange, onDeleteSelected, onCaptureVisible, onCaptureAll, extra }: DockProps) {
   return (
     <div className="doc-dock">
       {extra}
@@ -70,6 +75,8 @@ export function ToolDock({ tool, shape, styles, selected, onTool, onShape, onSty
         onStyles={onStyles}
         onSelectedChange={onSelectedChange}
         onDeleteSelected={onDeleteSelected}
+        onCaptureVisible={onCaptureVisible}
+        onCaptureAll={onCaptureAll}
       />
       <div className="doc-toolbar" role="toolbar" aria-label="Herramientas">
         {TOOLS.map((t) => (
@@ -99,6 +106,8 @@ function StyleBar({
   onStyles,
   onSelectedChange,
   onDeleteSelected,
+  onCaptureVisible,
+  onCaptureAll,
 }: Omit<DockProps, 'onTool' | 'extra'>) {
   const set = <K extends keyof ToolStyles>(k: K, patch: Partial<ToolStyles[K]>) => onStyles({ ...styles, [k]: { ...styles[k], ...patch } });
 
@@ -183,6 +192,17 @@ function StyleBar({
       return (
         <Bar>
           <Swatches colors={NOTE_COLORS} value={styles.note.color} onChange={(color) => set('note', { color })} />
+        </Bar>
+      );
+    case 'capture':
+      return (
+        <Bar>
+          <button type="button" className="doc-text-btn" onClick={onCaptureVisible}>
+            <Maximize size={15} /> Pantalla
+          </button>
+          <button type="button" className="doc-text-btn" onClick={onCaptureAll}>
+            <ScrollText size={15} /> Completo
+          </button>
         </Bar>
       );
     default:

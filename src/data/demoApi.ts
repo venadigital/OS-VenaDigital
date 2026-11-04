@@ -19,6 +19,7 @@ import type {
   TimeEntry,
   UsageRow,
   UsageSession,
+  Capture,
 } from './types';
 import { DEFAULT_PRICES } from '@/lib/pricing';
 import { SERIES } from '@/lib/palette';
@@ -40,6 +41,7 @@ type Store = {
   notes: Note[];
   boards: Board[];
   documents: Doc[];
+  captures: Capture[];
   accounts: AiAccount[];
   prices: ModelPrice[];
   usage: UsageRow[];
@@ -245,6 +247,7 @@ function seed(now: Date): Store {
     entries,
     notes,
     boards,
+    captures: [],
     documents: [
       {
         id: 'demo-doc-propuesta',
@@ -253,6 +256,7 @@ function seed(now: Date): Store {
         file_size: 4200,
         page_count: 3,
         thumbnail: null,
+        source_url: null,
         created_at: iso(subDays(now, 3)),
         updated_at: iso(subDays(now, 1)),
         annotations: {
@@ -298,6 +302,7 @@ export function createDemoApi(): Api {
   const cal = { connected: true, events: seedCalendar(new Date()) };
   const boardFiles = new Map<string, Blob>(); // "<board id>/<file id>"
   const docFiles = new Map<string, Blob>(); // file_path → PDF
+  const captureFiles = new Map<string, Blob>(); // file_path → image
   const timerListeners = new Set<() => void>();
   const notifyTimer = () => timerListeners.forEach((fn) => fn());
 
@@ -575,7 +580,7 @@ export function createDemoApi(): Api {
     async createDocument(file, info) {
       const now = iso(new Date());
       const id = uid();
-      const d: Doc = { id, file_path: `demo/${id}.pdf`, file_size: file.size, annotations: {}, created_at: now, updated_at: now, ...info };
+      const d: Doc = { id, file_path: `demo/${id}.pdf`, file_size: file.size, annotations: {}, source_url: null, created_at: now, updated_at: now, ...info };
       docFiles.set(d.file_path, file);
       s.documents.push(d);
       const { annotations: _a, ...summary } = d;
@@ -598,6 +603,31 @@ export function createDemoApi(): Api {
       const built = await buildDemoPdf();
       docFiles.set(DEMO_PDF, built);
       return built;
+    },
+
+    // ---------- Capturas ----------
+    listCaptures: async () => later(clone(s.captures).sort((a, b) => b.created_at.localeCompare(a.created_at))),
+    async createCapture(file, info) {
+      const id = uid();
+      const c: Capture = { id, file_path: `demo/${id}.png`, file_size: file.size, created_at: iso(new Date()), ...info };
+      captureFiles.set(c.file_path, file);
+      s.captures.push(c);
+      return later(clone(c));
+    },
+    async updateCapture(id, patch) {
+      Object.assign(s.captures.find((c) => c.id === id) ?? {}, patch);
+      return later(undefined);
+    },
+    async deleteCapture(id) {
+      const c = s.captures.find((x) => x.id === id);
+      if (c) captureFiles.delete(c.file_path);
+      s.captures = s.captures.filter((x) => x.id !== id);
+      return later(undefined);
+    },
+    async captureFile(capture) {
+      const stored = captureFiles.get(capture.file_path);
+      if (!stored) throw new Error('Captura no encontrada');
+      return stored;
     },
 
     // ---------- Consumo IA ----------

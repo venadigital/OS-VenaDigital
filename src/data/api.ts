@@ -20,6 +20,7 @@ import type {
   CollectorToken,
   Doc,
   DocAnnotations,
+  Capture,
   DocSummary,
   UsageSession,
   LinkPreview,
@@ -103,11 +104,18 @@ export interface Api {
   listDocuments(): Promise<DocSummary[]>;
   getDocument(id: string): Promise<Doc>;
   /** Stores the PDF untouched and creates its row. */
-  createDocument(file: Blob, info: { name: string; page_count: number; thumbnail: string | null }): Promise<DocSummary>;
+  createDocument(file: Blob, info: { name: string; page_count: number; thumbnail: string | null; source_url?: string | null }): Promise<DocSummary>;
   updateDocument(id: string, patch: { name?: string; annotations?: DocAnnotations; thumbnail?: string | null }): Promise<void>;
   deleteDocument(id: string): Promise<void>;
   /** The original PDF. */
   documentFile(doc: Pick<DocSummary, 'id' | 'file_path'>): Promise<Blob>;
+
+  // Capturas
+  listCaptures(): Promise<Capture[]>;
+  createCapture(file: Blob, info: { document_id: string | null; name: string; width: number; height: number; thumbnail: string | null }): Promise<Capture>;
+  updateCapture(id: string, patch: { name: string }): Promise<void>;
+  deleteCapture(id: string): Promise<void>;
+  captureFile(capture: Pick<Capture, 'file_path'>): Promise<Blob>;
 
   // Consumo IA
   /** Rows with fromDay <= day < toDay (yyyy-mm-dd). */

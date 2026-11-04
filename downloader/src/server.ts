@@ -11,6 +11,7 @@ import { Router } from './core/router.ts';
 import { TempStore } from './core/storage.ts';
 import { DownloadError, asDownloadError, type AudioFormat, type ErrorCode, type MediaInfo, type MediaKind, type VideoQuality } from './core/types.ts';
 import { startEngineUpdates } from './core/updater.ts';
+import { CAPTURE_MESSAGES, CAPTURE_STATUS, CaptureError, WebCapture } from './core/webCapture.ts';
 import { CobaltProvider } from './providers/cobalt.ts';
 import { GalleryDlProvider } from './providers/gallerydl.ts';
 import { YtDlpProvider } from './providers/ytdlp.ts';
@@ -84,6 +85,7 @@ export function buildApp(config: Config) {
     postProcess: (req, dir, ctx) => (req.kind === 'video' ? ensurePlayable(dir, ctx, { ffmpeg, ffprobe }) : Promise.resolve()),
   });
   const thumbs = new ThumbCache();
+  const capture = new WebCapture({ chrome: config.capture.chrome, profileDir: config.capture.profileDir, log });
 
   /** Jobs carry a code; the API adds the wording so every client shows the same text. */
   const withMessage = (job: JobView) => (job.error ? { ...job, message: MESSAGES[job.error] } : job);
@@ -135,7 +137,7 @@ export function buildApp(config: Config) {
       res.setHeader('access-control-allow-origin', origin);
       res.setHeader('access-control-allow-headers', 'authorization, content-type');
       res.setHeader('access-control-allow-methods', 'GET, POST, DELETE, OPTIONS');
-      res.setHeader('access-control-expose-headers', 'content-disposition');
+      res.setHeader('access-control-expose-headers', 'content-disposition, x-capture-title, x-capture-url, x-capture-pages, x-capture-truncated');
       res.setHeader('vary', 'origin');
     }
     if (req.method === 'OPTIONS') {
@@ -159,7 +161,28 @@ export function buildApp(config: Config) {
       if (req.method === 'GET' && resource === 'health') {
         // Engine detail is for whoever runs the service, not for the UI.
         const engines = await router.healthReport(url.searchParams.has('fresh'));
-        return send(res, 200, { ok: engines.some((e) => e.ok), engines });
+        return send(res, 200, { ok: engines.some((e) => e.ok), engines, capture: capture.available() });
+      }
+
+      if (req.method === 'POST' && resource === 'captures' && !id) {
+        const { url: input } = await body(req);
+        try {
+          const done = await capture.run(String(input ?? ''), clientSignal(req, res, config.capture.timeoutMs));
+          res.writeHead(200, {
+            'content-type': 'application/pdf',
+            'content-length': done.pdf.length,
+            'cache-control': 'no-store',
+            'x-capture-title': encodeURIComponent(done.title.slice(0, 160)),
+            'x-capture-url': encodeURIComponent(done.url),
+            'x-capture-pages': String(done.pages),
+            'x-capture-truncated': String(done.truncated),
+          });
+          return void res.end(done.pdf);
+        } catch (err) {
+          if (!(err instanceof CaptureError)) throw err;
+          log(`captura fallida (${err.code}): ${err.message.slice(0, 200)}`);
+          return send(res, CAPTURE_STATUS[err.code], { error: { code: err.code, message: CAPTURE_MESSAGES[err.code] } });
+        }
       }
 
       if (req.method === 'POST' && resource === 'detect') {

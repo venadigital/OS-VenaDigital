@@ -103,8 +103,28 @@ Ningún video se guarda de forma permanente. Todo vive en una carpeta temporal d
 
 La carpeta raíz se valida: el servicio se niega a arrancar con una ruta corta o que no contenga "downloader", para que un error de configuración nunca borre otra cosa.
 
+## Cargar webs para anotar
+
+`POST /api/captures {url}` devuelve un PDF de la página, listo para abrirlo en Documentos. Usa el Chrome instalado en el Mac, sin ventana y sin dependencias nuevas:
+
+1. Carga la página a 1440 × 900 y baja una vez hasta el final para que entre lo que se carga al acercarse.
+2. Vuelve a bajar y fotografía tramos de 600 px cuando terminan sus animaciones, siempre con el tramo en el centro de la pantalla: muchas webs deslizan los elementos al entrar y lo deshacen al salir, y lo que toca los bordes queda a medio camino. Lo flotante (cabeceras fijas, burbujas de chat) solo sale en el primero.
+3. Cada tramo es una página del PDF: su imagen y, encima, sus palabras como texto invisible, para poder seleccionarlas y resaltarlas.
+
+La nitidez baja con el largo de la página, para que el archivo quepa en los 50 MB de la biblioteca. Más de 60.000 px se cortan y el OS lo avisa.
+
+Las webs abren con un perfil propio de Chrome. Para iniciar sesión en un sitio o aceptar sus cookies:
+
+```bash
+npm run capture:login -- https://sitio.com
+```
+
+Cierra esa ventana antes de cargar una web desde el OS: el perfil no se abre dos veces.
+
 ## Seguridad
 
+- Las webs se cargan por una tubería privada con Chrome: no se abre ningún puerto de depuración, así que nada más en el Mac puede usar las sesiones de ese perfil.
+- `/api/captures` solo acepta direcciones públicas `http(s)`, ni `localhost` ni redes privadas ni archivos. Chrome corre con las descargas bloqueadas.
 - Escucha solo en `127.0.0.1`. `DOWNLOADER_TOKEN` exige `Authorization: Bearer …` si algún día se expone.
 - Solo el OS puede usarlo desde el navegador: se rechazan otros orígenes, hosts que no sean `127.0.0.1`/`localhost` (protección contra *DNS rebinding*) y POST que no sean JSON (así otra página no puede disparar descargas con un formulario).
 - Solo acepta enlaces de las cuatro plataformas: no es un proxy abierto ni descarga de cualquier sitio.
@@ -121,5 +141,8 @@ La carpeta raíz se valida: el servicio se niega a arrancar con una ruta corta o
 | `CORS_ORIGINS`         | `http://localhost:5183,https://os.venadigital.com.co` |
 | `YTDLP_BIN`, `GALLERYDL_BIN` | `.engines/bin/…`             |
 | `YTDLP_JS_RUNTIME`     | el Node que corre el servicio      |
+| `CHROME_BIN`           | el Google Chrome de `/Applications` |
+| `CAPTURE_PROFILE`      | `~/Library/Application Support/Vena Downloader/chrome-profile` |
+| `CAPTURE_TIMEOUT_SEC`  | `180`                              |
 | `COBALT_URL`, `COBALT_API_KEY` | vacío (Cobalt apagado)     |
 | `MAX_CONCURRENT` / `MAX_QUEUED` | `2` / `6`                 |

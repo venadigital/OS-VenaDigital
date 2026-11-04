@@ -344,6 +344,28 @@ describe('documentos', () => {
     expect(d.rows[0]).toEqual({ annotations: {}, page_count: 3 });
     expect((await as(USER_B, 'authenticated', () => db.query(`select id from public.documents`))).rows).toHaveLength(0);
   });
+
+  it('keeps captures private to their owner and alive after their document is deleted', async () => {
+    const bucket = await db.query(`select public, allowed_mime_types from storage.buckets where id = 'captures'`);
+    expect(bucket.rows).toEqual([{ public: false, allowed_mime_types: ['image/png', 'image/jpeg'] }]);
+    const path = `${USER_A}/cap-1.png`;
+    await as(USER_A, 'authenticated', () => db.query(`insert into storage.objects (bucket_id, name) values ('captures', $1)`, [path]));
+    expect((await as(USER_B, 'authenticated', () => db.query(`select name from storage.objects where bucket_id = 'captures'`))).rows).toHaveLength(0);
+    await expect(
+      as(USER_B, 'authenticated', () => db.query(`insert into storage.objects (bucket_id, name) values ('captures', $1)`, [`${USER_A}/intruso.png`])),
+    ).rejects.toThrow();
+
+    await as(USER_A, 'authenticated', async () => {
+      const doc = await db.query<{ id: string; source_url: string }>(
+        `insert into public.documents (name, file_path, source_url) values ('Web', 'x/web.pdf', 'https://venadigital.com.co/') returning id, source_url`,
+      );
+      expect(doc.rows[0].source_url).toBe('https://venadigital.com.co/');
+      await db.query(`insert into public.captures (document_id, name, file_path, width, height) values ($1, 'Portada', $2, 800, 600)`, [doc.rows[0].id, path]);
+      await db.query(`delete from public.documents where id = $1`, [doc.rows[0].id]);
+      expect((await db.query(`select name, document_id from public.captures where file_path = $1`, [path])).rows).toEqual([{ name: 'Portada', document_id: null }]);
+    });
+    expect((await as(USER_B, 'authenticated', () => db.query(`select id from public.captures`))).rows).toHaveLength(0);
+  });
 });
 
 describe('tareas · fecha de terminado', () => {

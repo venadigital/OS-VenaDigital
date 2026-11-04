@@ -146,6 +146,7 @@ export const PdfPage = memo(function PdfPage(props: Props) {
   const commit = (next: Annotation[]) => onChange(index, next);
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (tool === 'capture') return; // the region may cross pages: the viewer handles it
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     if (e.pointerType === 'pen') shared.onPen();
     // A second finger: what the first one started is a pan or a pinch, not a stroke.
