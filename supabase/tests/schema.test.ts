@@ -403,6 +403,34 @@ describe('noticias', () => {
   });
 });
 
+describe('notas · capa de tareas', () => {
+  it('starts in Entrada, stamps completed_at with done and clears it on reopen', async () => {
+    await as(USER_A, 'authenticated', async () => {
+      const n = await db.query<{ id: string; bucket: string; deadline: string | null; checklist: unknown[]; completed_at: string | null }>(
+        `insert into public.notes (type, body) values ('hacer', 'Llamar') returning id, bucket, deadline, checklist, completed_at`,
+      );
+      expect(n.rows[0]).toMatchObject({ bucket: 'entrada', deadline: null, checklist: [], completed_at: null });
+      const id = n.rows[0].id;
+      const stamp = async () => (await db.query<{ completed_at: string | null }>(`select completed_at::text from public.notes where id = $1`, [id])).rows[0].completed_at;
+
+      await db.query(`update public.notes set done = true where id = $1`, [id]);
+      const done = await stamp();
+      expect(done).not.toBeNull();
+      await db.query(`update public.notes set done = true, body = 'Llamar ya' where id = $1`, [id]);
+      expect(await stamp()).toBe(done);
+      await db.query(`update public.notes set done = false where id = $1`, [id]);
+      expect(await stamp()).toBeNull();
+    });
+  });
+
+  it('refuses a bucket it does not know and a checklist that is not a list', async () => {
+    await as(USER_A, 'authenticated', async () => {
+      await expect(db.query(`insert into public.notes (bucket) values ('luego')`)).rejects.toThrow();
+      await expect(db.query(`insert into public.notes (checklist) values ('{"a": 1}'::jsonb)`)).rejects.toThrow();
+    });
+  });
+});
+
 describe('tareas · fecha de terminado', () => {
   it('stamps completed_at when a task is marked done, keeps it on later edits and clears it on reopen', async () => {
     await as(USER_A, 'authenticated', async () => {

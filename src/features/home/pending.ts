@@ -2,6 +2,7 @@
 import { differenceInCalendarDays } from 'date-fns';
 import { dayKey, fromDayKey } from '@/lib/time';
 import { dayLabel, relDays } from '@/features/clientes/model';
+import { taskTitle } from '@/features/notas/tasks';
 import type { Note, Project, Task } from '@/data/types';
 
 export type PendingItem = {
@@ -14,13 +15,15 @@ export type PendingItem = {
   project?: Project;
 };
 
+const nearest = (a: string | null, b: string | null) => (a && b ? (a < b ? a : b) : (a ?? b));
+
 /** Today, then overdue (latest first), then upcoming (nearest first), then undated (pinned first). */
 export function pendingItems(notes: Note[], tasks: Task[], projectById: Map<string, Project>, now: Date): PendingItem[] {
   const today = dayKey(now);
   const items: PendingItem[] = [
     ...notes
-      .filter((n) => n.type === 'hacer' && !n.done)
-      .map((n): PendingItem => ({ key: `nota:${n.id}`, kind: 'nota', id: n.id, title: n.body, due: n.due_date, pinned: n.pinned })),
+      .filter((n) => n.type === 'hacer' && !n.done && (n.bucket !== 'algun_dia' || n.due_date))
+      .map((n): PendingItem => ({ key: `nota:${n.id}`, kind: 'nota', id: n.id, title: taskTitle(n.body), due: nearest(n.due_date, n.deadline), pinned: n.pinned })),
     ...tasks
       .filter((t) => !t.archived && t.due_date && !projectById.get(t.project_id)?.archived)
       .map((t): PendingItem => ({ key: `tarea:${t.id}`, kind: 'tarea', id: t.id, title: t.name, due: t.due_date!, pinned: false, project: projectById.get(t.project_id) })),

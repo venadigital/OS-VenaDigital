@@ -130,23 +130,36 @@ function seed(now: Date): Store {
     pinned: false,
     done: false,
     due_date: null,
+    bucket: 'entrada',
+    deadline: null,
+    checklist: [],
+    completed_at: null,
     created_at: iso(subMinutes(subDays(now, daysAgo), 30)),
     updated_at: iso(subDays(now, daysAgo)),
     ...n,
   });
   const notes: Note[] = [
-    note(0, { type: 'hacer', body: 'Grabar la clase 5 de Academia IA antes del martes.', pinned: true, due_date: dayKey(addDays(now, 4)) }),
+    note(0, { type: 'hacer', body: 'Grabar la clase 5 de Academia IA\nRevisar el guion antes de grabar.', pinned: true, due_date: dayKey(now), deadline: dayKey(addDays(now, 3)), bucket: 'cuando_sea', checklist: [{ id: 'g1', text: 'Probar el micrófono', done: true }, { id: 'g2', text: 'Cerrar notificaciones', done: false }] }),
+    note(0, { type: 'hacer', body: 'Llamar a la contadora', due_date: dayKey(now), bucket: 'cuando_sea' }),
+    note(2, { type: 'hacer', body: 'Revisar el contrato del cliente', due_date: dayKey(subDays(now, 2)), bucket: 'cuando_sea' }),
+    note(1, { type: 'hacer', body: 'Preparar guion de la clase 6', due_date: dayKey(addDays(now, 1)), bucket: 'cuando_sea' }),
+    note(1, { type: 'hacer', body: 'Publicar episodio del podcast', due_date: dayKey(addDays(now, 3)), bucket: 'cuando_sea' }),
+    note(2, { type: 'hacer', body: 'Renovar el dominio', deadline: dayKey(addDays(now, 5)), bucket: 'cuando_sea' }),
+    note(3, { type: 'hacer', body: 'Comprar micrófono nuevo', due_date: dayKey(addDays(now, 24)), bucket: 'cuando_sea' }),
+    note(2, { type: 'hacer', body: 'Ordenar la carpeta de facturas', bucket: 'cuando_sea' }),
+    note(5, { type: 'hacer', body: 'Aprender a usar webhooks en n8n', bucket: 'algun_dia' }),
+    note(1, { type: 'hacer', body: 'Escribirle a la diseñadora' }),
     note(1, { type: 'investigar', body: '¿Cuánto cuesta cada modelo nuevo de Codex? Revisar la tabla de precios de Consumo IA.', pinned: true }),
     note(2, { type: 'nota', body: '“Primero ordenas. Luego automatizas.” Frase para el carrusel del lunes.', pinned: true }),
     note(1, { type: 'link', url: 'https://supabase.com/docs/guides/database/postgres/row-level-security', link_site: 'supabase.com', link_title: 'Row Level Security', link_description: 'Políticas para que cada fila solo la vea su dueña.' }),
-    note(1, { type: 'hacer', body: 'Enviar las facturas de agosto a los clientes.' }),
+    note(1, { type: 'hacer', body: 'Enviar las facturas de agosto a los clientes.', due_date: dayKey(now), deadline: dayKey(subDays(now, 1)), bucket: 'cuando_sea' }),
     note(3, { type: 'inspiracion', body: 'Paleta cálida para la landing de Academia: arena, terracota y café.' }),
-    note(3, { type: 'investigar', body: 'Excalidraw: ¿exportToBlob sirve para las miniaturas de los tableros?' }),
+    note(3, { type: 'investigar', body: 'Excalidraw: ¿exportToBlob sirve para las miniaturas de los tableros?', bucket: 'cuando_sea' }),
     note(4, { type: 'nota', body: 'Episodio del podcast: cómo organizo mi semana con IA sin volverme loca.' }),
     note(5, { type: 'link', url: 'https://github.com/excalidraw/excalidraw', link_site: 'github.com', link_title: 'excalidraw/excalidraw', link_description: 'Pizarra open source (MIT) embebida en Tableros.' }),
-    note(6, { type: 'hacer', body: 'Revisar métricas de Instagram de agosto.', done: true }),
+    note(6, { type: 'hacer', body: 'Revisar métricas de Instagram de agosto.', done: true, completed_at: iso(subDays(now, 1)) }),
     note(7, { type: 'inspiracion', body: 'Menos caos, más sistema.' }),
-    note(8, { type: 'investigar', body: 'Push en PWA de iOS: ¿qué tan confiables son los avisos?' }),
+    note(8, { type: 'investigar', body: 'Push en PWA de iOS: ¿qué tan confiables son los avisos?', bucket: 'algun_dia' }),
     note(9, { type: 'link', url: 'https://developer.apple.com/design/human-interface-guidelines', link_site: 'developer.apple.com', link_title: 'Human Interface Guidelines', link_description: 'Referencia de estilo para el OS.' }),
   ];
 
@@ -495,6 +508,10 @@ export function createDemoApi(): Api {
         pinned: false,
         done: false,
         due_date: null,
+        bucket: 'entrada',
+        deadline: null,
+        checklist: [],
+        completed_at: null,
         created_at: now,
         updated_at: now,
         ...input,
@@ -503,7 +520,9 @@ export function createDemoApi(): Api {
       return later(clone(n));
     },
     async updateNote(id, patch) {
-      Object.assign(s.notes.find((n) => n.id === id) ?? {}, patch, { updated_at: iso(new Date()) });
+      const changedAt = iso(new Date());
+      const stamp = patch.done === undefined ? {} : { completed_at: patch.done ? changedAt : null };
+      Object.assign(s.notes.find((n) => n.id === id) ?? {}, patch, stamp, { updated_at: changedAt });
       return later(undefined);
     },
     async deleteNote(id) {

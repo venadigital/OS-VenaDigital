@@ -32,6 +32,11 @@ export type TimeEntry = {
 
 export type NoteType = 'hacer' | 'investigar' | 'link' | 'nota' | 'inspiracion';
 
+/** Where a to-do without a date lives. */
+export type NoteBucket = 'entrada' | 'cuando_sea' | 'algun_dia';
+
+export type ChecklistItem = { id: string; text: string; done: boolean };
+
 export type Note = {
   id: string;
   type: NoteType;
@@ -44,7 +49,14 @@ export type Note = {
   image_path: string | null;
   pinned: boolean;
   done: boolean;
+  /** "Cuándo": the day it is planned for. */
   due_date: string | null;
+  bucket: NoteBucket;
+  /** "Fecha límite": the day it must be done by. */
+  deadline: string | null;
+  checklist: ChecklistItem[];
+  /** When it was marked done; set and cleared by the database with `done`. */
+  completed_at: string | null;
   created_at: string;
   updated_at: string;
 };

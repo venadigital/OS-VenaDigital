@@ -20,6 +20,10 @@ const note = (id: string, due: string | null, patch: Partial<Note> = {}): Note =
   pinned: false,
   done: false,
   due_date: due,
+  bucket: 'entrada',
+  deadline: null,
+  checklist: [],
+  completed_at: null,
   created_at: iso,
   updated_at: iso,
   ...patch,
@@ -27,6 +31,28 @@ const note = (id: string, due: string | null, patch: Partial<Note> = {}): Note =
 const projects = new Map([['p1', project('p1')], ['old', project('old', true)]]);
 
 describe('pendingItems', () => {
+  it('shows only the first line of a to-do and leaves out Algún día unless it has a date', () => {
+    const items = pendingItems(
+      [note('Llamar\nPreguntar por las facturas', null), note('algún día', null, { bucket: 'algun_dia' }), note('algún día con fecha', '2026-10-20', { bucket: 'algun_dia' })],
+      [],
+      projects,
+      now,
+    );
+    expect(items.map((i) => i.title)).toEqual(['algún día con fecha', 'Llamar']);
+  });
+  it('sorts a to-do by whichever comes first, its plan or its deadline', () => {
+    const items = pendingItems(
+      [note('solo límite', null, { deadline: '2026-10-14' }), note('plan después del límite', '2026-10-30', { deadline: '2026-10-15' }), note('plan antes del límite', '2026-10-16', { deadline: '2026-10-30' })],
+      [],
+      projects,
+      now,
+    );
+    expect(items.map((i) => [i.title, i.due])).toEqual([
+      ['plan después del límite', '2026-10-15'],
+      ['solo límite', '2026-10-14'],
+      ['plan antes del límite', '2026-10-16'],
+    ]);
+  });
   it('puts today first, then overdue, upcoming and undated', () => {
     const items = pendingItems(
       [note('sin fecha', null), note('fijada', null, { pinned: true }), note('nota hoy', '2026-10-15'), note('lejos', '2026-10-30')],

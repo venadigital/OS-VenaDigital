@@ -16,6 +16,21 @@ export const NOTE_TYPES: { value: NoteType; label: string; tint: string; dot: st
 
 export const typeMeta = (t: NoteType) => NOTE_TYPES.find((x) => x.value === t) ?? NOTE_TYPES[3];
 
+/** What the capture bar hands to the full form ("Más opciones"). */
+export type NoteDraft = { draft: true; type: NoteType; body: string; url?: string; image?: File | null };
+
+export const IMAGE_TYPES = 'image/png,image/jpeg,image/webp,image/gif';
+
+/** The chosen file when it is an image the app accepts; otherwise explains why not. */
+export function acceptImage(f: File | undefined, toast: ReturnType<typeof useToast>): File | null {
+  if (!f) return null;
+  if (f.size > 5 * 1024 * 1024) {
+    toast('La imagen pesa más de 5 MB', 'error');
+    return null;
+  }
+  return f;
+}
+
 const URL_RE = /^https?:\/\/\S+$/i;
 export const isUrl = (s: string) => URL_RE.test(s.trim());
 

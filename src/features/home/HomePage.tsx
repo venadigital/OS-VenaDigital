@@ -8,7 +8,7 @@ import { qk, useApiMutation, useBoards, useClients, useEntries, useNoteImages, u
 import { clock, dur, greeting, hhmm, longDate, monthName, ratio, relativeDay, usd } from '@/lib/format';
 import { dayKey, rangeFor } from '@/lib/time';
 import { useWorkspaceView } from '@/lib/workspaceView';
-import { CaptureBar } from '@/features/notas/NotasPage';
+import { CaptureBar } from '@/features/notas/CaptureBar';
 import { NoteCard } from '@/features/notas/NoteCard';
 import { totalsByProject, useRunningTimer, useTimeData } from '@/features/tiempo/model';
 import { useConsumo } from '@/features/consumo/model';
@@ -147,13 +147,13 @@ function PendingCard({ now }: { now: Date }) {
     navigate(client ? `/clientes/${client.id}?tab=tareas` : '/tiempo');
   };
   return <Card className="pending-card">
-    <div className="section-heading"><h2 className="metric-label"><span className="icon-tile"><CircleCheck size={18}/></span>Pendientes a mano <span className="count-badge">{pending.length}</span></h2><Link to="/notas?pendientes=1" className="text-link">Ver todos <ArrowUpRight size={15}/></Link></div>
+    <div className="section-heading"><h2 className="metric-label"><span className="icon-tile"><CircleCheck size={18}/></span>Pendientes a mano <span className="count-badge">{pending.length}</span></h2><Link to="/notas?vista=hoy" className="text-link">Ver todos <ArrowUpRight size={15}/></Link></div>
     {notes.isLoading || loading ? <Skeleton className="h-28"/> : pending.length ? <div className="pending-list">{pending.slice(0,4).map(item => <div key={item.key} className="pending-row">
       <button type="button" className="pending-check" aria-label={`Completar: ${item.title}`} disabled={update.isPending} onClick={() => update.mutate({item, done:true}, {onSuccess: () => setCompleted(item)})}><Circle size={21}/></button>
       <button type="button" className="pending-content" onClick={() => open(item)}><span>{item.title}</span><small className={item.due && item.due < today ? 'text-crit' : ''}>{dueLabel(item.due, now)}{item.project ? ` · ${item.project.name}` : ''}{item.pinned ? ' · Fijada' : ''}</small></button>
     </div>)}</div> : <p className="text-ink-3">No tienes pendientes. Puedes capturar uno arriba.</p>}
     {completed && <div className="completion-feedback" role="status"><span>Completado: {completed.title.slice(0,50)}{completed.title.length > 50 ? '…' : ''}</span><button type="button" disabled={update.isPending} onClick={() => update.mutate({item:completed,done:false},{onSuccess:()=>setCompleted(null)})}>Deshacer</button></div>}
-    <Link to="/notas?nueva=1&pendientes=1" className="text-link mt-auto"><Plus size={15}/> Añadir pendiente</Link>
+    <Link to="/notas?vista=hoy&nueva=tarea" className="text-link mt-auto"><Plus size={15}/> Añadir pendiente</Link>
   </Card>;
 }
 
@@ -270,7 +270,7 @@ function AiCard({ now }: { now: Date }) {
 function PinnedNotes() {
   const navigate = useNavigate();
   const notesQ = useNotes();
-  const notes = (notesQ.data ?? []).filter(n => n.type !== 'hacer');
+  const notes = (notesQ.data ?? []).filter(n => n.type !== 'hacer' && !n.done);
   const pinned = notes.filter((n) => n.pinned);
   const shown = (pinned.length ? pinned : notes).slice(0, 2);
   const paths = shown.map((n) => n.image_path).filter((p): p is string => Boolean(p));
