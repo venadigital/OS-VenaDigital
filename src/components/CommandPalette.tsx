@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarPlus, CircleCheck, CornerDownLeft, FileText, FileUp, Globe, Moon, NotebookPen, Play, Search, Settings2, Shapes, Sun, UserPlus, Users } from 'lucide-react';
-import { useBoards, useClients, useDocuments, useNotes, useStartTimer } from '@/data/hooks';
+import { CalendarPlus, CircleCheck, CornerDownLeft, FileText, Folder, ListTodo, FileUp, Globe, Moon, NotebookPen, Play, Search, Settings2, Shapes, Sun, UserPlus, Users } from 'lucide-react';
+import { useBoards, useClients, useDocuments, useNoteLists, useNotes, useStartTimer } from '@/data/hooks';
+import { notasPlaces, type Place, recentPlaces, VIEW_ICONS, WALL_ICON } from '@/features/notas/places';
+import { isTask, taskTitle } from '@/features/notas/tasks';
 import { useDownloaderStatus } from '@/features/descargar/service';
 import { useTimeData } from '@/features/tiempo/model';
 import { useNav } from './Shell';
@@ -22,6 +24,7 @@ export function CommandPalette() {
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const notes = useNotes();
+  const noteLists = useNoteLists();
   const boards = useBoards();
   const documents = useDocuments();
   const clients = useClients();
@@ -72,10 +75,32 @@ export function CommandPalette() {
         ? { id: 'act:theme', group: 'Apariencia', label: 'Usar modo claro', icon: <Sun size={16} />, run: toggleTheme }
         : { id: 'act:theme', group: 'Apariencia', label: 'Usar modo oscuro', icon: <Moon size={16} />, run: toggleTheme },
     ];
+    // Places of Notas: its views, the wall and each area or project.
+    const placeIcon = (p: Place) => {
+      if (p.kind === 'area') return <Folder size={16} />;
+      if (p.kind === 'proyecto') return <ListTodo size={16} />;
+      const view = p.key.slice('vista:'.length);
+      const Icon = view === 'muro' ? WALL_ICON : VIEW_ICONS[view as keyof typeof VIEW_ICONS].icon;
+      return <Icon size={16} />;
+    };
+    const places: { place: Place; item: Item }[] = notasPlaces(noteLists.data ?? []).map((p) => ({
+      place: p,
+      item: { id: `place:${p.key}`, group: 'Notas', label: p.label, hint: { vista: 'Notas', area: 'Área', proyecto: 'Proyecto' }[p.kind], icon: placeIcon(p), run: go(p.to) },
+    }));
+
     const tq = norm(q.trim());
-    if (!tq) return base;
+    if (!tq) {
+      const byKey = new Map(places.map((p) => [p.place.key, p.item]));
+      const recent = recentPlaces()
+        .map((key) => byKey.get(key))
+        .filter((i): i is Item => Boolean(i))
+        .slice(0, 4)
+        .map((i) => ({ ...i, id: `recent:${i.id}`, group: 'Recientes' }));
+      return [...recent, ...base];
+    }
     const match = (s: string | null | undefined) => (s ? norm(s).includes(tq) : false);
     const found: Item[] = [
+      ...places.filter((p) => match(p.place.label)).slice(0, 8).map((p) => p.item),
       ...(clients.data ?? [])
         .filter((c) => match(c.name) || match(c.contact_name) || match(c.company))
         .slice(0, 6)
@@ -108,13 +133,13 @@ export function CommandPalette() {
         .map((n) => ({
           id: `note:${n.id}`,
           group: 'Notas',
-          label: (n.link_title || n.body || n.url || 'Nota').slice(0, 90),
+          label: (n.link_title || (isTask(n) ? taskTitle(n.body) : n.body) || n.url || 'Nota').slice(0, 90),
           icon: <NotebookPen size={16} />,
           run: go(`/notas?nota=${n.id}`),
         })),
     ];
     return [...base.filter((i) => match(i.label)), ...found];
-  }, [q, tasks, boards.data, documents.data, notes.data, clients.data, projectById, navigate, start, theme, nav, capture]);
+  }, [q, open, tasks, boards.data, documents.data, notes.data, noteLists.data, clients.data, projectById, navigate, start, theme, nav, capture]);
 
   if (!open) return null;
 

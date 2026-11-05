@@ -4,34 +4,19 @@ import { Link } from 'react-router-dom';
 import { addDays, startOfDay } from 'date-fns';
 import { ArrowUpRight, CalendarDays, Plus, Video } from 'lucide-react';
 import { Card, cx, Skeleton } from '@/components/ui';
-import { useAccount } from '@/data/ApiContext';
-import { useCalendarEvents, useCalendars, useCalendarStatus } from '@/data/hooks';
 import type { CalendarEvent } from '@/data/types';
 import { dur, hhmm } from '@/lib/format';
-import { eventColor } from '@/lib/googleCalendar';
-import { isVisible, readPrefs, todayAgenda } from './model';
+import { todayAgenda } from './model';
+import { eventLink, useAgendaEvents } from './useAgendaEvents';
 
 const MAX_ROWS = 3;
-const eventLink = (e: CalendarEvent) => `/calendario?evento=${encodeURIComponent(e.id)}`;
 const timeRange = (e: CalendarEvent) => `${hhmm(new Date(e.start))} – ${hhmm(new Date(e.end))}`;
 
 export function TodayAgendaCard({ now }: { now: Date }) {
-  const { user, mode } = useAccount();
-  const statusQ = useCalendarStatus();
-  const connected = Boolean(statusQ.data?.connected);
-  const calendarsQ = useCalendars(connected);
-  // Same calendars the Calendario page shows.
-  const shown = useMemo(() => {
-    const visible = mode === 'demo' ? {} : readPrefs(`${mode}:${user.id}`).visible;
-    return (calendarsQ.data ?? []).filter((c) => isVisible(c, visible));
-  }, [calendarsQ.data, mode, user.id]);
   const dayStart = startOfDay(now).getTime();
   const { from, to } = useMemo(() => ({ from: new Date(dayStart), to: addDays(new Date(dayStart), 2) }), [dayStart]);
-  const eventsQ = useCalendarEvents(from, to, connected ? shown : undefined);
+  const { statusQ, connected, calendarsQ, shown, eventsQ, colorOf } = useAgendaEvents(from, to);
   const agenda = useMemo(() => todayAgenda(eventsQ.data ?? [], now), [eventsQ.data, now]);
-
-  const colorById = useMemo(() => new Map((calendarsQ.data ?? []).map((c) => [c.id, c])), [calendarsQ.data]);
-  const colorOf = (e: CalendarEvent) => eventColor(e, colorById.get(e.calendarId));
 
   const loading = statusQ.isLoading || (connected && (calendarsQ.isLoading || (eventsQ.isLoading && shown.length > 0)));
   // Too many rows: the ones already over go first.

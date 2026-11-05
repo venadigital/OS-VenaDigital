@@ -13,7 +13,9 @@ import {
   taskTitle,
   taskView,
   whenOf,
+  groupUpcoming,
   upcomingGroups,
+  withDays,
   viewCounts,
   weekend,
   whenBucket,
@@ -180,6 +182,25 @@ describe('upcomingGroups', () => {
       ['Noviembre', undefined, 1],
       ['Enero 2027', undefined, 1],
     ]);
+  });
+});
+
+describe('withDays', () => {
+  it('adds the days of the week that only have events, in order, and leaves later ones out', () => {
+    const groups = withDays(upcomingGroups([note({ id: 'lunes', due_date: '2026-11-09' }), note({ id: 'mes', due_date: '2026-11-20' })], now), ['2026-11-06', '2026-11-09', '2026-11-30'], now);
+    expect(groups.map((g) => [g.key, g.tasks.length])).toEqual([
+      ['2026-11-06', 0],
+      ['2026-11-09', 1],
+      ['2026-11', 1],
+    ]);
+    expect(groups[0]).toMatchObject({ day: 6, title: 'Viernes' });
+  });
+});
+
+describe('groupUpcoming', () => {
+  it('keeps the order of what it is given inside each day', () => {
+    const groups = groupUpcoming(['b', 'a', 'c'], (x) => (x === 'c' ? '2026-11-07' : '2026-11-06'), now);
+    expect(groups.map((g) => g.tasks)).toEqual([['b', 'a'], ['c']]);
   });
 });
 

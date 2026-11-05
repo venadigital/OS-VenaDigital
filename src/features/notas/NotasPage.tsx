@@ -1,14 +1,15 @@
-import { useEffect, useMemo, useState, type ComponentType } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Archive, CalendarDays, Inbox, Layers, LayoutGrid, NotebookPen, Pin, Plus, Search, SquareCheck, Star, X } from 'lucide-react';
+import { NotebookPen, Pin, Plus, Search, X } from 'lucide-react';
 import { Page, PageHeader } from '@/components/Shell';
 import { Button, cx, Dot, Empty, Skeleton } from '@/components/ui';
 import { norm } from '@/lib/text';
 import { dayKey } from '@/lib/time';
 import { qk, useApiMutation, useNoteImages, useNoteLists, useNoteSections, useNotes, useNow } from '@/data/hooks';
 import type { Note, NoteInput, NoteList, NoteType } from '@/data/types';
-import { useRunningTimer } from '@/features/tiempo/model';
+import { useRunningTimer, useTimeData } from '@/features/tiempo/model';
 import { CaptureBar } from './CaptureBar';
+import { deliveriesFor } from './deliveries';
 import { NoteCard } from './NoteCard';
 import { ListDialog } from './ListDialog';
 import { listTree, type Progress, progressByList } from './lists';
@@ -16,19 +17,11 @@ import { ListPanel } from './ListPanel';
 import { isDraft, NoteDialog } from './NoteDialog';
 import { NotasBack } from './NotasBack';
 import { NOTE_TYPES, type NoteDraft } from './model';
+import { listKey, rememberPlace, VIEW_ICONS, viewKey, WALL_ICON } from './places';
 import { ProgressRing } from './ProgressRing';
 import { TaskDialog, type TaskDraft } from './TaskDialog';
 import { TaskPanel } from './TaskPanel';
-import { defaultWhen, isTask, noteView, type NotasView, parseView, TASK_VIEWS, type TaskView, viewCounts, type ViewCounts, whenBucket } from './tasks';
-
-const VIEW_ICONS: Record<TaskView, { icon: ComponentType<{ size?: number; 'aria-hidden'?: boolean }>; tint: string }> = {
-  entrada: { icon: Inbox, tint: 'var(--note-link)' },
-  hoy: { icon: Star, tint: 'var(--note-hacer)' },
-  proximo: { icon: CalendarDays, tint: 'var(--note-investigar)' },
-  cuando: { icon: Layers, tint: 'var(--note-investigar)' },
-  algun: { icon: Archive, tint: 'var(--note-inspiracion)' },
-  registro: { icon: SquareCheck, tint: 'var(--note-link)' },
-};
+import { defaultWhen, isTask, noteView, type NotasView, parseView, TASK_VIEWS, viewCounts, type ViewCounts, whenBucket } from './tasks';
 
 export function NotasPage() {
   const notesQ = useNotes();
@@ -81,7 +74,19 @@ export function NotasPage() {
     window.scrollTo(0, 0);
   }, [view, chosen, openList?.id]);
 
-  const counts = useMemo(() => viewCounts(notes, today), [notes, today]);
+  // Deliveries of Tiempo due today or late count as Hoy, and as late.
+  const time = useTimeData();
+  const dueToday = deliveriesFor(time.tasks, time.projectById, today).today.length;
+  const counts = useMemo(() => {
+    const c = viewCounts(notes, today);
+    return { ...c, hoy: c.hoy + dueToday, late: c.late + dueToday };
+  }, [notes, today, dueToday]);
+
+  // The search (⌘K) offers the places visited lately.
+  useEffect(() => {
+    if (openList) rememberPlace(listKey(openList.id));
+    else if (chosen) rememberPlace(viewKey(chosen));
+  }, [chosen, openList]);
   const progress = useMemo(() => progressByList(notes), [notes]);
   const listNames = useMemo(() => new Map(lists.map((l) => [l.id, l.name])), [lists]);
   const imagePaths = useMemo(() => notes.map((n) => n.image_path).filter((p): p is string => Boolean(p)), [notes]);
@@ -178,7 +183,7 @@ function NotasNav({
       </nav>
       <Link to="/notas?vista=muro" aria-current={!openList && view === 'muro' ? 'page' : undefined} className="notas-nav-link notas-nav-wall">
         <span className="notas-nav-tile" style={{ background: 'var(--note-nota)' }}>
-          <LayoutGrid size={15} aria-hidden />
+          <WALL_ICON size={15} aria-hidden />
         </span>
         <span className="flex-1">Muro</span>
         {counts.muro > 0 && <span className="notas-nav-count tnum">{counts.muro}</span>}

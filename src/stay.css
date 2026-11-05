@@ -716,3 +716,21 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .task-sub { font-size: 13px; }
   .task-form-notes, .task-step-text, .notas-field { font-size: 16px; }
 }
+
+/* Notas: the calendar's events above a day's to-dos, and Tiempo deliveries among them. */
+.notas-agenda { display: flex; flex-direction: column; gap: 2px; }
+.notas-agenda.is-boxed { padding: 8px 12px; border-radius: 12px; background: var(--color-plane); }
+.notas-agenda-row { --ev: #9d87c0; display: grid; grid-template-columns: 74px 3px minmax(0,1fr); align-items: center; gap: 10px; min-height: 30px; font-size: 13.5px; color: var(--color-ink); }
+.notas-agenda-row > i { align-self: stretch; margin-block: 6px; border-radius: 2px; background: var(--ev); }
+.notas-agenda-time { font-weight: 500; white-space: nowrap; }
+.notas-agenda-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--color-ink-2); }
+.notas-agenda-row:hover .notas-agenda-title { color: var(--color-ink); text-decoration: underline; text-underline-offset: 3px; }
+.notas-agenda-row.is-past { opacity: .55; }
+.task-chip.is-delivery { background: var(--stay-lime); color: var(--stay-on-lime); }
+.task-timer { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; color: var(--color-ink); }
+.task-timer svg { box-sizing: content-box; padding: 10px; border: 1px solid var(--stay-lilac-line); border-radius: 50%; background: var(--stay-lilac-soft); }
+.task-timer:hover svg { background: var(--stay-lilac); }
+.task-live { display: inline-flex; align-items: center; flex-shrink: 0; min-height: 44px; padding-inline: 8px; font-size: 12.5px; font-weight: 500; color: var(--color-good); }
+@media (max-width: 767px) {
+  .notas-agenda-row { grid-template-columns: 70px 3px minmax(0,1fr); font-size: 14px; min-height: 34px; }
+}

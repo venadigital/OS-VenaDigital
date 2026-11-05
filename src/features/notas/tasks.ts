@@ -107,7 +107,8 @@ export function deadlineLabel(deadline: string, now: Date): { text: string; late
 
 // ---------------------------------------------------------------- listas
 const byPinThenNewest = (a: Note, b: Note) => Number(b.pinned) - Number(a.pinned) || b.created_at.localeCompare(a.created_at);
-const dateOf = (n: Note) => n.due_date ?? n.deadline ?? '';
+/** The day a to-do shows up on in Próximo. */
+export const dateOf = (n: Pick<Note, 'due_date' | 'deadline'>) => n.due_date ?? n.deadline ?? '';
 
 export const completedAt = (n: Note) => n.completed_at ?? n.updated_at;
 
@@ -122,22 +123,42 @@ export function sortTasks(tasks: Note[], view: TaskView, today: string): Note[] 
   return list.sort(byPinThenNewest);
 }
 
-export type UpcomingGroup = { key: string; day?: number; title: string; tasks: Note[] };
+export type Grouped<T> = { key: string; day?: number; title: string; tasks: T[] };
+export type UpcomingGroup = Grouped<Note>;
 
-/** One group per day for the next week, then one per month. */
-export function upcomingGroups(tasks: Note[], now: Date): UpcomingGroup[] {
-  const groups = new Map<string, UpcomingGroup>();
-  const sorted = [...tasks].sort((a, b) => dateOf(a).localeCompare(dateOf(b)) || byPinThenNewest(a, b));
-  for (const n of sorted) {
-    const date = fromDayKey(dateOf(n));
-    const soon = differenceInCalendarDays(date, now) <= 7;
-    const key = soon ? dateOf(n) : format(date, 'yyyy-MM');
-    const title = capitalize(format(date, soon ? 'EEEE' : isSameYear(date, now) ? 'MMMM' : 'MMMM yyyy', { locale: es }));
-    const group = groups.get(key) ?? { key, day: soon ? date.getDate() : undefined, title, tasks: [] };
-    group.tasks.push(n);
-    groups.set(key, group);
+function upcomingSlot(dayKeyOf: string, now: Date): Omit<Grouped<never>, 'tasks'> {
+  const date = fromDayKey(dayKeyOf);
+  const soon = differenceInCalendarDays(date, now) <= 7;
+  return {
+    key: soon ? dayKeyOf : format(date, 'yyyy-MM'),
+    day: soon ? date.getDate() : undefined,
+    title: capitalize(format(date, soon ? 'EEEE' : isSameYear(date, now) ? 'MMMM' : 'MMMM yyyy', { locale: es })),
+  };
+}
+
+/** One group per day for the next week, then one per month. Items keep their order inside a group. */
+export function groupUpcoming<T>(items: T[], dayOf: (item: T) => string, now: Date): Grouped<T>[] {
+  const groups = new Map<string, Grouped<T>>();
+  const sorted = [...items].sort((a, b) => dayOf(a).localeCompare(dayOf(b)));
+  for (const item of sorted) {
+    const slot = upcomingSlot(dayOf(item), now);
+    const group = groups.get(slot.key) ?? { ...slot, tasks: [] };
+    group.tasks.push(item);
+    groups.set(slot.key, group);
   }
   return [...groups.values()];
+}
+
+export const upcomingGroups = (tasks: Note[], now: Date): UpcomingGroup[] => groupUpcoming([...tasks].sort(byPinThenNewest), dateOf, now);
+
+/** Adds an empty group for each day of the coming week that has something else on it (events), in date order. */
+export function withDays<T>(groups: Grouped<T>[], days: string[], now: Date): Grouped<T>[] {
+  const known = new Set(groups.map((g) => g.key));
+  const extra = days
+    .filter((d) => differenceInCalendarDays(fromDayKey(d), now) <= 7 && !known.has(d))
+    .map((d) => ({ ...upcomingSlot(d, now), tasks: [] as T[] }));
+  const byDay = (g: Grouped<T>) => (g.day === undefined ? 1 : 0);
+  return [...groups, ...extra].sort((a, b) => byDay(a) - byDay(b) || a.key.localeCompare(b.key));
 }
 
 export type ViewCounts = Record<TaskView, number> & { late: number; muro: number };
