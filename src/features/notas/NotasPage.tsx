@@ -1,21 +1,25 @@
 import { useEffect, useMemo, useState, type ComponentType } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Archive, CalendarDays, Inbox, Layers, LayoutGrid, NotebookPen, Pin, Plus, Search, SquareCheck, Star, X } from 'lucide-react';
 import { Page, PageHeader } from '@/components/Shell';
 import { Button, cx, Dot, Empty, Skeleton } from '@/components/ui';
 import { norm } from '@/lib/text';
 import { dayKey } from '@/lib/time';
-import { qk, useApiMutation, useNoteImages, useNotes, useNow } from '@/data/hooks';
-import type { Note, NoteInput, NoteType } from '@/data/types';
+import { qk, useApiMutation, useNoteImages, useNoteLists, useNoteSections, useNotes, useNow } from '@/data/hooks';
+import type { Note, NoteInput, NoteList, NoteType } from '@/data/types';
 import { useRunningTimer } from '@/features/tiempo/model';
 import { CaptureBar } from './CaptureBar';
 import { NoteCard } from './NoteCard';
+import { ListDialog } from './ListDialog';
+import { listTree, type Progress, progressByList } from './lists';
+import { ListPanel } from './ListPanel';
 import { isDraft, NoteDialog } from './NoteDialog';
 import { NotasBack } from './NotasBack';
 import { NOTE_TYPES, type NoteDraft } from './model';
+import { ProgressRing } from './ProgressRing';
 import { TaskDialog, type TaskDraft } from './TaskDialog';
 import { TaskPanel } from './TaskPanel';
-import { defaultWhen, isTask, noteView, type NotasView, parseView, TASK_VIEWS, type TaskView, viewCounts, type ViewCounts } from './tasks';
+import { defaultWhen, isTask, noteView, type NotasView, parseView, TASK_VIEWS, type TaskView, viewCounts, type ViewCounts, whenBucket } from './tasks';
 
 const VIEW_ICONS: Record<TaskView, { icon: ComponentType<{ size?: number; 'aria-hidden'?: boolean }>; tint: string }> = {
   entrada: { icon: Inbox, tint: 'var(--note-link)' },
@@ -28,14 +32,20 @@ const VIEW_ICONS: Record<TaskView, { icon: ComponentType<{ size?: number; 'aria-
 
 export function NotasPage() {
   const notesQ = useNotes();
+  const listsQ = useNoteLists();
   const notes = useMemo(() => notesQ.data ?? [], [notesQ.data]);
   const now = useNow(60_000);
   const today = dayKey(now);
   const { timer } = useRunningTimer();
   const [params, setParams] = useSearchParams();
+  const navigate = useNavigate();
+  const lists = useMemo(() => listsQ.data ?? [], [listsQ.data]);
+  const sections = useNoteSections().data ?? [];
+  const openList = lists.find((l) => l.id === params.get('lista')) ?? null;
   const chosen = parseView(params.get('vista'));
   // Beside the list of views there is always a view open; on a phone the list is its own screen.
   const view: NotasView = chosen ?? 'hoy';
+  const [listForm, setListForm] = useState<NoteList | { new: true } | null>(null);
   const [editing, setEditing] = useState<Note | NoteDraft | null>(null);
   const [task, setTask] = useState<Note | TaskDraft | null>(null);
 
@@ -60,6 +70,7 @@ export function NotasPage() {
       if (n) {
         open(n);
         next.set('vista', noteView(n, today));
+        next.delete('lista');
       }
       next.delete('nota');
     }
@@ -68,38 +79,80 @@ export function NotasPage() {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [view, chosen]);
+  }, [view, chosen, openList?.id]);
 
   const counts = useMemo(() => viewCounts(notes, today), [notes, today]);
+  const progress = useMemo(() => progressByList(notes), [notes]);
+  const listNames = useMemo(() => new Map(lists.map((l) => [l.id, l.name])), [lists]);
   const imagePaths = useMemo(() => notes.map((n) => n.image_path).filter((p): p is string => Boolean(p)), [notes]);
   const images = useNoteImages(imagePaths).data ?? {};
 
   return (
     <Page className="notas-page">
-      <div className="notas-layout" data-open={Boolean(chosen)}>
-        <NotasNav view={view} counts={counts} />
+      <div className="notas-layout" data-open={Boolean(chosen || openList)}>
+        <NotasNav view={view} openList={openList} lists={lists} progress={progress} counts={counts} onNewList={() => setListForm({ new: true })} />
         <div className="notas-content">
-          {view === 'muro' ? (
+          {openList ? (
+            <ListPanel
+              key={openList.id}
+              list={openList}
+              lists={lists}
+              sections={sections}
+              notes={notes}
+              progress={progress}
+              now={now}
+              loading={notesQ.isLoading}
+              onOpen={open}
+              onNewTask={(sectionId) => setTask({ draft: true, when: whenBucket('cuando_sea'), listId: openList.id, sectionId })}
+            />
+          ) : view === 'muro' ? (
             <MuroView notes={notes} loading={notesQ.isLoading} images={images} onEdit={setEditing} />
           ) : (
-            <TaskPanel view={view} notes={notes} now={now} loading={notesQ.isLoading} onOpen={open} />
+            <TaskPanel view={view} notes={notes} listNames={listNames} now={now} loading={notesQ.isLoading} onOpen={open} />
           )}
         </div>
       </div>
 
-      {view !== 'muro' && (
-        <button type="button" className={cx('notas-fab', timer && 'has-timer')} aria-label="Nueva tarea" onClick={() => setTask({ draft: true, when: defaultWhen(view, today) })}>
+      {(openList || view !== 'muro') && (
+        <button
+          type="button"
+          className={cx('notas-fab', timer && 'has-timer')}
+          aria-label="Nueva tarea"
+          onClick={() => setTask(openList ? { draft: true, when: whenBucket('cuando_sea'), listId: openList.id } : { draft: true, when: defaultWhen(view, today) })}
+        >
           <Plus size={24} aria-hidden />
         </button>
       )}
 
       <TaskDialog task={task} imageUrl={task && !('draft' in task) && task.image_path ? images[task.image_path] : undefined} onClose={() => setTask(null)} />
+      <ListDialog list={listForm} onClose={() => setListForm(null)} onSaved={(l) => navigate(`/notas?lista=${l.id}`)} />
       <NoteDialog note={editing} onClose={() => setEditing(null)} imageUrl={editing && !isDraft(editing) && editing.image_path ? images[editing.image_path] : undefined} />
     </Page>
   );
 }
 
-function NotasNav({ view, counts }: { view: NotasView; counts: ViewCounts }) {
+function NotasNav({
+  view,
+  openList,
+  lists,
+  progress,
+  counts,
+  onNewList,
+}: {
+  view: NotasView;
+  openList: NoteList | null;
+  lists: NoteList[];
+  progress: Map<string, Progress>;
+  counts: ViewCounts;
+  onNewList: () => void;
+}) {
+  const tree = listTree(lists);
+  const project = (l: NoteList) => (
+    <Link key={l.id} to={`/notas?lista=${l.id}`} aria-current={openList?.id === l.id ? 'page' : undefined} className="notas-nav-link notas-nav-project">
+      <ProgressRing progress={progress.get(l.id)} />
+      <span className="min-w-0 flex-1 truncate">{l.name}</span>
+    </Link>
+  );
   return (
     <aside className="notas-nav">
       <h1 className="notas-nav-title page-title">Notas</h1>
@@ -108,7 +161,7 @@ function NotasNav({ view, counts }: { view: NotasView; counts: ViewCounts }) {
           const { icon: Icon, tint } = VIEW_ICONS[v.id];
           const count = v.id === 'entrada' || v.id === 'hoy' ? counts[v.id] : 0;
           return (
-            <Link key={v.id} to={`/notas?vista=${v.id}`} aria-current={view === v.id ? 'page' : undefined} className="notas-nav-link">
+            <Link key={v.id} to={`/notas?vista=${v.id}`} aria-current={!openList && view === v.id ? 'page' : undefined} className="notas-nav-link">
               <span className="notas-nav-tile" style={{ background: tint }}>
                 <Icon size={15} aria-hidden />
               </span>
@@ -123,13 +176,27 @@ function NotasNav({ view, counts }: { view: NotasView; counts: ViewCounts }) {
           );
         })}
       </nav>
-      <Link to="/notas?vista=muro" aria-current={view === 'muro' ? 'page' : undefined} className="notas-nav-link notas-nav-wall">
+      <Link to="/notas?vista=muro" aria-current={!openList && view === 'muro' ? 'page' : undefined} className="notas-nav-link notas-nav-wall">
         <span className="notas-nav-tile" style={{ background: 'var(--note-nota)' }}>
           <LayoutGrid size={15} aria-hidden />
         </span>
         <span className="flex-1">Muro</span>
         {counts.muro > 0 && <span className="notas-nav-count tnum">{counts.muro}</span>}
       </Link>
+      {tree.loose.length > 0 && <div className="notas-nav-group">{tree.loose.map(project)}</div>}
+      {tree.areas.map(({ area, projects }) => (
+        <div key={area.id} className="notas-nav-group">
+          <Link to={`/notas?lista=${area.id}`} aria-current={openList?.id === area.id ? 'page' : undefined} className="notas-nav-area">
+            {area.name}
+          </Link>
+          {projects.map(project)}
+        </div>
+      ))}
+      <div className="notas-nav-spacer" />
+      <button type="button" className="notas-nav-new" onClick={onNewList}>
+        <Plus size={16} aria-hidden />
+        Nueva lista
+      </button>
     </aside>
   );
 }

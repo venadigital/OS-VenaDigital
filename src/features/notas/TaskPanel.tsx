@@ -1,17 +1,13 @@
-import { useMemo, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { PageHeader } from '@/components/Shell';
 import { Empty, Skeleton } from '@/components/ui';
-import { qk, useApiMutation } from '@/data/hooks';
-import type { Note, NoteInput } from '@/data/types';
+import type { Note } from '@/data/types';
 import { dayKey } from '@/lib/time';
 import { NotasBack } from './NotasBack';
-import { isTask, sortTasks, TASK_VIEWS, taskTitle, taskView, type TaskView, upcomingGroups } from './tasks';
-import { TaskRow, type TaskActions } from './TaskRow';
-
-/** How long a checked to-do stays in place before moving to Registro (or back). */
-const LINGER_MS = 1400;
+import { isTask, sortTasks, TASK_VIEWS, taskView, type TaskView, upcomingGroups } from './tasks';
+import { TaskRow } from './TaskRow';
+import { useTaskRows } from './useTaskRows';
 
 const EMPTY: Record<TaskView, string> = {
   entrada: 'Entrada vacía',
@@ -22,51 +18,28 @@ const EMPTY: Record<TaskView, string> = {
   registro: 'Aún no hay tareas hechas',
 };
 
-const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-export function TaskPanel({ view, notes, now, loading, onOpen }: { view: TaskView; notes: Note[]; now: Date; loading: boolean; onOpen: (n: Note) => void }) {
+export function TaskPanel({
+  view,
+  notes,
+  listNames,
+  now,
+  loading,
+  onOpen,
+}: {
+  view: TaskView;
+  notes: Note[];
+  listNames: Map<string, string>;
+  now: Date;
+  loading: boolean;
+  onOpen: (n: Note) => void;
+}) {
   const today = dayKey(now);
-  // A to-do being checked keeps its row, in the view it was checked from, until it has had time to read as done.
-  const [settling, setSettling] = useState<Record<string, { done: boolean; view: TaskView }>>({});
-  const lastToggle = useRef<Record<string, number>>({});
-  const update = useApiMutation((api, v: { id: string; patch: NoteInput }) => api.updateNote(v.id, v.patch), [qk.notes]);
-  const remove = useApiMutation((api, id: string) => api.deleteNote(id), [qk.notes], 'No se pudo borrar');
+  const { actions, shows, rowState } = useTaskRows({ listKey: view, belongs: (n) => isTask(n) && taskView(n, today) === view, onOpen });
+  const tasks = sortTasks(notes.filter(shows), view, today);
 
-  const tasks = useMemo(
-    () => sortTasks(notes.filter((n) => isTask(n) && (taskView(n, today) === view || settling[n.id]?.view === view)), view, today),
-    [notes, view, today, settling],
+  const row = (n: Note) => (
+    <TaskRow key={n.id} note={n} {...rowState(n)} place={view} now={now} listName={n.list_id ? listNames.get(n.list_id) : undefined} actions={actions} />
   );
-
-  const toggle = (n: Note) => {
-    const next = !(settling[n.id]?.done ?? n.done);
-    const turn = (lastToggle.current[n.id] ?? 0) + 1;
-    lastToggle.current[n.id] = turn;
-    setSettling((s) => ({ ...s, [n.id]: { done: next, view } }));
-    const saved = update.mutateAsync({ id: n.id, patch: { done: next } }).catch(() => undefined);
-    void Promise.all([saved, wait(LINGER_MS)]).then(() => {
-      if (lastToggle.current[n.id] !== turn) return;
-      setSettling((s) => {
-        const rest = { ...s };
-        delete rest[n.id];
-        return rest;
-      });
-    });
-  };
-
-  const actions: TaskActions = {
-    onToggle: toggle,
-    onOpen,
-    onPatch: (n, patch) => update.mutate({ id: n.id, patch }),
-    onDelete: (n) => {
-      if (confirm(`¿Borrar "${taskTitle(n.body) || 'esta tarea'}"?`)) remove.mutate(n.id);
-    },
-  };
-
-  const row = (n: Note) => {
-    const state = settling[n.id];
-    const done = state?.done ?? n.done;
-    return <TaskRow key={n.id} note={n} done={done} leaving={Boolean(state) && taskView({ ...n, done }, today) !== view} view={view} now={now} actions={actions} />;
-  };
 
   const label = TASK_VIEWS.find((v) => v.id === view)?.label ?? '';
   const dateLine = format(now, "EEEE d 'de' MMMM", { locale: es });

@@ -24,6 +24,8 @@ const note = (id: string, due: string | null, patch: Partial<Note> = {}): Note =
   deadline: null,
   checklist: [],
   completed_at: null,
+  list_id: null,
+  section_id: null,
   created_at: iso,
   updated_at: iso,
   ...patch,

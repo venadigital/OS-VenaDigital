@@ -14,6 +14,8 @@ import type {
   ModelPrice,
   Note,
   NoteInput,
+  NoteList,
+  NoteSection,
   Project,
   Task,
   TimeEntry,
@@ -40,6 +42,8 @@ type Store = {
   tasks: Task[];
   entries: TimeEntry[];
   notes: Note[];
+  noteLists: NoteList[];
+  noteSections: NoteSection[];
   boards: Board[];
   documents: Doc[];
   captures: Capture[];
@@ -134,30 +138,60 @@ function seed(now: Date): Store {
     deadline: null,
     checklist: [],
     completed_at: null,
+    list_id: null,
+    section_id: null,
     created_at: iso(subMinutes(subDays(now, daysAgo), 30)),
     updated_at: iso(subDays(now, daysAgo)),
     ...n,
   });
+  const noteList = (name: string, kind: NoteList['kind'], sort: number, patch: Partial<NoteList> = {}): NoteList => ({
+    id: uid(),
+    kind,
+    area_id: null,
+    name,
+    description: '',
+    sort,
+    created_at: created,
+    updated_at: created,
+    ...patch,
+  });
+  const venaList = noteList('Vena Digital', 'area', 0);
+  const personalList = noteList('Personal', 'area', 1);
+  const academiaList = noteList('Academia IA', 'proyecto', 0, { area_id: venaList.id, description: 'Clases, material y lanzamiento de la próxima cohorte.' });
+  const podcastList = noteList('Podcast', 'proyecto', 1, { area_id: venaList.id });
+  const contenidoList = noteList('Contenido', 'proyecto', 2, { area_id: venaList.id });
+  const viajeList = noteList('Viaje a Cartagena', 'proyecto', 0, { area_id: personalList.id });
+  const noteLists = [venaList, personalList, academiaList, podcastList, contenidoList, viajeList];
+  const noteSection = (list: NoteList, name: string, sort: number): NoteSection => ({ id: uid(), list_id: list.id, name, sort, created_at: created, updated_at: created });
+  const planeacionSection = noteSection(academiaList, 'Planeación', 0);
+  const grabacionSection = noteSection(academiaList, 'Grabación', 1);
+  const lanzamientoSection = noteSection(academiaList, 'Lanzamiento', 2);
+  const noteSections = [planeacionSection, grabacionSection, lanzamientoSection];
   const notes: Note[] = [
-    note(0, { type: 'hacer', body: 'Grabar la clase 5 de Academia IA\nRevisar el guion antes de grabar.', pinned: true, due_date: dayKey(now), deadline: dayKey(addDays(now, 3)), bucket: 'cuando_sea', checklist: [{ id: 'g1', text: 'Probar el micrófono', done: true }, { id: 'g2', text: 'Cerrar notificaciones', done: false }] }),
+    note(0, { type: 'hacer', body: 'Grabar la clase 5 de Academia IA\nRevisar el guion antes de grabar.', pinned: true, due_date: dayKey(now), deadline: dayKey(addDays(now, 3)), bucket: 'cuando_sea', list_id: academiaList.id, section_id: grabacionSection.id, checklist: [{ id: 'g1', text: 'Probar el micrófono', done: true }, { id: 'g2', text: 'Cerrar notificaciones', done: false }] }),
     note(0, { type: 'hacer', body: 'Llamar a la contadora', due_date: dayKey(now), bucket: 'cuando_sea' }),
     note(2, { type: 'hacer', body: 'Revisar el contrato del cliente', due_date: dayKey(subDays(now, 2)), bucket: 'cuando_sea' }),
-    note(1, { type: 'hacer', body: 'Preparar guion de la clase 6', due_date: dayKey(addDays(now, 1)), bucket: 'cuando_sea' }),
-    note(1, { type: 'hacer', body: 'Publicar episodio del podcast', due_date: dayKey(addDays(now, 3)), bucket: 'cuando_sea' }),
-    note(2, { type: 'hacer', body: 'Renovar el dominio', deadline: dayKey(addDays(now, 5)), bucket: 'cuando_sea' }),
-    note(3, { type: 'hacer', body: 'Comprar micrófono nuevo', due_date: dayKey(addDays(now, 24)), bucket: 'cuando_sea' }),
+    note(1, { type: 'hacer', body: 'Preparar guion de la clase 6', due_date: dayKey(addDays(now, 1)), bucket: 'cuando_sea', list_id: academiaList.id, section_id: planeacionSection.id }),
+    note(4, { type: 'hacer', body: 'Definir temario de la cohorte', bucket: 'cuando_sea', list_id: academiaList.id, section_id: planeacionSection.id, done: true, completed_at: iso(subDays(now, 3)) }),
+    note(3, { type: 'hacer', body: 'Editar la clase 4', bucket: 'cuando_sea', list_id: academiaList.id, section_id: grabacionSection.id, done: true, completed_at: iso(subDays(now, 1)) }),
+    note(3, { type: 'hacer', body: 'Escribir la página de inscripción', bucket: 'cuando_sea', list_id: academiaList.id, section_id: lanzamientoSection.id }),
+    note(3, { type: 'investigar', body: 'Comparar pasarelas de pago', bucket: 'cuando_sea', list_id: academiaList.id, section_id: lanzamientoSection.id }),
+    note(3, { type: 'hacer', body: 'Comprar bloqueador', bucket: 'cuando_sea', list_id: viajeList.id }),
+    note(1, { type: 'hacer', body: 'Publicar episodio del podcast', due_date: dayKey(addDays(now, 3)), bucket: 'cuando_sea', list_id: podcastList.id }),
+    note(2, { type: 'hacer', body: 'Renovar el dominio', deadline: dayKey(addDays(now, 5)), bucket: 'cuando_sea', list_id: venaList.id }),
+    note(3, { type: 'hacer', body: 'Comprar micrófono nuevo', due_date: dayKey(addDays(now, 24)), bucket: 'cuando_sea', list_id: podcastList.id }),
     note(2, { type: 'hacer', body: 'Ordenar la carpeta de facturas', bucket: 'cuando_sea' }),
     note(5, { type: 'hacer', body: 'Aprender a usar webhooks en n8n', bucket: 'algun_dia' }),
     note(1, { type: 'hacer', body: 'Escribirle a la diseñadora' }),
     note(1, { type: 'investigar', body: '¿Cuánto cuesta cada modelo nuevo de Codex? Revisar la tabla de precios de Consumo IA.', pinned: true }),
     note(2, { type: 'nota', body: '“Primero ordenas. Luego automatizas.” Frase para el carrusel del lunes.', pinned: true }),
     note(1, { type: 'link', url: 'https://supabase.com/docs/guides/database/postgres/row-level-security', link_site: 'supabase.com', link_title: 'Row Level Security', link_description: 'Políticas para que cada fila solo la vea su dueña.' }),
-    note(1, { type: 'hacer', body: 'Enviar las facturas de agosto a los clientes.', due_date: dayKey(now), deadline: dayKey(subDays(now, 1)), bucket: 'cuando_sea' }),
+    note(1, { type: 'hacer', body: 'Enviar las facturas de agosto a los clientes.', due_date: dayKey(now), deadline: dayKey(subDays(now, 1)), bucket: 'cuando_sea', list_id: venaList.id }),
     note(3, { type: 'inspiracion', body: 'Paleta cálida para la landing de Academia: arena, terracota y café.' }),
     note(3, { type: 'investigar', body: 'Excalidraw: ¿exportToBlob sirve para las miniaturas de los tableros?', bucket: 'cuando_sea' }),
     note(4, { type: 'nota', body: 'Episodio del podcast: cómo organizo mi semana con IA sin volverme loca.' }),
     note(5, { type: 'link', url: 'https://github.com/excalidraw/excalidraw', link_site: 'github.com', link_title: 'excalidraw/excalidraw', link_description: 'Pizarra open source (MIT) embebida en Tableros.' }),
-    note(6, { type: 'hacer', body: 'Revisar métricas de Instagram de agosto.', done: true, completed_at: iso(subDays(now, 1)) }),
+    note(6, { type: 'hacer', body: 'Revisar métricas de Instagram de agosto.', done: true, completed_at: iso(subDays(now, 1)), list_id: contenidoList.id }),
     note(7, { type: 'inspiracion', body: 'Menos caos, más sistema.' }),
     note(8, { type: 'investigar', body: 'Push en PWA de iOS: ¿qué tan confiables son los avisos?', bucket: 'algun_dia' }),
     note(9, { type: 'link', url: 'https://developer.apple.com/design/human-interface-guidelines', link_site: 'developer.apple.com', link_title: 'Human Interface Guidelines', link_description: 'Referencia de estilo para el OS.' }),
@@ -260,6 +294,8 @@ function seed(now: Date): Store {
     tasks,
     entries,
     notes,
+    noteLists,
+    noteSections,
     boards,
     captures: [],
     documents: [
@@ -512,6 +548,8 @@ export function createDemoApi(): Api {
         deadline: null,
         checklist: [],
         completed_at: null,
+        list_id: null,
+        section_id: null,
         created_at: now,
         updated_at: now,
         ...input,
@@ -527,6 +565,40 @@ export function createDemoApi(): Api {
     },
     async deleteNote(id) {
       s.notes = s.notes.filter((n) => n.id !== id);
+      return later(undefined);
+    },
+    listNoteLists: async () => later(clone(s.noteLists)),
+    async createNoteList(input) {
+      const now = iso(new Date());
+      const list: NoteList = { id: uid(), kind: 'proyecto', area_id: null, description: '', sort: 0, created_at: now, updated_at: now, ...input };
+      s.noteLists.push(list);
+      return later(clone(list));
+    },
+    async updateNoteList(id, patch) {
+      Object.assign(s.noteLists.find((l) => l.id === id) ?? {}, patch, { updated_at: iso(new Date()) });
+      return later(undefined);
+    },
+    async deleteNoteList(id) {
+      s.noteLists = s.noteLists.filter((l) => l.id !== id);
+      s.noteSections = s.noteSections.filter((x) => x.list_id !== id);
+      for (const l of s.noteLists) if (l.area_id === id) l.area_id = null;
+      for (const n of s.notes) if (n.list_id === id) Object.assign(n, { list_id: null, section_id: null });
+      return later(undefined);
+    },
+    listNoteSections: async () => later(clone(s.noteSections)),
+    async createNoteSection(input) {
+      const now = iso(new Date());
+      const section: NoteSection = { id: uid(), sort: 0, created_at: now, updated_at: now, ...input };
+      s.noteSections.push(section);
+      return later(clone(section));
+    },
+    async updateNoteSection(id, patch) {
+      Object.assign(s.noteSections.find((x) => x.id === id) ?? {}, patch, { updated_at: iso(new Date()) });
+      return later(undefined);
+    },
+    async deleteNoteSection(id) {
+      s.noteSections = s.noteSections.filter((x) => x.id !== id);
+      for (const n of s.notes) if (n.section_id === id) n.section_id = null;
       return later(undefined);
     },
     async linkPreview(url) {

@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { Archive, CalendarDays, CalendarRange, Check, Flag, ImagePlus, Inbox, Layers, Plus, Star, Sunrise, Trash2, X } from 'lucide-react';
-import { Button, cx, Dialog, IconButton, Input, Menu, Segmented, type MenuItem } from '@/components/ui';
+import { Button, cx, Dialog, IconButton, Input, Menu, Segmented, Select, type MenuItem } from '@/components/ui';
 import { useToast } from '@/components/Toast';
-import { qk, useApiMutation } from '@/data/hooks';
+import { qk, useApiMutation, useNoteLists, useNoteSections } from '@/data/hooks';
 import type { ChecklistItem, Note } from '@/data/types';
 import { dayKey } from '@/lib/time';
+import { listTree } from './lists';
 import { acceptImage, IMAGE_TYPES } from './model';
-import { dateLabel, newStep, taskNotes, taskPatch, taskTitle, type TaskType, tomorrow, weekend, type When, whenBucket, whenDate, whenLabel } from './tasks';
+import { dateLabel, newStep, taskNotes, taskPatch, taskTitle, type TaskType, tomorrow, weekend, type When, whenBucket, whenDate, whenLabel, whenOf } from './tasks';
 
-export type TaskDraft = { draft: true; when: When };
+export type TaskDraft = { draft: true; when: When; listId?: string | null; sectionId?: string | null };
 const isDraft = (t: Note | TaskDraft | null): t is TaskDraft => Boolean(t && 'draft' in t);
 
 const TYPES: { value: TaskType; label: string }[] = [
@@ -36,9 +37,13 @@ export function TaskDialog({ task, imageUrl, onClose }: { task: Note | TaskDraft
   const [deadline, setDeadline] = useState('');
   const [steps, setSteps] = useState<ChecklistItem[]>([]);
   const [newStepId, setNewStepId] = useState<string | null>(null);
+  const [listId, setListId] = useState<string | null>(null);
+  const [sectionId, setSectionId] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [removeImage, setRemoveImage] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const tree = listTree(useNoteLists().data ?? []);
+  const sections = (useNoteSections().data ?? []).filter((s) => s.list_id === listId).sort((a, b) => a.sort - b.sort);
 
   useEffect(() => {
     if (!task) return;
@@ -46,7 +51,10 @@ export function TaskDialog({ task, imageUrl, onClose }: { task: Note | TaskDraft
     setType(n?.type === 'investigar' ? 'investigar' : 'hacer');
     setTitle(n ? taskTitle(n.body) : '');
     setNotes(n ? taskNotes(n.body) : '');
-    setWhen(n ? { due_date: n.due_date, bucket: n.bucket } : (task as TaskDraft).when);
+    const draft = isDraft(task) ? task : null;
+    setWhen(n ? whenOf(n) : draft!.when);
+    setListId(n?.list_id ?? draft?.listId ?? null);
+    setSectionId(n?.section_id ?? draft?.sectionId ?? null);
     setChoosingDate(false);
     setDeadline(n?.deadline ?? '');
     setSteps(n?.checklist ?? []);
@@ -64,7 +72,7 @@ export function TaskDialog({ task, imageUrl, onClose }: { task: Note | TaskDraft
 
   const save = useApiMutation(
     async (api, _: void) => {
-      const patch = taskPatch({ type, title, notes, when, deadline, steps });
+      const patch = taskPatch({ type, title, notes, when, deadline, steps, listId, sectionId });
       if (file) patch.image_path = await api.uploadNoteImage(file);
       else if (removeImage) patch.image_path = null;
       if (existing) await api.updateNote(existing.id, patch);
@@ -108,7 +116,7 @@ export function TaskDialog({ task, imageUrl, onClose }: { task: Note | TaskDraft
     { label: 'Elegir fecha…', icon: <CalendarDays size={14} />, onSelect: () => setChoosingDate(true) },
     { label: 'Cuando sea', icon: <Layers size={14} />, onSelect: () => pick(whenBucket('cuando_sea')) },
     { label: 'Algún día', icon: <Archive size={14} />, onSelect: () => pick(whenBucket('algun_dia')) },
-    { label: 'Entrada', icon: <Inbox size={14} />, onSelect: () => pick(whenBucket('entrada')) },
+    ...(listId ? [] : [{ label: 'Entrada', icon: <Inbox size={14} />, onSelect: () => pick(whenBucket('entrada')) }]),
   ];
 
   return (
@@ -181,6 +189,47 @@ export function TaskDialog({ task, imageUrl, onClose }: { task: Note | TaskDraft
 
       <div className="self-start">
         <Segmented options={TYPES} value={type} onChange={setType} />
+      </div>
+
+      <div className="task-form-place">
+        <Select
+          className="notas-field"
+          aria-label="Lista"
+          value={listId ?? ''}
+          onChange={(e) => {
+            const next = e.target.value || null;
+            setListId(next);
+            setSectionId(null);
+            if (next && !when.due_date && when.bucket === 'entrada') setWhen(whenBucket('cuando_sea'));
+          }}
+        >
+          <option value="">Sin lista</option>
+          {tree.loose.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.name}
+            </option>
+          ))}
+          {tree.areas.map(({ area, projects }) => (
+            <optgroup key={area.id} label={area.name}>
+              <option value={area.id}>{area.name}</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </Select>
+        {sections.length > 0 && (
+          <Select className="notas-field" aria-label="Sección" value={sectionId ?? ''} onChange={(e) => setSectionId(e.target.value || null)}>
+            <option value="">Sin sección</option>
+            {sections.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </Select>
+        )}
       </div>
 
       <div className="task-form-pills">

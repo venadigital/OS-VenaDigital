@@ -12,6 +12,7 @@ import {
   taskPatch,
   taskTitle,
   taskView,
+  whenOf,
   upcomingGroups,
   viewCounts,
   weekend,
@@ -41,6 +42,8 @@ const note = (patch: Partial<Note> = {}): Note => ({
   deadline: null,
   checklist: [],
   completed_at: null,
+  list_id: null,
+  section_id: null,
   created_at: iso,
   updated_at: iso,
   ...patch,
@@ -57,6 +60,9 @@ describe('taskView', () => {
     ['planeada para otro día', { due_date: '2026-11-06' }, 'proximo'],
     ['con fecha límite futura', { deadline: '2026-11-20' }, 'proximo'],
     ['en Cuando sea', { bucket: 'cuando_sea' }, 'cuando'],
+    ['sin fecha pero dentro de una lista', { list_id: 'l' }, 'cuando'],
+    ['dentro de una lista y en Algún día', { list_id: 'l', bucket: 'algun_dia' }, 'algun'],
+    ['dentro de una lista y para hoy', { list_id: 'l', due_date: today }, 'hoy'],
     ['en Algún día', { bucket: 'algun_dia' }, 'algun'],
     ['en Algún día con fecha límite futura', { bucket: 'algun_dia', deadline: '2026-11-20' }, 'algun'],
   ] as const)('%s', (_, patch, view) => {
@@ -92,6 +98,11 @@ describe('cuándo', () => {
     expect(defaultWhen('algun', today)).toEqual({ due_date: null, bucket: 'algun_dia' });
     expect(defaultWhen('proximo', today)).toEqual({ due_date: null, bucket: 'entrada' });
     expect(defaultWhen('muro', today)).toEqual({ due_date: null, bucket: 'entrada' });
+  });
+  it('reads a to-do in a list as out of Entrada', () => {
+    expect(whenOf(note({ list_id: 'l' }))).toEqual({ due_date: null, bucket: 'cuando_sea' });
+    expect(whenOf(note({}))).toEqual({ due_date: null, bucket: 'entrada' });
+    expect(whenOf(note({ list_id: 'l', bucket: 'algun_dia' })).bucket).toBe('algun_dia');
   });
   it('does not fall back to Entrada when its date is cleared', () => {
     expect(whenDate('2026-11-06').bucket).toBe('cuando_sea');
@@ -199,6 +210,8 @@ describe('taskPatch', () => {
         when: whenDate(today),
         deadline: '',
         steps: [{ id: 'a', text: ' Uno ', done: true }, { id: 'b', text: '   ', done: false }],
+        listId: 'l',
+        sectionId: 's',
       }),
     ).toEqual({
       type: 'investigar',
@@ -207,7 +220,13 @@ describe('taskPatch', () => {
       bucket: 'cuando_sea',
       deadline: null,
       checklist: [{ id: 'a', text: 'Uno', done: true }],
+      list_id: 'l',
+      section_id: 's',
     });
+  });
+  it('drops the section when there is no list', () => {
+    const patch = taskPatch({ type: 'hacer', title: 'x', notes: '', when: whenBucket('entrada'), deadline: '', steps: [], listId: null, sectionId: 's' });
+    expect(patch.section_id).toBeNull();
   });
   it('cleanSteps keeps the order', () => {
     expect(cleanSteps([{ id: 'a', text: 'Uno', done: false }, { id: 'b', text: 'Dos', done: true }]).map((s) => s.id)).toEqual(['a', 'b']);

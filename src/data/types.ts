@@ -37,6 +37,32 @@ export type NoteBucket = 'entrada' | 'cuando_sea' | 'algun_dia';
 
 export type ChecklistItem = { id: string; text: string; done: boolean };
 
+export type NoteListKind = 'area' | 'proyecto';
+
+/** An area or a project of Notas. Unrelated to the projects of Tiempo. */
+export type NoteList = {
+  id: string;
+  kind: NoteListKind;
+  /** The area a project hangs from. */
+  area_id: string | null;
+  name: string;
+  description: string;
+  sort: number;
+  created_at: string;
+  updated_at: string;
+};
+export type NoteListInput = Partial<Pick<NoteList, 'kind' | 'area_id' | 'name' | 'description' | 'sort'>>;
+
+export type NoteSection = {
+  id: string;
+  list_id: string;
+  name: string;
+  sort: number;
+  created_at: string;
+  updated_at: string;
+};
+export type NoteSectionInput = Partial<Pick<NoteSection, 'list_id' | 'name' | 'sort'>>;
+
 export type Note = {
   id: string;
   type: NoteType;
@@ -57,6 +83,8 @@ export type Note = {
   checklist: ChecklistItem[];
   /** When it was marked done; set and cleared by the database with `done`. */
   completed_at: string | null;
+  list_id: string | null;
+  section_id: string | null;
   created_at: string;
   updated_at: string;
 };

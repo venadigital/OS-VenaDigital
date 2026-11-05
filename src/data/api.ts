@@ -30,6 +30,10 @@ import type {
   NewsSource,
   Note,
   NoteInput,
+  NoteList,
+  NoteListInput,
+  NoteSection,
+  NoteSectionInput,
   Project,
   Task,
   TimeEntry,
@@ -90,6 +94,14 @@ export interface Api {
   linkPreview(url: string): Promise<LinkPreview>;
   uploadNoteImage(file: File): Promise<string>;
   noteImageUrls(paths: string[]): Promise<Record<string, string>>;
+  listNoteLists(): Promise<NoteList[]>;
+  createNoteList(input: NoteListInput & { name: string }): Promise<NoteList>;
+  updateNoteList(id: string, patch: NoteListInput): Promise<void>;
+  deleteNoteList(id: string): Promise<void>;
+  listNoteSections(): Promise<NoteSection[]>;
+  createNoteSection(input: NoteSectionInput & { list_id: string; name: string }): Promise<NoteSection>;
+  updateNoteSection(id: string, patch: NoteSectionInput): Promise<void>;
+  deleteNoteSection(id: string): Promise<void>;
 
   // Tableros
   listBoards(): Promise<BoardSummary[]>;

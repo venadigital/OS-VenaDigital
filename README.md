@@ -9,7 +9,7 @@ Sistema operativo personal de trabajo de Vena Digital. Funciona en el navegador 
 | **Calendario** | Tu Google Calendar dentro del OS: día, semana, mes y agenda; crear, editar y eliminar eventos, invitados, Google Meet y eventos recurrentes. Los eventos viven en Google, aquí no se copian. |
 | **Consumo IA** | Tokens de Claude Code y Codex convertidos a USD a precio de API, por día, cuenta y modelo. Compara con lo que pagas en suscripciones. Precios editables. |
 | **Tableros** | Pizarras con [Excalidraw](https://github.com/excalidraw/excalidraw) (MIT). Varios tableros, guardado automático y exportación a PNG. |
-| **Notas** | Tareas por hacer y por investigar en Entrada, Hoy, Próximo, Cuando sea, Algún día y Registro, con checklist y fecha límite. Muro de post-its para links (con vista previa), notas e inspiración (con imágenes). |
+| **Notas** | Tareas por hacer y por investigar en Entrada, Hoy, Próximo, Cuando sea, Algún día y Registro, con checklist y fecha límite, agrupadas en áreas y proyectos con secciones y avance. Muro de post-its para links (con vista previa), notas e inspiración (con imágenes). |
 | **Descargar** | Pega un enlace de YouTube, Instagram, TikTok o X, elige video, audio o imágenes y la calidad, y baja el archivo. Solo en el Mac: depende de un servicio local y no aparece en el celular. |
 
 La propuesta visual está en [`design/`](design/): los mockups se generan con `node design/build/index.mjs`.

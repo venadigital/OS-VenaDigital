@@ -431,6 +431,70 @@ describe('notas · capa de tareas', () => {
   });
 });
 
+describe('notas · áreas, proyectos y secciones', () => {
+  it('keeps tasks when their section or list is deleted', async () => {
+    await as(USER_A, 'authenticated', async () => {
+      const list = (await db.query<{ id: string }>(`insert into public.note_lists (name) values ('Academia') returning id`)).rows[0].id;
+      const section = (await db.query<{ id: string }>(`insert into public.note_sections (list_id, name) values ($1, 'Grabación') returning id`, [list])).rows[0].id;
+      const task = (await db.query<{ id: string }>(`insert into public.notes (type, body, list_id, section_id) values ('hacer', 'Grabar', $1, $2) returning id`, [list, section])).rows[0].id;
+      const links = async () => (await db.query<{ list_id: string | null; section_id: string | null }>(`select list_id, section_id from public.notes where id = $1`, [task])).rows[0];
+      expect(await links()).toEqual({ list_id: list, section_id: section });
+
+      await db.query(`delete from public.note_sections where id = $1`, [section]);
+      expect(await links()).toEqual({ list_id: list, section_id: null });
+
+      const again = (await db.query<{ id: string }>(`insert into public.note_sections (list_id, name) values ($1, 'Otra') returning id`, [list])).rows[0].id;
+      await db.query(`update public.notes set section_id = $1 where id = $2`, [again, task]);
+      await db.query(`delete from public.note_lists where id = $1`, [list]);
+      expect(await links()).toEqual({ list_id: null, section_id: null });
+      expect((await db.query(`select id from public.note_sections where id = $1`, [again])).rows).toHaveLength(0);
+    });
+  });
+
+  it('drops a section that is not from the list of the task', async () => {
+    await as(USER_A, 'authenticated', async () => {
+      const one = (await db.query<{ id: string }>(`insert into public.note_lists (name) values ('Uno') returning id`)).rows[0].id;
+      const two = (await db.query<{ id: string }>(`insert into public.note_lists (name) values ('Dos') returning id`)).rows[0].id;
+      const section = (await db.query<{ id: string }>(`insert into public.note_sections (list_id, name) values ($1, 'De uno') returning id`, [one])).rows[0].id;
+      const inserted = await db.query<{ section_id: string | null }>(`insert into public.notes (body, list_id, section_id) values ('Cruzada', $1, $2) returning section_id`, [two, section]);
+      expect(inserted.rows[0].section_id).toBeNull();
+      const moved = await db.query<{ id: string }>(`insert into public.notes (body, list_id, section_id) values ('Se mueve', $1, $2) returning id`, [one, section]);
+      const after = await db.query<{ section_id: string | null }>(`update public.notes set list_id = $1 where id = $2 returning section_id`, [two, moved.rows[0].id]);
+      expect(after.rows[0].section_id).toBeNull();
+    });
+  });
+
+  it('only hangs projects from areas, and keeps the projects when the area goes', async () => {
+    await as(USER_A, 'authenticated', async () => {
+      const area = (await db.query<{ id: string }>(`insert into public.note_lists (kind, name) values ('area', 'Vena') returning id`)).rows[0].id;
+      const project = (await db.query<{ id: string }>(`insert into public.note_lists (kind, area_id, name) values ('proyecto', $1, 'Podcast') returning id`, [area])).rows[0].id;
+      await expect(db.query(`insert into public.note_lists (kind, area_id, name) values ('proyecto', $1, 'Dentro de un proyecto')`, [project])).rejects.toThrow(/área no es válida/);
+      await expect(db.query(`insert into public.note_lists (kind, area_id, name) values ('area', $1, 'Área dentro de área')`, [area])).rejects.toThrow(/área no es válida/);
+      await db.query(`delete from public.note_lists where id = $1`, [area]);
+      const left = await db.query<{ area_id: string | null }>(`select area_id from public.note_lists where id = $1`, [project]);
+      expect(left.rows[0].area_id).toBeNull();
+    });
+  });
+
+  it('keeps lists and sections private and refuses links to rows of another user', async () => {
+    const a = await as(USER_A, 'authenticated', async () => {
+      const area = (await db.query<{ id: string }>(`insert into public.note_lists (kind, name) values ('area', 'Privada') returning id`)).rows[0].id;
+      const list = (await db.query<{ id: string }>(`insert into public.note_lists (name) values ('Privado') returning id`)).rows[0].id;
+      const section = (await db.query<{ id: string }>(`insert into public.note_sections (list_id, name) values ($1, 'Privada') returning id`, [list])).rows[0].id;
+      return { area, list, section };
+    });
+    await as(USER_B, 'authenticated', async () => {
+      expect((await db.query(`select * from public.note_lists`)).rows).toHaveLength(0);
+      expect((await db.query(`select * from public.note_sections`)).rows).toHaveLength(0);
+      await expect(db.query(`insert into public.note_sections (list_id, name) values ($1, 'Intrusa')`, [a.list])).rejects.toThrow();
+      await expect(db.query(`insert into public.notes (body, list_id) values ('Intrusa', $1)`, [a.list])).rejects.toThrow();
+      await expect(db.query(`insert into public.note_lists (kind, area_id, name) values ('proyecto', $1, 'Intruso')`, [a.area])).rejects.toThrow(/área no es válida/);
+      const mine = await db.query<{ section_id: string | null }>(`insert into public.notes (body, section_id) values ('Sin lista', $1) returning section_id`, [a.section]);
+      expect(mine.rows[0].section_id).toBeNull();
+    });
+  });
+});
+
 describe('tareas · fecha de terminado', () => {
   it('stamps completed_at when a task is marked done, keeps it on later edits and clears it on reopen', async () => {
     await as(USER_A, 'authenticated', async () => {

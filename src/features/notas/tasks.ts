@@ -23,13 +23,13 @@ export const parseView = (v: string | null): NotasView | null => (v === 'muro' |
 export const isTask = (n: Pick<Note, 'type'>) => n.type === 'hacer' || n.type === 'investigar';
 
 /** The one view a to-do shows up in. Anything due today or late goes to Hoy, whatever else it says. */
-export function taskView(n: Pick<Note, 'done' | 'due_date' | 'deadline' | 'bucket'>, today: string): TaskView {
+export function taskView(n: Pick<Note, 'done' | 'due_date' | 'deadline' | 'bucket' | 'list_id'>, today: string): TaskView {
   if (n.done) return 'registro';
   if ((n.due_date && n.due_date <= today) || (n.deadline && n.deadline <= today)) return 'hoy';
   if (n.due_date) return 'proximo';
   if (n.bucket === 'algun_dia') return 'algun';
   if (n.deadline) return 'proximo';
-  return n.bucket === 'cuando_sea' ? 'cuando' : 'entrada';
+  return n.bucket === 'cuando_sea' || n.list_id ? 'cuando' : 'entrada';
 }
 
 export const noteView = (n: Note, today: string): NotasView => (isTask(n) ? taskView(n, today) : 'muro');
@@ -47,6 +47,12 @@ export const joinTask = (title: string, notes: string) => [title.trim(), notes.t
 
 // ---------------------------------------------------------------- cuándo
 export type When = Pick<Note, 'due_date' | 'bucket'>;
+
+/** A to-do in a list has already left Entrada, even when it was moved there without touching its bucket. */
+export const whenOf = (n: Pick<Note, 'due_date' | 'bucket' | 'list_id'>): When => ({
+  due_date: n.due_date,
+  bucket: n.list_id && n.bucket === 'entrada' ? 'cuando_sea' : n.bucket,
+});
 
 /** A dated to-do has left Entrada: clearing its date later must not send it back there. */
 export const whenDate = (date: string): When => ({ due_date: date, bucket: 'cuando_sea' });
@@ -155,6 +161,23 @@ export const cleanSteps = (steps: ChecklistItem[]): ChecklistItem[] =>
   steps.map((s) => ({ ...s, text: s.text.trim() })).filter((s) => s.text);
 
 /** Everything the to-do form edits, ready to save. */
-export function taskPatch(v: { type: TaskType; title: string; notes: string; when: When; deadline: string; steps: ChecklistItem[] }): NoteInput {
-  return { type: v.type, body: joinTask(v.title, v.notes), ...v.when, deadline: v.deadline || null, checklist: cleanSteps(v.steps) };
+export function taskPatch(v: {
+  type: TaskType;
+  title: string;
+  notes: string;
+  when: When;
+  deadline: string;
+  steps: ChecklistItem[];
+  listId: string | null;
+  sectionId: string | null;
+}): NoteInput {
+  return {
+    type: v.type,
+    body: joinTask(v.title, v.notes),
+    ...v.when,
+    deadline: v.deadline || null,
+    checklist: cleanSteps(v.steps),
+    list_id: v.listId,
+    section_id: v.listId ? v.sectionId : null,
+  };
 }

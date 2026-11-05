@@ -14,6 +14,8 @@ export const qk = {
   running: ['running'] as const,
   notes: ['notes'] as const,
   noteImages: (paths: string[]) => ['note-images', ...paths] as const,
+  noteLists: ['note-lists'] as const,
+  noteSections: ['note-sections'] as const,
   boards: ['boards'] as const,
   board: (id: string) => ['board', id] as const,
   documents: ['documents'] as const,
@@ -89,6 +91,14 @@ export const useTaskEntries = (taskIds: string[]) => {
 export const useNotes = () => {
   const api = useApi();
   return useQuery({ queryKey: qk.notes, queryFn: () => api.listNotes() });
+};
+export const useNoteLists = () => {
+  const api = useApi();
+  return useQuery({ queryKey: qk.noteLists, queryFn: () => api.listNoteLists() });
+};
+export const useNoteSections = () => {
+  const api = useApi();
+  return useQuery({ queryKey: qk.noteSections, queryFn: () => api.listNoteSections() });
 };
 export const useNoteImages = (paths: string[]) => {
   const api = useApi();

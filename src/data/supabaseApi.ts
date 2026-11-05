@@ -18,6 +18,8 @@ import type {
   NewsItem,
   NewsSource,
   Note,
+  NoteList,
+  NoteSection,
   Project,
   Task,
   TimeEntry,
@@ -214,6 +216,30 @@ export function createSupabaseApi(sb: SupabaseClient): Api {
       const note = check(await sb.from('notes').select('image_path').eq('id', id).maybeSingle()) as Pick<Note, 'image_path'> | null;
       check(await sb.from('notes').delete().eq('id', id));
       if (note?.image_path) await sb.storage.from('notes').remove([note.image_path]);
+    },
+    async listNoteLists() {
+      return check(await sb.from('note_lists').select('*').order('sort').order('created_at')) as NoteList[];
+    },
+    async createNoteList(input) {
+      return check(await sb.from('note_lists').insert(input).select().single()) as NoteList;
+    },
+    async updateNoteList(id, patch) {
+      check(await sb.from('note_lists').update(patch).eq('id', id));
+    },
+    async deleteNoteList(id) {
+      check(await sb.from('note_lists').delete().eq('id', id));
+    },
+    async listNoteSections() {
+      return check(await sb.from('note_sections').select('*').order('sort').order('created_at')) as NoteSection[];
+    },
+    async createNoteSection(input) {
+      return check(await sb.from('note_sections').insert(input).select().single()) as NoteSection;
+    },
+    async updateNoteSection(id, patch) {
+      check(await sb.from('note_sections').update(patch).eq('id', id));
+    },
+    async deleteNoteSection(id) {
+      check(await sb.from('note_sections').delete().eq('id', id));
     },
     async linkPreview(url) {
       const res = await sb.rpc('link_preview', { p_url: url });
