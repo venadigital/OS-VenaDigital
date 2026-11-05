@@ -346,3 +346,23 @@ export type Invoice = {
 };
 
 export type InvoiceInput = Partial<Omit<Invoice, 'id' | 'created_at' | 'updated_at'>>;
+
+// ---------------------------------------------------------------- noticias
+export type NewsSource = {
+  slug: string;
+  name: string;
+  site: string;
+  last_checked_at: string | null;
+  last_ok_at: string | null;
+  last_error: string | null;
+};
+
+export type NewsItem = {
+  id: string;
+  source: string;
+  url: string;
+  title: string;
+  summary: string | null;
+  image_url: string | null;
+  published_at: string;
+};

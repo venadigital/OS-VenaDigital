@@ -368,6 +368,41 @@ describe('documentos', () => {
   });
 });
 
+describe('noticias', () => {
+  beforeAll(async () => {
+    await db.exec(`
+      insert into public.news_sources (slug, name, site) values ('xataka', 'Xataka', 'xataka.com');
+      insert into public.news_items (source, url, title, published_at) values ('xataka', 'https://xataka.com/a', 'Una noticia', now());
+    `);
+  });
+
+  it('lets anyone signed in read, and nobody write', async () => {
+    const seen = await as(USER_A, 'authenticated', () => db.query(`select * from public.news_items`));
+    expect(seen.rows).toHaveLength(1);
+    await expect(
+      as(USER_A, 'authenticated', () => db.query(`insert into public.news_items (source, url, title, published_at) values ('xataka', 'https://xataka.com/b', 'Intruso', now())`)),
+    ).rejects.toThrow();
+    await expect(as(USER_A, 'authenticated', () => db.query(`delete from public.news_items`))).rejects.toThrow();
+    await expect(as(USER_A, 'authenticated', () => db.query(`update public.news_sources set name = 'Otro'`))).rejects.toThrow();
+  });
+
+  it('keeps the news away from people not signed in', async () => {
+    await expect(as(null, 'anon', () => db.query(`select * from public.news_items`))).rejects.toThrow();
+  });
+
+  it('refuses addresses and images that are not web links', async () => {
+    await expect(db.query(`insert into public.news_items (source, url, title, published_at) values ('xataka', 'javascript:alert(1)', 'Mal', now())`)).rejects.toThrow();
+    await expect(
+      db.query(`insert into public.news_items (source, url, title, image_url, published_at) values ('xataka', 'https://xataka.com/c', 'Mal', 'http://x.test/a.png', now())`),
+    ).rejects.toThrow();
+  });
+
+  it('never lets the app ask about the sync secret', async () => {
+    await expect(as(USER_A, 'authenticated', () => db.query(`select public.news_sync_authorized('x')`))).rejects.toThrow(/permission denied/);
+    await expect(as(null, 'anon', () => db.query(`select public.news_sync_authorized('x')`))).rejects.toThrow(/permission denied/);
+  });
+});
+
 describe('tareas · fecha de terminado', () => {
   it('stamps completed_at when a task is marked done, keeps it on later edits and clears it on reopen', async () => {
     await as(USER_A, 'authenticated', async () => {

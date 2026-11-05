@@ -28,6 +28,7 @@ import { sketchDataUrl } from './demoSketches';
 import { DEMO_CALENDARS, seedCalendar } from './demoCalendar';
 import { seedClients } from './demoClients';
 import { buildDemoPdf } from './demoDocument';
+import { seedNews } from './demoNews';
 
 let seq = 0;
 const uid = () => `demo-${Date.now().toString(36)}-${++seq}`;
@@ -568,6 +569,10 @@ export function createDemoApi(): Api {
         return data ? [{ id, data }] : [];
       }));
     },
+
+    // ---------- Noticias ----------
+    listNews: async ({ source, limit }) => later(seedNews(new Date()).items.filter((n) => !source || n.source === source).slice(0, limit)),
+    listNewsSources: async () => later(seedNews(new Date()).sources),
 
     // ---------- Documentos ----------
     listDocuments: async () =>

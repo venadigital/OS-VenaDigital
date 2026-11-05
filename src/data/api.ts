@@ -26,6 +26,8 @@ import type {
   LinkPreview,
   ModelPrice,
   ModelPriceInput,
+  NewsItem,
+  NewsSource,
   Note,
   NoteInput,
   Project,
@@ -116,6 +118,11 @@ export interface Api {
   updateCapture(id: string, patch: { name: string }): Promise<void>;
   deleteCapture(id: string): Promise<void>;
   captureFile(capture: Pick<Capture, 'file_path'>): Promise<Blob>;
+
+  // Noticias (la Edge Function `news-sync` llena estas tablas; la app solo las lee)
+  /** Newest first; `source` limits them to one source. */
+  listNews(opts: { source: string | null; limit: number }): Promise<NewsItem[]>;
+  listNewsSources(): Promise<NewsSource[]>;
 
   // Consumo IA
   /** Rows with fromDay <= day < toDay (yyyy-mm-dd). */

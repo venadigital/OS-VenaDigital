@@ -15,6 +15,8 @@ import type {
   DocSummary,
   LinkPreview,
   ModelPrice,
+  NewsItem,
+  NewsSource,
   Note,
   Project,
   Task,
@@ -276,6 +278,16 @@ export function createSupabaseApi(sb: SupabaseClient): Api {
         }),
       );
       return found.flat();
+    },
+
+    // ---------- Noticias ----------
+    async listNews({ source, limit }) {
+      let query = sb.from('news_items').select('id, source, url, title, summary, image_url, published_at').order('published_at', { ascending: false }).limit(limit);
+      if (source) query = query.eq('source', source);
+      return check(await query) as NewsItem[];
+    },
+    async listNewsSources() {
+      return check(await sb.from('news_sources').select('*').order('name')) as NewsSource[];
     },
 
     // ---------- Documentos ----------

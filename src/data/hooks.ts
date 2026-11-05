@@ -19,6 +19,8 @@ export const qk = {
   documents: ['documents'] as const,
   document: (id: string) => ['document', id] as const,
   captures: ['captures'] as const,
+  news: (source: string | null, limit: number) => ['news', source, limit] as const,
+  newsSources: ['news-sources'] as const,
   usage: (from: string, to: string) => ['usage', from, to] as const,
   sessions: (from: Date, to: Date) => ['sessions', from.getTime(), to.getTime()] as const,
   prices: ['prices'] as const,
@@ -112,6 +114,21 @@ export const useDocuments = () => {
 export const useCaptures = () => {
   const api = useApi();
   return useQuery({ queryKey: qk.captures, queryFn: () => api.listCaptures() });
+};
+// The installed app can stay open for hours; the news arrive on their own.
+const NEWS_REFRESH_MS = 10 * 60_000;
+export const useNews = (source: string | null, limit: number) => {
+  const api = useApi();
+  return useQuery({
+    queryKey: qk.news(source, limit),
+    queryFn: () => api.listNews({ source, limit }),
+    placeholderData: keepPreviousData,
+    refetchInterval: NEWS_REFRESH_MS,
+  });
+};
+export const useNewsSources = () => {
+  const api = useApi();
+  return useQuery({ queryKey: qk.newsSources, queryFn: () => api.listNewsSources(), refetchInterval: NEWS_REFRESH_MS });
 };
 export const useDocument = (id: string) => {
   const api = useApi();

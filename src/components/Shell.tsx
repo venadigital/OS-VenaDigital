@@ -1,6 +1,6 @@
 import { useEffect, useMemo, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { CalendarDays, Download, FileText, Home, Moon, NotebookPen, Search, Settings2, Shapes, Sparkles, Square, Sun, Timer, Users } from 'lucide-react';
+import { CalendarDays, Download, FileText, Home, Moon, Newspaper, NotebookPen, Search, Settings2, Shapes, Sparkles, Square, Sun, Timer, Users } from 'lucide-react';
 import { useAccount } from '@/data/ApiContext';
 import { useBoards, useTimerSync } from '@/data/hooks';
 import { useRunningTimer } from '@/features/tiempo/model';
@@ -16,6 +16,7 @@ export const NAV = [
   { to: '/', label: 'Inicio', short: 'Inicio', icon: Home },
   { to: '/tiempo', label: 'Tiempo', short: 'Tiempo', icon: Timer },
   { to: '/calendario', label: 'Calendario', short: 'Calendario', icon: CalendarDays },
+  { to: '/noticias', label: 'Noticias', short: 'Noticias', icon: Newspaper },
   { to: '/clientes', label: 'Clientes', short: 'Clientes', icon: Users },
   { to: '/consumo', label: 'Consumo IA', short: 'Consumo', icon: Sparkles },
   { to: '/tableros', label: 'Tableros', short: 'Tableros', icon: Shapes },
