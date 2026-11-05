@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "collector": "node collector/collector.mjs",
-    "db:setup-sql": "node scripts/build-setup-sql.mjs"
+    "db:setup-sql": "node scripts/build-setup-sql.mjs",
+    "extension:build": "vite build --config vite.extension.config.ts"
   },
   "dependencies": {
     "@excalidraw/excalidraw": "^0.18.1",

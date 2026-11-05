@@ -1,6 +1,6 @@
-// Injected into every frame of the tab when a capture starts. It defines what the service
-// worker calls in the frame that scrolls. This is the tab being read, so whatever it changes
-// (scroll position, hidden headers) is put back at the end.
+// Injected into every frame of the tab to find what scrolls and to go down it photographing.
+// This is the tab being read, so whatever it changes (scroll position, hidden headers) is put
+// back at the end.
 (() => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const root = () => document.scrollingElement || document.documentElement;
@@ -10,13 +10,17 @@
   const hidden = new Map();
 
   // ---------- Finding what scrolls ----------
+  // A scroller has to fit on screen: what is taller than the screen (a wide diagram with its own
+  // horizontal scroll, say) moves along with the page and can't be gone through by itself.
   const bestInner = () => {
     let best = null;
     let bestScore = 0;
-    for (const el of document.querySelectorAll('body *')) {
+    for (const el of document.querySelectorAll('body, body *')) {
       if (el.clientHeight < 150 || el.scrollHeight <= el.clientHeight + 40) continue;
       const overflow = getComputedStyle(el).overflowY;
       if (overflow !== 'auto' && overflow !== 'scroll') continue;
+      const r = el.getBoundingClientRect();
+      if (r.height > innerHeight + 2 || r.bottom <= 0 || r.top >= innerHeight) continue;
       const score = el.clientWidth * el.clientHeight * (el.scrollHeight - el.clientHeight);
       if (score > bestScore) {
         best = el;
@@ -29,6 +33,13 @@
     const r = el.getBoundingClientRect();
     return { left: r.left + el.clientLeft, top: r.top + el.clientTop, width: el.clientWidth, height: el.clientHeight };
   };
+  /** The part of the scroller that is really on screen: nothing outside it can be photographed. */
+  const visibleRect = (el) => {
+    const r = rectOf(el);
+    const left = Math.max(0, r.left);
+    const top = Math.max(0, r.top);
+    return { left, top, width: Math.min(innerWidth, r.left + r.width) - left, height: Math.min(innerHeight, r.top + r.height) - top };
+  };
 
   const probe = () => {
     const doc = root();
@@ -37,7 +48,7 @@
       vw: innerWidth,
       vh: innerHeight,
       doc: { scrollable: doc.scrollHeight - doc.clientHeight, width: doc.clientWidth, height: doc.clientHeight },
-      inner: inner && { scrollable: inner.scrollHeight - inner.clientHeight, ...rectOf(inner) },
+      inner: inner && { scrollable: inner.scrollHeight - inner.clientHeight, ...visibleRect(inner) },
       iframes: [...document.querySelectorAll('iframe, frame')].map((f) => ({ ...rectOf(f), src: f.src || '' })),
     };
   };
@@ -50,7 +61,7 @@
     scrollTop: scrollTop(),
     total: target().scrollHeight,
     clientHeight: target().clientHeight,
-    rect: scroller ? rectOf(scroller) : { left: 0, top: 0, width: root().clientWidth, height: root().clientHeight },
+    rect: scroller ? visibleRect(scroller) : { left: 0, top: 0, width: root().clientWidth, height: root().clientHeight },
   });
 
   const begin = (kind) => {
@@ -73,6 +84,22 @@
     await sleep(120);
     while (busy() && performance.now() - start < ms) await sleep(80);
   };
+  // Scroll libraries turn a jump into an animation run by their own code, which nothing announces.
+  // The only sign that the page has arrived is that it stops moving.
+  const stopMoving = async (ms) => {
+    const start = performance.now();
+    let last = scrollTop();
+    let quiet = 0;
+    while (quiet < 3 && performance.now() - start < ms) {
+      await sleep(60);
+      const now = scrollTop();
+      quiet = Math.abs(now - last) < 0.5 ? quiet + 1 : 0;
+      last = now;
+    }
+  };
+  /** Until what was just changed is on the screen. A hidden frame gets no frames, so it has a limit. */
+  const painted = () =>
+    Promise.race([new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))), sleep(150)]);
 
   // What stays on screen (headers, chat bubbles) belongs to the first stretch only.
   // Big fixed elements are usually the page's background, so they stay. Looking for them
@@ -103,66 +130,24 @@
 
   const goTo = async (top, later) => {
     jump(top);
+    await stopMoving(2500);
     if (later) hideFloating();
     await settle(1500);
+    await stopMoving(1500);
+    await painted();
     return view();
   };
 
-  // ---------- Text, so the OS can select it ----------
-  let texts = [];
-  let textsAt = -1;
-  const indexTexts = (rect) => {
-    const total = target().scrollHeight;
-    if (textsAt === total) return;
-    textsAt = total;
-    texts = [];
-    const walkFrom = scroller ?? document.body;
-    if (!walkFrom) return;
-    const walker = document.createTreeWalker(walkFrom, NodeFilter.SHOW_TEXT);
-    const here = scrollTop();
-    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-      const parent = node.parentElement;
-      if (!parent || !/\S/.test(node.data) || /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE)$/.test(parent.tagName)) continue;
-      const box = parent.getBoundingClientRect();
-      if (box.width > 0) texts.push({ node, parent, top: box.top - rect.top + here, bottom: box.bottom - rect.top + here });
-    }
-  };
-  /** Words of the stretch [top, top + h], from its top-left corner. */
-  const harvest = (top, h) => {
-    const words = [];
-    const { rect } = view();
-    indexTexts(rect);
-    const range = document.createRange();
-    const y0 = rect.top + top - scrollTop();
-    const round = (n) => Math.round(n * 100) / 100;
-    const reach = innerHeight; // sections that were still sliding in when they were indexed
-    for (const { node, parent, top: textTop, bottom: textBottom } of texts) {
-      if (textBottom < top - reach || textTop > top + h + reach || !node.isConnected) continue;
-      const style = getComputedStyle(parent);
-      if (style.visibility !== 'visible' || style.opacity === '0') continue;
-      for (const m of node.data.matchAll(/\S+/g)) {
-        range.setStart(node, m.index);
-        range.setEnd(node, m.index + m[0].length);
-        const r = range.getClientRects()[0];
-        if (!r || r.width < 1 || r.height < 1) continue;
-        const cy = r.top + r.height / 2;
-        if (cy < y0 || cy >= y0 + h || r.right <= rect.left || r.left >= rect.left + rect.width) continue;
-        words.push([m[0], round(r.left - rect.left), round(r.top - y0), round(r.width), round(r.height)]);
-      }
-    }
-    return words;
-  };
-
   // ---------- Leaving the tab as it was ----------
-  const end = () => {
+  const end = async () => {
     for (const [el, [value, priority]] of hidden) {
       if (value) el.style.setProperty('visibility', value, priority);
       else el.style.removeProperty('visibility');
     }
     hidden.clear();
     jump(startScroll);
-    delete globalThis.__venaCapture;
+    await stopMoving(1500);
   };
 
-  globalThis.__venaCapture = { probe, begin, goTo, harvest, end };
+  globalThis.__venaCapture = { probe, begin, goTo, view, end, element: () => scroller };
 })();

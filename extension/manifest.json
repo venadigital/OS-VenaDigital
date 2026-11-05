@@ -1,19 +1,39 @@
 {
   "manifest_version": 3,
   "name": "Vena OS",
-  "version": "1.0.0",
-  "description": "Guarda la página que estás viendo en Documentos de Vena OS, para anotarla o como captura.",
+  "version": "2.0.0",
+  "description": "Herramientas de dibujo sobre la página que estás viendo. Las capturas quedan en Documentos de Vena OS.",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAuDQQIMuD7YMR57d/+Oh5x1dXBtP+emNcx7NSS3BTeIVQk0OqresG2KX1176FVGF3n1/EvKrkZ5eQNhbC7b9w8xvSUwkcH//Qtjp8yWpB1oCIdwEin6CWnJcA9JkScemvVEgpGGgKNvO3fpTFf1PUJBXIoOQY0I1JjYtByYecR/JevZKBDRAP7ETID6SS4ClAe/YrhBydmZkf8ekjweGLaoD7ha8699QUvGhju328jrC2neKEfMbyKSTm3gqfqWwGeYPx59fpblsW83Myj4xcktTA1FNusElxBc3mwPewoYv6O8drButNy1mnL8wIx09NxiMW/wE7R+tJhBBFqBCYOwIDAQAB",
-  "icons": { "16": "icons/icon-16.png", "48": "icons/icon-48.png", "128": "icons/icon-128.png" },
-  "action": {
-    "default_title": "Guardar en Vena OS",
-    "default_popup": "popup/popup.html",
-    "default_icon": { "16": "icons/icon-16.png", "48": "icons/icon-48.png", "128": "icons/icon-128.png" }
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
   },
-  "background": { "service_worker": "service-worker.js", "type": "module" },
-  "permissions": ["scripting", "storage", "webNavigation"],
-  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_title": "Dibujar en esta página",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "background": {
+    "service_worker": "service-worker.js",
+    "type": "module"
+  },
+  "permissions": [
+    "scripting",
+    "storage",
+    "webNavigation",
+    "alarms"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
   "externally_connectable": {
-    "matches": ["https://os.venadigital.com.co/*", "http://localhost:5183/*"]
+    "matches": [
+      "https://os.venadigital.com.co/*",
+      "http://localhost:5183/*"
+    ]
   }
 }

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Cuerpo que se desplaza y diagrama ancho</title>
+    <style>
+      /* Quien se desplaza es el body, no la página; y dentro hay un diagrama ancho más alto que la pantalla. */
+      html { height: 100%; overflow: hidden; }
+      body { margin: 0; height: 100%; overflow-y: auto; font: 18px/1.5 Helvetica, Arial, sans-serif; color: #1f1e1c; }
+      .fila { height: 200px; display: flex; align-items: center; padding: 0 48px; border-bottom: 2px solid #000; box-sizing: border-box; background: #fff5f5; }
+      .diagrama { height: 1400px; overflow-x: auto; background: #e7f5ff; }
+      .ancho { width: 2400px; height: 1460px; background: repeating-linear-gradient(90deg, #d0ebff 0 100px, #a5d8ff 100px 200px); }
+    </style>
+  </head>
+  <body>
+    <div class="fila"><strong>Antes</strong>&nbsp;del diagrama</div>
+    <div class="diagrama"><div class="ancho">Diagrama ancho</div></div>
+    <div class="fila"><strong>Fila A</strong></div>
+    <div class="fila"><strong>Fila B</strong></div>
+    <div class="fila"><strong>Fila C</strong></div>
+    <div class="fila"><strong>Después</strong>&nbsp;del diagrama</div>
+  </body>
+</html>

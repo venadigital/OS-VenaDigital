@@ -5,10 +5,8 @@ import { captureScale, encodeCapture, type CaptureImage } from './capture';
 /** Fixed by the `key` in extension/manifest.json. */
 export const EXTENSION_ID = 'kcnicbloecgnkjjahlfkhokliigkaflh';
 
-export type ExtensionMeta = { id: string; kind: 'document' | 'capture'; title: string; url: string; count: number; truncated: boolean };
-/** A word: text, then left, top, width and height from the stretch's top-left corner. */
-export type WebWord = [string, number, number, number, number];
-export type WebPart = { bytes: Uint8Array; type: string; width: number; height: number; words: WebWord[] };
+export type ExtensionMeta = { id: string; title: string; url: string; count: number; truncated: boolean };
+export type WebPart = { bytes: Uint8Array; type: string; width: number; height: number };
 
 type RuntimeWithExternal = {
   sendMessage: (id: string, message: unknown, callback: (response: unknown) => void) => void;
@@ -43,66 +41,12 @@ function fromBase64(data: string): Uint8Array {
 export async function readParts(meta: ExtensionMeta, onProgress: (share: number) => void): Promise<WebPart[]> {
   const parts: WebPart[] = [];
   for (let index = 0; index < meta.count; index++) {
-    const part = await ask<{ data: string; type: string; width: number; height: number; words: WebWord[] } | null>({ type: 'part', id: meta.id, index });
+    const part = await ask<{ data: string; type: string; width: number; height: number } | null>({ type: 'part', id: meta.id, index });
     if (!part) throw new Error('La captura está incompleta. Vuelve a hacerla.');
-    parts.push({ bytes: fromBase64(part.data), type: part.type, width: part.width, height: part.height, words: part.words });
+    parts.push({ bytes: fromBase64(part.data), type: part.type, width: part.width, height: part.height });
     onProgress((index + 1) / meta.count);
   }
   return parts;
-}
-
-/**
- * The PDF of a captured page, the same kind the Mac service makes: each stretch is a page with
- * its image and, on top, its words as invisible text. One page unit is one CSS pixel.
- */
-export async function buildWebPdf(parts: WebPart[], title: string): Promise<Blob> {
-  const lib = await import('pdf-lib');
-  const { PDFDocument, StandardFonts, TextRenderingMode } = lib;
-  const pdf = await PDFDocument.create();
-  pdf.setTitle(title);
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
-
-  // Helvetica only knows Latin-1-ish characters (all of Spanish); anything else becomes "?".
-  const known = new Map<string, boolean>();
-  const clean = (text: string) =>
-    [...text]
-      .map((ch) => {
-        if (!known.has(ch)) {
-          try {
-            font.encodeText(ch);
-            known.set(ch, true);
-          } catch {
-            known.set(ch, false);
-          }
-        }
-        return known.get(ch) ? ch : '?';
-      })
-      .join('');
-
-  for (const part of parts) {
-    const page = pdf.addPage([part.width, part.height]);
-    const image = await pdf.embedJpg(part.bytes);
-    page.drawImage(image, { x: 0, y: 0, width: part.width, height: part.height });
-    if (!part.words.length) continue;
-    const key = page.node.newFontDictionary('VenaF', font.ref);
-    const ops = [lib.beginText(), lib.setTextRenderingMode(TextRenderingMode.Invisible)];
-    for (const [text, x, y, w, h] of part.words) {
-      const word = clean(text);
-      const size = h * 0.85;
-      const natural = font.widthOfTextAtSize(word, size);
-      if (!natural) continue;
-      ops.push(
-        lib.setFontAndSize(key, size),
-        lib.setCharacterSqueeze((w / natural) * 100),
-        lib.setTextMatrix(1, 0, 0, 1, x, part.height - (y + h * 0.8)),
-        lib.showText(font.encodeText(word)),
-      );
-    }
-    ops.push(lib.endText());
-    page.pushOperators(...ops);
-  }
-  const bytes = await pdf.save({ useObjectStreams: false });
-  return new Blob([bytes.slice().buffer as ArrayBuffer], { type: 'application/pdf' });
 }
 
 /** Stretches one under the other, as one image for the Capturas library. */

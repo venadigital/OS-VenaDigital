@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Desplazamiento suave por código</title>
+    <style>
+      body { margin: 0; font: 18px/1.5 Helvetica, Arial, sans-serif; color: #1f1e1c; }
+      .fila { height: 200px; display: flex; align-items: center; padding: 0 48px; border-bottom: 2px solid #000; box-sizing: border-box; }
+      .fila:nth-child(odd) { background: #fff9db; }
+      .fila:nth-child(even) { background: #e6fcf5; }
+    </style>
+  </head>
+  <body>
+    <div id="filas"></div>
+    <script>
+      for (let i = 1; i <= 24; i++) document.getElementById('filas').insertAdjacentHTML('beforeend', `<div class="fila"><strong>Tramo ${i}</strong>&nbsp;con desplazamiento animado</div>`);
+      // Como las librerías de scroll suave: un salto no llega de una vez, se anima por código.
+      let shown = 0;
+      let animating = false;
+      addEventListener('scroll', () => {
+        if (animating || Math.abs(scrollY - shown) < 2) return;
+        const to = scrollY;
+        const from = shown;
+        const start = performance.now();
+        animating = true;
+        scrollTo({ top: from, behavior: 'instant' });
+        const step = (now) => {
+          const k = Math.min(1, (now - start) / 500);
+          shown = from + (to - from) * k;
+          scrollTo({ top: shown, behavior: 'instant' });
+          if (k < 1) requestAnimationFrame(step);
+          else {
+            shown = to;
+            requestAnimationFrame(() => (animating = false));
+          }
+        };
+        requestAnimationFrame(step);
+      });
+    </script>
+  </body>
+</html>

@@ -1,109 +1,192 @@
 {
-  "anotar_largo": {
+  "herramientas": {
     "seen": {
-      "path": "/documentos/demo",
-      "pages": 12,
-      "first": [
-        1201,
-        479
-      ],
-      "gap": "0px",
-      "web": true,
+      "lapiz": 1,
+      "resaltador": 2,
+      "flecha": 3,
+      "texto": 4,
+      "deshacer": 3,
+      "rehacer": 4,
+      "borrador": 3
+    },
+    "text": "Hola ñandú",
+    "moved": "translate(0 -300)",
+    "passes": "none",
+    "ok": true,
+    "seconds": 3
+  },
+  "recuadro": {
+    "seen": {
+      "width": 1000,
+      "height": 400,
+      "type": "image/png",
       "name": "Página larga de prueba",
-      "text": "Cabecera fija Fila 1 canción número 1 de la página Fila 2 canción número 2 de la página"
+      "longestDark": 4,
+      "gapsMin": 0,
+      "gapsMax": 0,
+      "darkRows": 1
+    },
+    "ok": true,
+    "seconds": 5
+  },
+  "pantalla": {
+    "seen": {
+      "width": 2560,
+      "height": 1514,
+      "type": "image/png",
+      "name": "Página larga de prueba",
+      "longestDark": 4,
+      "gapsMin": 400,
+      "gapsMax": 400,
+      "darkRows": 3
+    },
+    "dockBack": true,
+    "ok": true,
+    "seconds": 5
+  },
+  "completa": {
+    "seen": {
+      "width": 2530,
+      "height": 12112,
+      "type": "image/jpeg",
+      "name": "Página larga de prueba",
+      "longestDark": 4,
+      "gapsMin": 400,
+      "gapsMax": 400,
+      "darkRows": 30
     },
     "after": {
-      "scrollY": 300,
-      "floating": "visible",
-      "leftover": "undefined"
+      "scrollY": 2000,
+      "header": "visible"
     },
     "ok": true,
-    "seconds": 16
+    "seconds": 18
   },
-  "capturar_largo": {
+  "marco_artifact": {
+    "inTop": false,
+    "marks": 1,
     "seen": {
-      "width": 1265,
-      "height": 6056,
-      "type": "image/png",
-      "name": "Página larga de prueba",
-      "file": "capturar_largo.png"
-    },
-    "ok": true,
-    "seconds": 12
-  },
-  "capturar_marco": {
-    "seen": {
-      "width": 1265,
-      "height": 3200,
-      "type": "image/png",
+      "width": 2530,
+      "height": 6400,
+      "type": "image/jpeg",
       "name": "Citas de prueba",
-      "file": "capturar_marco.png"
-    },
-    "ok": true,
-    "seconds": 7
-  },
-  "anotar_marco": {
-    "seen": {
-      "path": "/documentos/demo",
-      "pages": 7,
-      "first": [
-        1201,
-        454
-      ],
-      "gap": "0px",
-      "web": true,
-      "name": "Citas de prueba",
-      "text": "Bloque 1 dentro del marco Bloque 2 dentro del marco"
+      "longestDark": 4,
+      "gapsMin": 400,
+      "gapsMax": 400,
+      "darkRows": 16
     },
     "ok": true,
     "seconds": 10
   },
-  "capturar_panel": {
+  "scroll_animado": {
     "seen": {
-      "width": 1045,
-      "height": 2400,
+      "width": 2530,
+      "height": 9600,
+      "type": "image/jpeg",
+      "name": "Desplazamiento suave por código",
+      "longestDark": 4,
+      "gapsMin": 400,
+      "gapsMax": 400,
+      "darkRows": 24
+    },
+    "ok": true,
+    "seconds": 17
+  },
+  "cuerpo_y_diagrama": {
+    "seen": {
+      "width": 2530,
+      "height": 4800,
+      "type": "image/jpeg",
+      "name": "Cuerpo que se desplaza y diagrama ancho",
+      "longestDark": 4,
+      "gapsMin": 400,
+      "gapsMax": 3200,
+      "darkRows": 5
+    },
+    "cssHeight": 2400,
+    "ok": true,
+    "seconds": 8
+  },
+  "panel": {
+    "marks": 1,
+    "moved": "translate(0 -200)",
+    "seen": {
+      "width": 2090,
+      "height": 4800,
       "type": "image/png",
       "name": "App con panel",
-      "file": "capturar_panel.png"
+      "longestDark": 4,
+      "gapsMin": 400,
+      "gapsMax": 400,
+      "darkRows": 12
     },
+    "after": 200,
     "ok": true,
-    "seconds": 6
+    "seconds": 8
   },
-  "capturar_pantalla": {
+  "csp_estricta": {
+    "position": "fixed",
+    "marks": 1,
+    "fill": "#1f1e1c",
     "seen": {
-      "width": 1280,
-      "height": 757,
+      "width": 2560,
+      "height": 1514,
       "type": "image/png",
-      "name": "Página larga de prueba",
-      "file": "capturar_pantalla.png"
+      "name": "Sitio con política estricta",
+      "longestDark": 0,
+      "gapsMin": 0,
+      "gapsMax": 0,
+      "darkRows": 0
     },
     "ok": true,
-    "seconds": 4
+    "seconds": 5
   },
   "cancelar": {
     "after": {
       "scrollY": 200,
-      "floating": "visible",
-      "leftover": "undefined"
+      "header": "visible"
     },
+    "back": true,
     "openedOs": false,
     "ok": true,
-    "seconds": 6
+    "seconds": 7
   },
   "cambiar_de_pestana": {
     "message": "Cambiaste de pestaña durante la captura. Quédate en ella hasta que termine.",
-    "after": {
-      "scrollY": 0,
-      "floating": "visible",
-      "leftover": "undefined"
-    },
+    "back": true,
+    "header": "visible",
     "ok": true,
-    "seconds": 6
+    "seconds": 9
   },
-  "pagina_prohibida": {
-    "message": "Chrome no deja capturar esta página.",
+  "cerrar": {
+    "asks": "¿Cerrar y borrar los trazos?SeguirCerrar",
+    "kept": 1,
+    "gone": true,
+    "fresh": 0,
+    "goneAgain": true,
     "ok": true,
     "seconds": 3
+  },
+  "pagina_prohibida": {
+    "badge": "!",
+    "title": "Chrome no deja dibujar en esta página.",
+    "ok": true,
+    "seconds": 2
+  },
+  "guardado_silencioso": {
+    "opened": true,
+    "activeTab": "http://127.0.0.1:8765/largo.html",
+    "message": "GuardadaVer capturas",
+    "closed": true,
+    "library": "http://localhost:5183/documentos?demo=&vista=capturas",
+    "ok": true,
+    "seconds": 5
+  },
+  "os_sin_sesion": {
+    "message": "Termina en la pestaña del OS.",
+    "active": "http://127.0.0.1:8765/documentos?extension=e0157121-fafc-4ac2-ba58-c42c121e38b6",
+    "ok": true,
+    "seconds": 32
   },
   "otros_sitios": {
     "seen": "undefined",
@@ -112,18 +195,16 @@
   },
   "web_real": {
     "seen": {
-      "path": "/documentos/demo",
-      "pages": 15,
-      "first": [
-        1201,
-        479
-      ],
-      "gap": "0px",
-      "web": true,
+      "width": 2360,
+      "height": 13560,
+      "type": "image/jpeg",
       "name": "Vena Digital · IA real para negocios reales",
-      "text": "Servicios   Sobre Lau   Testimonios   FAQ   Escríbeme ? IA   real   para   negocios   reales Implementamos IA en tu negocio Pero solo donde de verdad tiene sentido."
+      "longestDark": 70,
+      "gapsMin": 0,
+      "gapsMax": 0,
+      "darkRows": 1
     },
     "ok": true,
-    "seconds": 24
+    "seconds": 30
   }
 }

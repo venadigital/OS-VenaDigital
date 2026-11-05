@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bandFor, chooseTarget, frameOffsets, friendlyError, scaleFor, scrollFor, stretchHeight } from './lib.js';
+import { bandFor, chooseTarget, cropPlan, frameOffsets, friendlyError, movedBetween, scaleFor, scrollFor } from './lib.js';
 
 const frame = (frameId, over = {}) => ({
   frameId,
@@ -94,11 +94,34 @@ describe('stretches', () => {
     expect(bandFor(660)).toEqual({ height: 440, margin: 110 });
   });
 
-  it('starts at the top of the page and ends where the page ends', () => {
+  it('starts at the top of the page', () => {
     expect(scrollFor(0, 150)).toBe(0);
     expect(scrollFor(600, 150)).toBe(450);
-    expect(stretchHeight(600, 600, 2000)).toBe(600);
-    expect(stretchHeight(1800, 600, 2000)).toBe(200);
+  });
+
+  const view = (scrollTop, height = 900) => ({ scrollTop, rect: { top: 0, height } });
+
+  it('cuts the stretch out of the middle of the screen when the page went where it was asked', () => {
+    expect(cropPlan(600, 600, view(450))).toEqual({ start: 600, y: 150, height: 600 });
+  });
+
+  it('asks for no more than is on screen, so nothing comes out black', () => {
+    // The page stopped 400 px short: only 300 px of the stretch are visible, and they are valid.
+    expect(cropPlan(1000, 600, view(400))).toEqual({ start: 1000, y: 600, height: 300 });
+  });
+
+  it('skips what is already above the screen when the page overshot', () => {
+    expect(cropPlan(600, 600, view(700))).toEqual({ start: 700, y: 0, height: 600 });
+  });
+
+  it('reports nothing left when the page cannot reach the stretch', () => {
+    expect(cropPlan(2000, 600, view(1000)).height).toBe(0);
+  });
+
+  it('notices a page that moved during the photo', () => {
+    expect(movedBetween(view(450), view(450))).toBe(false);
+    expect(movedBetween(view(450), view(520))).toBe(true);
+    expect(movedBetween({ scrollTop: 0, rect: { top: 40 } }, { scrollTop: 0, rect: { top: 0 } })).toBe(true);
   });
 
   it('gives up sharpness on very long pages', () => {

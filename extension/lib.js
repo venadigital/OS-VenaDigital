@@ -2,14 +2,12 @@
 
 /** Long enough for a very long article; the rest of a bottomless feed stays out. */
 export const MAX_HEIGHT = 60_000;
-/** Under the 50 MB the document library accepts for one file. */
-export const MAX_BYTES = 48 * 1024 * 1024;
 /** Chrome allows two screenshots per second. */
 export const MIN_SHOT_GAP_MS = 550;
 /** A scroller covering less of the tab than this is a sidebar or a widget, not the page. */
 const MIN_AREA_SHARE = 0.25;
 
-/** Sharpness that still fits the library: the longer the page, the fewer pixels per point. */
+/** Sharpness that still fits one image: the longer the page, the fewer pixels per point. */
 export const scaleFor = (height) => (height <= 15_000 ? 2 : height <= 30_000 ? 1.5 : 1);
 
 /**
@@ -22,9 +20,22 @@ export function bandFor(clientHeight) {
   return { height, margin: Math.max(0, Math.round((clientHeight - height) / 2)) };
 }
 
-/** The stretch starting at `top`: where to scroll, and how tall it is once the page's end is known. */
+/** Where to scroll to photograph the stretch that starts at `top`. */
 export const scrollFor = (top, margin) => Math.max(0, top - margin);
-export const stretchHeight = (top, band, total) => Math.min(band, total - top);
+
+/**
+ * What the photo can really show of the stretch starting at `top`, wherever the page ended up.
+ * It never asks for more than is on screen (that would come out black), and the next stretch
+ * starts where this one ends, so nothing is lost when a page scrolls short of what was asked.
+ */
+export function cropPlan(top, wanted, view) {
+  const start = Math.max(top, view.scrollTop);
+  const y = start - view.scrollTop;
+  return { start, y, height: Math.max(0, Math.min(wanted, view.rect.height - y)) };
+}
+
+/** Whether the page moved between measuring it and photographing it: the photo can't be trusted. */
+export const movedBetween = (a, b) => Math.abs(a.scrollTop - b.scrollTop) > 1 || Math.abs(a.rect.top - b.rect.top) > 1;
 
 /** Where each frame sits in the tab. A frame that can't be placed stays out of the result. */
 export function frameOffsets(frames, navigation) {
@@ -69,7 +80,7 @@ const visibleArea = (r, offset, tabW, tabH) => {
 /**
  * The page's real scroller: what shows most of the tab and has the most to scroll. It can be
  * the document, a panel inside it, or the document of a frame (Claude artifacts live in one).
- * With nothing to scroll, the top document is captured as it is.
+ * With nothing to scroll, the top document is used as it is.
  */
 export function chooseTarget(frames, offsets, tabW, tabH) {
   const minArea = tabW * tabH * MIN_AREA_SHARE;
