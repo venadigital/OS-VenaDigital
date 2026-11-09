@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient, type QueryKey } from '@tanstack/react-query';
 import { useApi } from './ApiContext';
 import type { Api } from './api';
-import type { CalendarInfo } from './types';
+import type { CalendarInfo, Note, NoteInput } from './types';
 import { dayKey } from '@/lib/time';
 import { DEFAULT_PRICES } from '@/lib/pricing';
 import { useToast } from '@/components/Toast';
@@ -218,6 +218,31 @@ export function useApiMutation<V, R = unknown>(fn: (api: Api, vars: V) => Promis
     mutationFn: (vars: V) => fn(api, vars),
     onSettled: () => Promise.all(keys.map((k) => qc.invalidateQueries({ queryKey: k }))),
     onError: (err) => toast(`${errorMessage}: ${err instanceof Error ? err.message : String(err)}`, 'error'),
+  });
+}
+
+export type NotePatch = { id: string; patch: NoteInput };
+
+/** Saves changes to several notes at once. They show right away and go back if the save fails. */
+export function usePatchNotes(errorMessage = 'No se pudo guardar') {
+  const api = useApi();
+  const qc = useQueryClient();
+  const toast = useToast();
+  return useMutation({
+    mutationFn: (patches: NotePatch[]) => Promise.all(patches.map((p) => api.updateNote(p.id, p.patch))),
+    onMutate: async (patches) => {
+      await qc.cancelQueries({ queryKey: qk.notes });
+      const before = qc.getQueryData<Note[]>(qk.notes);
+      const byId = new Map<string, NoteInput>();
+      for (const p of patches) byId.set(p.id, { ...byId.get(p.id), ...p.patch });
+      qc.setQueryData<Note[]>(qk.notes, (notes) => notes?.map((n) => (byId.has(n.id) ? { ...n, ...byId.get(n.id) } : n)));
+      return { before };
+    },
+    onError: (err, _patches, ctx) => {
+      if (ctx?.before) qc.setQueryData(qk.notes, ctx.before);
+      toast(`${errorMessage}: ${err instanceof Error ? err.message : String(err)}`, 'error');
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.notes }),
   });
 }
 

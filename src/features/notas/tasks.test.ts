@@ -46,6 +46,8 @@ const note = (patch: Partial<Note> = {}): Note => ({
   completed_at: null,
   list_id: null,
   section_id: null,
+  sort: null,
+  today_sort: null,
   created_at: iso,
   updated_at: iso,
   ...patch,
@@ -143,14 +145,23 @@ describe('deadlineLabel', () => {
 
 describe('sortTasks', () => {
   const titles = (list: Note[]) => list.map((n) => n.id);
-  it('puts late deadlines first in Hoy, then pinned, then newest', () => {
+  it('puts pinned first in Hoy, then late deadlines, then newest', () => {
     const list = [
       note({ id: 'vieja', created_at: '2026-10-01T00:00:00Z' }),
       note({ id: 'nueva', created_at: '2026-10-09T00:00:00Z' }),
       note({ id: 'fijada', pinned: true }),
       note({ id: 'vencida', deadline: '2026-11-04' }),
     ];
-    expect(titles(sortTasks(list, 'hoy', today))).toEqual(['vencida', 'fijada', 'nueva', 'vieja']);
+    expect(titles(sortTasks(list, 'hoy', today))).toEqual(['fijada', 'vencida', 'nueva', 'vieja']);
+  });
+  it('keeps the order they were dragged to, with the new ones on top; Hoy has its own', () => {
+    const list = [
+      note({ id: 'segunda', sort: 2, today_sort: 0 }),
+      note({ id: 'nueva', created_at: '2026-10-09T00:00:00Z' }),
+      note({ id: 'primera', sort: 1, today_sort: 1 }),
+    ];
+    expect(titles(sortTasks(list, 'cuando', today))).toEqual(['nueva', 'primera', 'segunda']);
+    expect(titles(sortTasks(list, 'hoy', today))).toEqual(['nueva', 'segunda', 'primera']);
   });
   it('lists the latest done first in Registro, falling back to the last edit', () => {
     const list = [

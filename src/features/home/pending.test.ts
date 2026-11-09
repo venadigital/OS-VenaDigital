@@ -26,6 +26,8 @@ const note = (id: string, due: string | null, patch: Partial<Note> = {}): Note =
   completed_at: null,
   list_id: null,
   section_id: null,
+  sort: null,
+  today_sort: null,
   created_at: iso,
   updated_at: iso,
   ...patch,

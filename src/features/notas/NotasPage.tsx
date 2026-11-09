@@ -21,7 +21,9 @@ import { listKey, rememberPlace, VIEW_ICONS, viewKey, WALL_ICON } from './places
 import { ProgressRing } from './ProgressRing';
 import { TaskDialog, type TaskDraft } from './TaskDialog';
 import { TaskPanel } from './TaskPanel';
-import { defaultWhen, isTask, noteView, type NotasView, parseView, TASK_VIEWS, viewCounts, type ViewCounts, whenBucket } from './tasks';
+import { NotasDrag } from './drag';
+import { SelectionBar, SelectionProvider, useSelection } from './selection';
+import { defaultWhen, isTask, noteView, type NotasView, parseView, TASK_VIEWS, taskView, viewCounts, type ViewCounts, whenBucket, whenDate } from './tasks';
 
 export function NotasPage() {
   const notesQ = useNotes();
@@ -43,6 +45,19 @@ export function NotasPage() {
   const [task, setTask] = useState<Note | TaskDraft | null>(null);
 
   const open = (n: Note) => (isTask(n) ? setTask(n) : setEditing(n));
+  const selection = useSelection(openList ? `lista:${openList.id}` : view);
+
+  /** What dropping a to-do on a view or list beside it changes; null where it already is. */
+  const dropOn = (place: string, n: Note): NoteInput | null => {
+    if (!isTask(n) || n.done) return null;
+    const at = taskView(n, today);
+    if (place === 'hoy') return at === 'hoy' ? null : { ...whenDate(today), today_sort: null };
+    if (place === 'entrada') return at === 'entrada' ? null : { ...whenBucket('entrada'), list_id: null, section_id: null };
+    if (place === 'cuando') return at === 'cuando' ? null : whenBucket('cuando_sea');
+    if (place === 'algun') return at === 'algun' ? null : whenBucket('algun_dia');
+    const listId = place.startsWith('lista:') ? place.slice('lista:'.length) : null;
+    return listId && n.list_id !== listId ? { list_id: listId, section_id: null, sort: null } : null;
+  };
 
   // Links from Inicio and the search: `nueva` opens a blank form, `nota` opens that note where it lives.
   useEffect(() => {
@@ -94,31 +109,37 @@ export function NotasPage() {
 
   return (
     <Page className="notas-page">
-      <div className="notas-layout" data-open={Boolean(chosen || openList)}>
-        <NotasNav view={view} openList={openList} lists={lists} progress={progress} counts={counts} onNewList={() => setListForm({ new: true })} />
-        <div className="notas-content">
-          {openList ? (
-            <ListPanel
-              key={openList.id}
-              list={openList}
-              lists={lists}
-              sections={sections}
-              notes={notes}
-              progress={progress}
-              now={now}
-              loading={notesQ.isLoading}
-              onOpen={open}
-              onNewTask={(sectionId) => setTask({ draft: true, when: whenBucket('cuando_sea'), listId: openList.id, sectionId })}
-            />
-          ) : view === 'muro' ? (
-            <MuroView notes={notes} loading={notesQ.isLoading} images={images} onEdit={setEditing} />
-          ) : (
-            <TaskPanel view={view} notes={notes} listNames={listNames} now={now} loading={notesQ.isLoading} onOpen={open} />
-          )}
-        </div>
-      </div>
+      <SelectionProvider value={selection}>
+        <NotasDrag enabled={!selection.on} dropOn={dropOn}>
+          <div className={cx('notas-layout', selection.on && 'is-selecting')} data-open={Boolean(chosen || openList)}>
+            <NotasNav view={view} openList={openList} lists={lists} progress={progress} counts={counts} onNewList={() => setListForm({ new: true })} />
+            <div className="notas-content">
+              {openList ? (
+                <ListPanel
+                  key={openList.id}
+                  list={openList}
+                  lists={lists}
+                  sections={sections}
+                  notes={notes}
+                  progress={progress}
+                  now={now}
+                  loading={notesQ.isLoading}
+                  onOpen={open}
+                  onNewTask={(sectionId) => setTask({ draft: true, when: whenBucket('cuando_sea'), listId: openList.id, sectionId })}
+                />
+              ) : view === 'muro' ? (
+                <MuroView notes={notes} loading={notesQ.isLoading} images={images} onEdit={setEditing} />
+              ) : (
+                <TaskPanel view={view} notes={notes} listNames={listNames} now={now} loading={notesQ.isLoading} onOpen={open} />
+              )}
+            </div>
+          </div>
+        </NotasDrag>
+      </SelectionProvider>
 
-      {(openList || view !== 'muro') && (
+      {selection.on && <SelectionBar selection={selection} notes={notes} lists={lists} progress={progress} now={now} hasTimer={Boolean(timer)} />}
+
+      {(openList || view !== 'muro') && !selection.on && (
         <button
           type="button"
           className={cx('notas-fab', timer && 'has-timer')}
@@ -135,6 +156,9 @@ export function NotasPage() {
     </Page>
   );
 }
+
+/** The views a to-do can be dropped on: Próximo needs a day, and Registro and the wall are not for planning. */
+const DROP_VIEWS = new Set<string>(['entrada', 'hoy', 'cuando', 'algun']);
 
 function NotasNav({
   view,
@@ -153,7 +177,7 @@ function NotasNav({
 }) {
   const tree = listTree(lists);
   const project = (l: NoteList) => (
-    <Link key={l.id} to={`/notas?lista=${l.id}`} aria-current={openList?.id === l.id ? 'page' : undefined} className="notas-nav-link notas-nav-project">
+    <Link key={l.id} to={`/notas?lista=${l.id}`} aria-current={openList?.id === l.id ? 'page' : undefined} className="notas-nav-link notas-nav-project" data-drop-place={`lista:${l.id}`}>
       <ProgressRing progress={progress.get(l.id)} />
       <span className="min-w-0 flex-1 truncate">{l.name}</span>
     </Link>
@@ -166,7 +190,13 @@ function NotasNav({
           const { icon: Icon, tint } = VIEW_ICONS[v.id];
           const count = v.id === 'entrada' || v.id === 'hoy' ? counts[v.id] : 0;
           return (
-            <Link key={v.id} to={`/notas?vista=${v.id}`} aria-current={!openList && view === v.id ? 'page' : undefined} className="notas-nav-link">
+            <Link
+              key={v.id}
+              to={`/notas?vista=${v.id}`}
+              aria-current={!openList && view === v.id ? 'page' : undefined}
+              className="notas-nav-link"
+              data-drop-place={DROP_VIEWS.has(v.id) ? v.id : undefined}
+            >
               <span className="notas-nav-tile" style={{ background: tint }}>
                 <Icon size={15} aria-hidden />
               </span>
@@ -191,7 +221,7 @@ function NotasNav({
       {tree.loose.length > 0 && <div className="notas-nav-group">{tree.loose.map(project)}</div>}
       {tree.areas.map(({ area, projects }) => (
         <div key={area.id} className="notas-nav-group">
-          <Link to={`/notas?lista=${area.id}`} aria-current={openList?.id === area.id ? 'page' : undefined} className="notas-nav-area">
+          <Link to={`/notas?lista=${area.id}`} aria-current={openList?.id === area.id ? 'page' : undefined} className="notas-nav-area" data-drop-place={`lista:${area.id}`}>
             {area.name}
           </Link>
           {projects.map(project)}

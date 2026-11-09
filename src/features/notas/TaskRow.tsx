@@ -3,6 +3,7 @@ import { cx, Menu, type MenuItem } from '@/components/ui';
 import type { Note, NoteInput } from '@/data/types';
 import { relativeDay } from '@/lib/format';
 import { dayKey } from '@/lib/time';
+import type { RowDrag } from './drag';
 import { carriedLabel, completedAt, dateLabel, deadlineLabel, taskNotes, taskTitle, type TaskView, whenBucket, whenDate, whenOf } from './tasks';
 
 export type TaskActions = {
@@ -38,6 +39,9 @@ function plannedLabel(note: Note, now: Date): string | null {
   return note.bucket === 'algun_dia' ? 'Algún día' : null;
 }
 
+/** While choosing several: the whole row picks it. */
+export type RowPick = { selected: boolean; onToggle: () => void };
+
 export function TaskRow({
   note,
   done,
@@ -46,6 +50,8 @@ export function TaskRow({
   now,
   listName,
   actions,
+  pick,
+  drag,
 }: {
   note: Note;
   done: boolean;
@@ -55,6 +61,8 @@ export function TaskRow({
   /** The area or project it belongs to, when the row is not already inside it. */
   listName?: string;
   actions: TaskActions;
+  pick?: RowPick;
+  drag?: RowDrag;
 }) {
   const title = taskTitle(note.body) || 'Sin título';
   const steps = note.checklist.length;
@@ -76,31 +84,58 @@ export function TaskRow({
     </>
   );
 
+  const content = (
+    <>
+      <span className="task-line">
+        <span className="task-title">{title}</span>
+        {note.pinned && !done && <Pin size={13} className="task-icon" aria-label="Fijada" />}
+        {taskNotes(note.body) && <Text size={14} className="task-icon" aria-label="Tiene notas" />}
+        {steps > 0 && (
+          <span className="task-steps-count">
+            <ListChecks size={14} className="task-icon" aria-label="Checklist" />
+            {note.checklist.filter((s) => s.done).length}/{steps}
+          </span>
+        )}
+        {note.image_path && <ImageIcon size={14} className="task-icon" aria-label="Tiene imagen" />}
+        {note.type === 'investigar' && <span className="task-chip">Por investigar</span>}
+      </span>
+      {(details || flag || planned) && (
+        <span className="task-sub">
+          {details && <span>{details}</span>}
+          {aside(true)}
+        </span>
+      )}
+    </>
+  );
+
+  if (pick) {
+    return (
+      <button
+        type="button"
+        className={cx('task-row is-picking', done && 'is-done', pick.selected && 'is-picked')}
+        aria-pressed={pick.selected}
+        aria-label={`Seleccionar: ${title}`}
+        onClick={pick.onToggle}
+      >
+        <span className="task-check" aria-hidden>
+          <span className="task-box">{done && <Check size={14} strokeWidth={3} />}</span>
+        </span>
+        <span className="task-main">{content}</span>
+        {aside(false)}
+        <span className="task-pick" aria-hidden>
+          {pick.selected && <Check size={14} strokeWidth={3} />}
+        </span>
+      </button>
+    );
+  }
+
   return (
-    <div className={cx('task-row', done && 'is-done', leaving && 'is-leaving')}>
+    <div className={cx('task-row', done && 'is-done', leaving && 'is-leaving', drag && 'is-draggable')} {...drag}>
       <button type="button" className="task-check" aria-pressed={done} aria-label={`${done ? 'Marcar pendiente' : 'Marcar hecha'}: ${title}`} onClick={() => actions.onToggle(note)}>
         <span className="task-box">{done && <Check size={14} strokeWidth={3} aria-hidden />}</span>
       </button>
       <button type="button" className="task-main" onClick={() => actions.onOpen(note)}>
-        <span className="task-line">
-          <span className="task-title">{title}</span>
-          {note.pinned && !done && <Pin size={13} className="task-icon" aria-label="Fijada" />}
-          {taskNotes(note.body) && <Text size={14} className="task-icon" aria-label="Tiene notas" />}
-          {steps > 0 && (
-            <span className="task-steps-count">
-              <ListChecks size={14} className="task-icon" aria-label="Checklist" />
-              {note.checklist.filter((s) => s.done).length}/{steps}
-            </span>
-          )}
-          {note.image_path && <ImageIcon size={14} className="task-icon" aria-label="Tiene imagen" />}
-          {note.type === 'investigar' && <span className="task-chip">Por investigar</span>}
-        </span>
-        {(details || flag || planned) && (
-          <span className="task-sub">
-            {details && <span>{details}</span>}
-            {aside(true)}
-          </span>
-        )}
+        {content}
       </button>
       {aside(false)}
       <Menu

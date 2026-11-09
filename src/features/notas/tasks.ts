@@ -4,6 +4,7 @@ import { es } from 'date-fns/locale';
 import { dayLabel, relDays } from '@/features/clientes/model';
 import { dayKey, fromDayKey } from '@/lib/time';
 import type { ChecklistItem, Note, NoteBucket, NoteInput, NoteType } from '@/data/types';
+import { byOrder, byPinned, type OrderKey } from './order';
 
 export type TaskView = 'entrada' | 'hoy' | 'proximo' | 'cuando' | 'algun' | 'registro';
 export type NotasView = TaskView | 'muro';
@@ -106,19 +107,26 @@ export function deadlineLabel(deadline: string, now: Date): { text: string; late
 }
 
 // ---------------------------------------------------------------- listas
-const byPinThenNewest = (a: Note, b: Note) => Number(b.pinned) - Number(a.pinned) || b.created_at.localeCompare(a.created_at);
+const newest = (a: Note, b: Note) => b.created_at.localeCompare(a.created_at);
+const byPinThenNewest = (a: Note, b: Note) => byPinned(a, b) || byOrder('sort', 'first')(a, b) || newest(a, b);
 /** The day a to-do shows up on in Próximo. */
 export const dateOf = (n: Pick<Note, 'due_date' | 'deadline'>) => n.due_date ?? n.deadline ?? '';
 
 export const completedAt = (n: Note) => n.completed_at ?? n.updated_at;
 
-/** Late deadlines first in Hoy, the latest done first in Registro, otherwise pinned and then newest. */
+/** The order it shows in each view, after the one it was dragged to. */
+export const orderKeyOf = (view: TaskView): OrderKey => (view === 'hoy' ? 'today_sort' : 'sort');
+
+/**
+ * The latest done first in Registro. Elsewhere pinned first, then the order they were dragged to,
+ * with the new ones on top: late deadlines first in Hoy, otherwise newest.
+ */
 export function sortTasks(tasks: Note[], view: TaskView, today: string): Note[] {
   const list = [...tasks];
   if (view === 'registro') return list.sort((a, b) => completedAt(b).localeCompare(completedAt(a)));
   if (view === 'hoy') {
     const late = (n: Note) => Number(Boolean(n.deadline && n.deadline <= today));
-    return list.sort((a, b) => late(b) - late(a) || byPinThenNewest(a, b));
+    return list.sort((a, b) => byPinned(a, b) || byOrder('today_sort', 'first')(a, b) || late(b) - late(a) || newest(a, b));
   }
   return list.sort(byPinThenNewest);
 }

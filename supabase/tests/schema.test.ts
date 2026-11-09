@@ -429,6 +429,15 @@ describe('notas · capa de tareas', () => {
       await expect(db.query(`insert into public.notes (checklist) values ('{"a": 1}'::jsonb)`)).rejects.toThrow();
     });
   });
+
+  it('starts with no order of its own and keeps the one it is dragged to', async () => {
+    await as(USER_A, 'authenticated', async () => {
+      const n = await db.query<{ id: string; sort: number | null; today_sort: number | null }>(`insert into public.notes (type, body) values ('hacer', 'Ordenar') returning id, sort, today_sort`);
+      expect(n.rows[0]).toMatchObject({ sort: null, today_sort: null });
+      const moved = await db.query<{ sort: number; today_sort: number }>(`update public.notes set sort = 1.5, today_sort = -1 where id = $1 returning sort, today_sort`, [n.rows[0].id]);
+      expect(moved.rows[0]).toEqual({ sort: 1.5, today_sort: -1 });
+    });
+  });
 });
 
 describe('notas · áreas, proyectos y secciones', () => {

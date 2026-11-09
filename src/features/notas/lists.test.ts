@@ -24,6 +24,8 @@ const note = (id: string, patch: Partial<Note> = {}): Note => ({
   completed_at: null,
   list_id: 'l',
   section_id: null,
+  sort: null,
+  today_sort: null,
   created_at: iso,
   updated_at: iso,
   ...patch,
@@ -74,6 +76,10 @@ describe('groupBySection', () => {
       ['a', []],
       ['b', ['en-b']],
     ]);
+  });
+  it('keeps the order they were dragged to inside a section, with new ones last', () => {
+    const [group] = groupBySection([note('nueva'), note('segunda', { sort: 5 }), note('primera', { sort: 1 })], []);
+    expect(ids(group.tasks)).toEqual(['primera', 'segunda', 'nueva']);
   });
   it('has no loose group when everything is in a section', () => {
     expect(groupBySection([note('x', { section_id: 'a' })], [section('a')]).map((g) => g.section?.id)).toEqual(['a']);

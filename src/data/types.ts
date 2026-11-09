@@ -85,6 +85,10 @@ export type Note = {
   completed_at: string | null;
   list_id: string | null;
   section_id: string | null;
+  /** The order it was dragged to in its views and lists; none keeps the usual order. */
+  sort: number | null;
+  /** The order it was dragged to in Hoy. */
+  today_sort: number | null;
   created_at: string;
   updated_at: string;
 };

@@ -1,5 +1,6 @@
 // Areas, projects and their sections.
 import type { Note, NoteList, NoteSection } from '@/data/types';
+import { byOrder, byPinned } from './order';
 import { isTask } from './tasks';
 
 const bySort = <T extends { sort: number; created_at: string }>(a: T, b: T) => a.sort - b.sort || a.created_at.localeCompare(b.created_at);
@@ -31,8 +32,8 @@ export function progressByList(notes: Note[]): Map<string, Progress> {
   return progress;
 }
 
-/** The order they were planned in: pinned first, then oldest. */
-const byPinThenOldest = (a: Note, b: Note) => Number(b.pinned) - Number(a.pinned) || a.created_at.localeCompare(b.created_at);
+/** Pinned first, then the order they were dragged to, then the order they were planned in, with new ones last. */
+const byPinThenOldest = (a: Note, b: Note) => byPinned(a, b) || byOrder('sort', 'last')(a, b) || a.created_at.localeCompare(b.created_at);
 
 export type SectionGroup = { section: NoteSection | null; tasks: Note[] };
 

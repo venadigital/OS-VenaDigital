@@ -8,6 +8,8 @@ import { groupBySection, moveSort, nextSort, type Progress, siblings, type SortP
 import { ListDialog, SectionDialog } from './ListDialog';
 import { NotasBack } from './NotasBack';
 import { ProgressRing } from './ProgressRing';
+import { useNotasDrag } from './drag';
+import { SelectToggle, useSelectionCtx } from './selection';
 import { completedAt, isTask } from './tasks';
 import { TaskRow } from './TaskRow';
 import { useTaskRows } from './useTaskRows';
@@ -86,11 +88,29 @@ export function ListPanel({
     },
   ];
 
-  const row = (n: Note) => <TaskRow key={n.id} note={n} {...rowState(n)} place="lista" now={now} actions={actions} />;
+  const selection = useSelectionCtx();
+  const drag = useNotasDrag();
+  selection.shown.current = [...open, ...(showDone ? done : [])].map((n) => n.id);
+  const hasTasks = open.length > 0 || (showDone && done.length > 0);
+  const row = (n: Note) => {
+    const state = rowState(n);
+    return (
+      <TaskRow
+        key={n.id}
+        note={n}
+        {...state}
+        place="lista"
+        now={now}
+        actions={actions}
+        pick={selection.on ? { selected: selection.ids.has(n.id), onToggle: () => selection.toggle(n.id) } : undefined}
+        drag={state.done ? undefined : drag.row(n)}
+      />
+    );
+  };
 
   return (
     <div className="notas-tasks">
-      <NotasBack />
+      <NotasBack selectable={hasTasks} />
       <header className="list-head">
         {area && (
           <Link to={`/notas?lista=${area.id}`} className="page-eyebrow list-eyebrow">
@@ -100,6 +120,7 @@ export function ListPanel({
         <div className="list-title-row">
           {list.kind === 'proyecto' && <ProgressRing progress={listProgress} size={30} label={`${listProgress?.done ?? 0} de ${listProgress?.total ?? 0} hechas`} />}
           <h1 className="page-title min-w-0">{list.name}</h1>
+          {(hasTasks || selection.on) && <SelectToggle className="notas-select-wide list-select" />}
           <Menu
             align="left"
             items={listMenu}
@@ -135,7 +156,12 @@ export function ListPanel({
         <>
           {groups.length === 0 && projects.length === 0 && <Empty title="Sin tareas" />}
           {groups.map(({ section, tasks }) => (
-            <section key={section?.id ?? 'sin-seccion'} className="list-section" aria-label={section?.name ?? 'Sin sección'}>
+            <section
+              key={section?.id ?? 'sin-seccion'}
+              className="list-section"
+              aria-label={section?.name ?? 'Sin sección'}
+              {...drag.group(`seccion:${section?.id ?? 'ninguna'}`, { notes: tasks, order: 'sort', joins: { section_id: section?.id ?? null } })}
+            >
               {section && (
                 <div className="list-section-head">
                   <h2>{section.name}</h2>
