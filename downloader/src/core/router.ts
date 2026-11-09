@@ -52,6 +52,7 @@ export class Router {
   private readonly routes: Routes;
   private readonly healthTtlMs: number;
   private readonly health = new Map<string, { at: number; value: ProviderHealth }>();
+  private readonly checking = new Map<string, Promise<ProviderHealth>>();
   private readonly log: (msg: string) => void;
 
   constructor(providers: DownloadProvider[], opts: { routes?: Routes; healthTtlMs?: number; log?: (msg: string) => void } = {}) {
@@ -61,12 +62,31 @@ export class Router {
     this.log = opts.log ?? (() => {});
   }
 
+  /** Once there is an answer nobody waits for a check: an expired one is served while the next runs behind it. */
   async healthOf(p: DownloadProvider, fresh = false): Promise<ProviderHealth> {
     const cached = this.health.get(p.id);
-    if (!fresh && cached && Date.now() - cached.at < this.healthTtlMs) return cached.value;
-    const value = await p.healthCheck().catch((err) => ({ ok: false, detail: String(err) }));
-    this.health.set(p.id, { at: Date.now(), value });
-    return value;
+    if (fresh || !cached) return this.checkHealth(p);
+    if (Date.now() - cached.at >= this.healthTtlMs) void this.checkHealth(p);
+    return cached.value;
+  }
+
+  private checkHealth(p: DownloadProvider): Promise<ProviderHealth> {
+    const running = this.checking.get(p.id);
+    if (running) return running;
+    const check = p
+      .healthCheck()
+      .catch((err): ProviderHealth => ({ ok: false, detail: String(err) }))
+      .then((value) => {
+        // Running out of time means the Mac is busy, not that the engine broke: keep the last answer and retry on the next read.
+        const timedOut = value.detail === 'timeout';
+        const last = this.health.get(p.id)?.value;
+        const kept = timedOut && last?.ok ? last : value;
+        this.health.set(p.id, { at: timedOut ? 0 : Date.now(), value: kept });
+        return kept;
+      })
+      .finally(() => this.checking.delete(p.id));
+    this.checking.set(p.id, check);
+    return check;
   }
 
   /** Forget cached health (after engines were updated). */

@@ -4,7 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { Router, parseRoutes, DEFAULT_ROUTES } from '../src/core/router.ts';
-import { DownloadError, type DownloadProvider, type ErrorCode, type MediaInfo, type MediaKind } from '../src/core/types.ts';
+import { DownloadError, type DownloadProvider, type ErrorCode, type MediaInfo, type MediaKind, type ProviderHealth } from '../src/core/types.ts';
 
 const target = { url: 'https://x.com/a/status/1', platform: 'x' as const, label: 'X' };
 const info = (title: string): MediaInfo => ({ platform: 'x', label: 'X', url: target.url, title, items: 1, options: { video: ['best'], audio: [], image: false } });
@@ -66,6 +66,48 @@ test('si todos fallan devuelve el error más informativo', async () => {
 test('sin motores disponibles responde engine_unavailable', async () => {
   const r = new Router([fake('a', { healthy: false })], { routes: { ...DEFAULT_ROUTES, x: ['a'] } });
   await assert.rejects(r.inspect(target, new AbortController().signal), (e: DownloadError) => e.code === 'engine_unavailable');
+});
+
+const tick = () => new Promise((done) => setImmediate(done));
+
+test('con la salud vencida contesta sin esperar y revisa por detrás', async () => {
+  let checks = 0;
+  const pending: (() => void)[] = [];
+  const p: DownloadProvider = {
+    ...fake('a'),
+    healthCheck: () => {
+      checks++;
+      if (checks === 1) return Promise.resolve({ ok: true, version: '1' });
+      return new Promise((done) => pending.push(() => done({ ok: true, version: '2' })));
+    },
+  };
+  const r = new Router([p], { healthTtlMs: 0 });
+  assert.equal((await r.healthOf(p)).version, '1');
+  assert.equal((await r.healthOf(p)).version, '1');
+  assert.equal(checks, 2);
+  pending[0]();
+  await tick();
+  assert.equal((await r.healthOf(p)).version, '2');
+});
+
+test('un chequeo que se queda sin tiempo no tumba a un motor sano', async () => {
+  const answers: ProviderHealth[] = [{ ok: true, version: '1' }, { ok: false, detail: 'timeout' }];
+  const p: DownloadProvider = { ...fake('a'), healthCheck: async () => answers.shift() ?? { ok: true, version: '2' } };
+  const r = new Router([p]);
+  assert.equal((await r.healthOf(p)).ok, true);
+  assert.equal((await r.healthOf(p, true)).version, '1');
+  assert.equal((await r.healthOf(p)).version, '1');
+  await tick();
+  assert.equal((await r.healthOf(p)).version, '2');
+});
+
+test('una falla real sí marca al motor como caído', async () => {
+  const answers: ProviderHealth[] = [{ ok: true }, { ok: false, detail: 'ffmpeg no está disponible' }];
+  const p: DownloadProvider = { ...fake('a'), healthCheck: async () => answers.shift() ?? { ok: true } };
+  const r = new Router([p]);
+  await r.healthOf(p);
+  assert.equal((await r.healthOf(p, true)).ok, false);
+  assert.equal((await r.healthOf(p)).ok, false);
 });
 
 test('las rutas se cambian por configuración', () => {
