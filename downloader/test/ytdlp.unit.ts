@@ -1,6 +1,27 @@
 import assert from 'node:assert/strict';
+import { mkdtemp, writeFile } from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { test } from 'node:test';
 import { YtDlpProvider, classifyYtDlp } from '../src/providers/ytdlp.ts';
+
+async function script(body: string): Promise<string> {
+  const file = path.join(await mkdtemp(path.join(os.tmpdir(), 'ytdlp-test-')), 'bin');
+  await writeFile(file, `#!/bin/sh\n${body}\n`, { mode: 0o755 });
+  return file;
+}
+
+test('si ffmpeg tarda en contestar es falta de tiempo, no que falte', async () => {
+  const p = new YtDlpProvider({ bin: await script('echo 1.0'), ffmpeg: await script('exec sleep 30'), checkTimeoutMs: 1500 });
+  assert.equal((await p.healthCheck()).detail, 'timeout');
+});
+
+test('si ffmpeg no existe el motor sí está caído', async () => {
+  const p = new YtDlpProvider({ bin: await script('echo 1.0'), ffmpeg: '/no/existe/ffmpeg' });
+  const health = await p.healthCheck();
+  assert.equal(health.ok, false);
+  assert.notEqual(health.detail, 'timeout');
+});
 
 test('traduce calidad y formato a opciones de yt-dlp', () => {
   const v = YtDlpProvider.selectionArgs({ url: 'u', platform: 'youtube', kind: 'video', quality: '720' });

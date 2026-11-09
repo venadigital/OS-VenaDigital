@@ -21,6 +21,7 @@ export interface YtDlpOptions {
   jsRuntime?: string;
   cookiesFile?: string;
   cookiesFromBrowser?: string;
+  checkTimeoutMs?: number;
 }
 
 /** Turns yt-dlp's error text into our codes. Order matters: most specific first. */
@@ -67,10 +68,11 @@ export class YtDlpProvider implements DownloadProvider {
 
   async healthCheck(): Promise<ProviderHealth> {
     try {
-      const v = await run(this.opts.bin, ['--version'], { timeoutMs: 15_000 });
+      const timeoutMs = this.opts.checkTimeoutMs ?? 15_000;
+      const v = await run(this.opts.bin, ['--version'], { timeoutMs });
       if (v.code !== 0) return { ok: false, detail: v.stderr.trim().slice(0, 200) };
-      const ff = await run(this.opts.ffmpeg ?? 'ffmpeg', ['-version'], { timeoutMs: 10_000 }).catch(() => null);
-      if (!ff || ff.code !== 0) return { ok: false, version: v.stdout.trim(), detail: 'ffmpeg no está disponible' };
+      const ff = await run(this.opts.ffmpeg ?? 'ffmpeg', ['-version'], { timeoutMs });
+      if (ff.code !== 0) return { ok: false, version: v.stdout.trim(), detail: 'ffmpeg no está disponible' };
       return { ok: true, version: v.stdout.trim() };
     } catch (err) {
       return { ok: false, detail: err instanceof Error ? err.message : String(err) };
@@ -91,7 +93,7 @@ export class YtDlpProvider implements DownloadProvider {
   }
 
   async inspect(target: DetectedUrl, signal: AbortSignal): Promise<MediaInfo> {
-    const res = await run(this.opts.bin, [...this.base(target.platform), '-J', '--', target.url], { signal, timeoutMs: 60_000 });
+    const res = await run(this.opts.bin, [...this.base(target.platform), '-J', '--', target.url], { signal, timeoutMs: 120_000 });
     if (res.code !== 0) throw new DownloadError(classifyYtDlp(res.stderr), undefined, res.stderr.slice(-2000));
     let info: YtInfo;
     try {

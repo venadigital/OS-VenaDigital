@@ -194,7 +194,7 @@ export function buildApp(config: Config) {
       if (req.method === 'POST' && resource === 'inspect') {
         const { url: input } = await body(req);
         const target = detectUrl(String(input ?? ''));
-        const info: MediaInfo = await router.inspect(target, clientSignal(req, res, 75_000));
+        const info: MediaInfo = await router.inspect(target, clientSignal(req, res, 135_000));
         return send(res, 200, { ...info, thumbnail: thumbs.register(info.thumbnail) });
       }
 

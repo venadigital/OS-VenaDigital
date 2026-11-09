@@ -101,6 +101,12 @@ test('un chequeo que se queda sin tiempo no tumba a un motor sano', async () => 
   assert.equal((await r.healthOf(p)).version, '2');
 });
 
+test('sin respuesta previa, un chequeo sin tiempo no saca al motor de la ruta', async () => {
+  const p: DownloadProvider = { ...fake('a'), healthCheck: async () => ({ ok: false, detail: 'timeout' }) };
+  const r = new Router([p], { routes: { ...DEFAULT_ROUTES, x: ['a'] } });
+  assert.equal((await r.inspect(target, new AbortController().signal)).title, 'a');
+});
+
 test('una falla real sí marca al motor como caído', async () => {
   const answers: ProviderHealth[] = [{ ok: true }, { ok: false, detail: 'ffmpeg no está disponible' }];
   const p: DownloadProvider = { ...fake('a'), healthCheck: async () => answers.shift() ?? { ok: true } };

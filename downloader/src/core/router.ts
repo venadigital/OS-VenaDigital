@@ -77,10 +77,10 @@ export class Router {
       .healthCheck()
       .catch((err): ProviderHealth => ({ ok: false, detail: String(err) }))
       .then((value) => {
-        // Running out of time means the Mac is busy, not that the engine broke: keep the last answer and retry on the next read.
+        // Running out of time means the Mac is busy, not that the engine broke: keep the last answer (or assume it works) and retry on the next read.
         const timedOut = value.detail === 'timeout';
         const last = this.health.get(p.id)?.value;
-        const kept = timedOut && last?.ok ? last : value;
+        const kept = timedOut ? (last ?? { ok: true, detail: 'timeout' }) : value;
         this.health.set(p.id, { at: timedOut ? 0 : Date.now(), value: kept });
         return kept;
       })
