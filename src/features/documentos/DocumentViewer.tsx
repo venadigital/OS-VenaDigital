@@ -11,6 +11,7 @@ import { deliverFile } from '@/lib/deliverFile';
 import { firstPageThumbnail, openPdf, pdfErrorMessage, type PDFDocumentProxy, type PDFPageProxy } from './pdf';
 import { DEFAULT_STYLES, DRAWING_TOOLS, isWebAddress, mergeLineRects, pageMarks, spillMarks, translate, uid, withPage, type Box, type Tool, type ToolStyles } from './model';
 import { boundsOf, captureFileName, captureLayout, overlapOf, type CaptureImage, type Rect } from './capture';
+import { LaserPointer } from './LaserPointer';
 import { PdfPage, type Shared } from './PdfPage';
 import { TOOLS, ToolDock } from './Toolbar';
 import './documentos.css';
@@ -849,6 +850,7 @@ function Viewer({ doc }: { doc: Doc }) {
             />
           )}
         </div>
+        {tool === 'laser' && <LaserPointer scrollRef={scrollRef} shared={shared} />}
         {pages.length > 0 && !isWeb && (
           <div className="doc-page-chip md:hidden">
             {current + 1} / {pages.length}

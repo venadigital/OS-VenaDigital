@@ -1,7 +1,7 @@
 // Floating tool dock of the PDF viewer: the tools, and above them the colors and sizes of
 // the tool in hand (or of the selected mark).
 import type { ReactNode } from 'react';
-import { Camera, Circle, Eraser, Highlighter, Maximize, MousePointer2, MoveUpRight, PenLine, ScrollText, Slash, Square, StickyNote, TextSelect, Trash2, Type } from 'lucide-react';
+import { Camera, Circle, Eraser, Highlighter, Maximize, MousePointer2, MoveUpRight, PenLine, Presentation, ScrollText, Slash, Square, StickyNote, TextSelect, Trash2, Type } from 'lucide-react';
 import type { Annotation, ShapeKind } from '@/data/types';
 import { cx } from '@/components/ui';
 import { HIGHLIGHT_COLORS, INK_COLORS, MARKER_WIDTHS, NOTE_COLORS, PEN_WIDTHS, SHAPE_WIDTHS, TEXT_SIZES, type Tool, type ToolStyles } from './model';
@@ -19,6 +19,7 @@ export const TOOLS: { id: Tool; label: string; key: string }[] = [
   { id: 'shape', label: 'Formas', key: 'R' },
   { id: 'note', label: 'Nota', key: 'N' },
   { id: 'capture', label: 'Captura', key: 'C' },
+  { id: 'laser', label: 'Puntero láser', key: 'L' },
 ];
 
 function ToolIcon({ tool, shape }: { tool: Tool; shape: ShapeKind }) {
@@ -44,6 +45,8 @@ function ToolIcon({ tool, shape }: { tool: Tool; shape: ShapeKind }) {
       return <StickyNote {...p} />;
     case 'capture':
       return <Camera {...p} />;
+    case 'laser':
+      return <Presentation {...p} />;
   }
 }
 

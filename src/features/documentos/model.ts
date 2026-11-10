@@ -4,7 +4,7 @@
 import { getStroke } from 'perfect-freehand';
 import type { Annotation, DocAnnotations, InkPoint, ShapeKind } from '@/data/types';
 
-export type Tool = 'select' | 'pen' | 'marker' | 'texthl' | 'eraser' | 'text' | 'shape' | 'note' | 'capture';
+export type Tool = 'select' | 'pen' | 'marker' | 'texthl' | 'eraser' | 'text' | 'shape' | 'note' | 'capture' | 'laser';
 export type Box = { x: number; y: number; w: number; h: number };
 
 export const INK_COLORS = ['#1f1e1c', '#e03131', '#f08c00', '#2f9e44', '#1971c2', '#7048e8', '#e64980', '#868e96'];
@@ -41,7 +41,7 @@ export const DEFAULT_STYLES: ToolStyles = {
 };
 
 /** Tools that draw with the pointer (the page takes touches instead of scrolling). */
-export const DRAWING_TOOLS: Tool[] = ['pen', 'marker', 'eraser', 'text', 'shape', 'note', 'capture'];
+export const DRAWING_TOOLS: Tool[] = ['pen', 'marker', 'eraser', 'text', 'shape', 'note', 'capture', 'laser'];
 
 export const uid = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : `a${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`);
 export const r2 = (n: number) => Math.round(n * 100) / 100;
