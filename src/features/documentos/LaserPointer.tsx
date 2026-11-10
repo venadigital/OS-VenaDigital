@@ -6,9 +6,9 @@ import type { Shared } from './PdfPage';
 type Point = { x: number; y: number; at: number };
 
 /** How long each stretch of the trail lasts, in milliseconds. */
-const TRAIL_MS = 650;
+const TRAIL_MS = 300;
 const DOT_RADIUS = 5;
-const TRAIL_RADIUS = 3.2;
+const TRAIL_RADIUS = 2.1;
 /** Samples closer than this add nothing, and would pile up on a fast mouse. */
 const MIN_STEP = 2;
 const GLOW_COLOR = 'rgba(255, 38, 38, 0.85)';
@@ -93,22 +93,29 @@ export function LaserPointer({ scrollRef, shared }: { scrollRef: RefObject<HTMLD
 
       const paths = trails.map(smooth);
       const life = (p: Point) => Math.max(0, 1 - (now - p.at) / TRAIL_MS) ** 0.8;
-      const paint = (scale: number, color: string, glow = 0) => {
-        ctx.beginPath();
+      const trail = (scale: number) => () => {
         for (const path of paths) traceTrail(ctx, path, (p) => TRAIL_RADIUS * scale * life(p));
-        if (head) {
-          const r = DOT_RADIUS * scale;
-          ctx.moveTo(head.x + r, head.y);
-          ctx.arc(head.x, head.y, r, 0, TAU);
-        }
+      };
+      const dot = (scale: number) => () => {
+        if (!head) return;
+        const r = DOT_RADIUS * scale;
+        ctx.moveTo(head.x + r, head.y);
+        ctx.arc(head.x, head.y, r, 0, TAU);
+      };
+      const fill = (trace: () => void, color: string, glow = 0) => {
+        ctx.beginPath();
+        trace();
         ctx.fillStyle = color;
         ctx.shadowColor = glow ? GLOW_COLOR : 'transparent';
         ctx.shadowBlur = glow * dpr;
         ctx.fill();
       };
-      paint(2.2, 'rgba(255, 38, 38, 0.32)', 18);
-      paint(1, '#ff2b2b');
-      paint(0.32, '#ffc9c4');
+      // The trail stays quiet so it doesn't read as a drawn line; only the dot glows.
+      fill(trail(1.5), 'rgba(255, 38, 38, 0.16)', 5);
+      fill(dot(2.2), 'rgba(255, 38, 38, 0.32)', 18);
+      fill(trail(1), '#ff2b2b');
+      fill(dot(1), '#ff2b2b');
+      fill(dot(0.32), '#ffc9c4');
 
       // A resting pointer needs no frames: only the trail animates.
       if (trails.some((t) => t.length)) schedule();
