@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Check, ChevronLeft, CircleAlert, Download, ExternalLink, FileDown, FileText, Globe, Hand, Highlighter, Images, LoaderCircle, PenLine, Redo2, Trash2, Undo2, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { Check, ChevronLeft, CircleAlert, Download, ExternalLink, FileDown, FileText, Globe, Hand, Highlighter, Images, LoaderCircle, Maximize, PenLine, Redo2, Trash2, Undo2, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useApi } from '@/data/ApiContext';
 import { qk, useDocument } from '@/data/hooks';
@@ -263,6 +263,7 @@ function Viewer({ doc }: { doc: Doc }) {
   // ---------- Zoom ----------
   const [zoom, setZoomState] = useState(1);
   const zoomRef = useRef(zoom);
+  const [isFull, setIsFull] = useState(false);
   const [renderZoom, setRenderZoom] = useState(1);
   const pendingAnchor = useRef<(Anchor & { cx: number; cy: number }) | null>(null);
   const isPhone = typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches;
@@ -312,10 +313,14 @@ function Viewer({ doc }: { doc: Doc }) {
     const cy = r.top + r.height / 2;
     zoomTo(z, anchorAt(cx, cy), cx, cy);
   };
+  /** The page width; in full screen, the whole page (a web page is one long sheet: just its width). */
   const fitZoom = () => {
-    const w = scrollRef.current?.clientWidth ?? 800;
+    const scroller = scrollRef.current;
+    const w = scroller?.clientWidth ?? 800;
     const widest = Math.max(...pages.map((p) => p.width), 1);
-    return clampZoom((w - gutter * 2) / widest);
+    if (!isFull) return clampZoom((w - gutter * 2) / widest);
+    const tallest = Math.max(...pages.map((p) => p.height), 1);
+    return clampZoom(isWeb ? w / widest : Math.min(w / widest, (scroller?.clientHeight ?? 600) / tallest));
   };
   useLayoutEffect(applyAnchor, [zoom]);
   useEffect(() => {
@@ -373,10 +378,60 @@ function Viewer({ doc }: { doc: Doc }) {
     };
   }, [pages.length]);
 
-  const goToPage = (n: number) => {
-    const el = scrollRef.current?.querySelector<HTMLElement>(`[data-page="${Math.min(pages.length, Math.max(1, n)) - 1}"]`);
-    if (el && scrollRef.current) scrollRef.current.scrollTop = el.offsetTop - 12;
+  const showPage = (index: number) => {
+    const scroller = scrollRef.current;
+    const el = scroller?.querySelector<HTMLElement>(`[data-page="${index}"]`);
+    if (!scroller || !el) return;
+    scroller.scrollTop = el.offsetTop - (isFull ? (scroller.clientHeight - el.offsetHeight) / 2 : 12);
   };
+  const goToPage = (n: number) => showPage(Math.min(pages.length, Math.max(1, n)) - 1);
+
+  // ---------- Full screen: the whole page on the whole screen, with the tools at hand ----------
+  // iPhone has no full screen for pages, so there the button doesn't exist.
+  const canFullscreen = typeof document !== 'undefined' && document.fullscreenEnabled;
+  const [frameHeight, setFrameHeight] = useState(0);
+  const [recenter, setRecenter] = useState(0);
+  const currentRef = useRef(current);
+  currentRef.current = current;
+  const zoomBeforeFull = useRef(1);
+  const toggleFullscreen = () => {
+    // If the browser refuses, everything simply stays as it was.
+    void (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(() => undefined);
+  };
+  useEffect(() => {
+    const onChange = () => {
+      const full = Boolean(document.fullscreenElement);
+      if (full) zoomBeforeFull.current = zoomRef.current;
+      else {
+        zoomRef.current = zoomBeforeFull.current;
+        setZoomState(zoomBeforeFull.current);
+      }
+      setIsFull(full);
+      setRecenter((n) => n + 1);
+    };
+    document.addEventListener('fullscreenchange', onChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', onChange);
+      if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
+    };
+  }, []);
+  // The screen takes a moment to reach its final size: fit whenever it changes.
+  useEffect(() => {
+    const scroller = scrollRef.current;
+    if (!isFull || !scroller || !pages.length) return;
+    const observer = new ResizeObserver(() => {
+      setFrameHeight(scroller.clientHeight);
+      zoomRef.current = fitZoom();
+      setZoomState(zoomRef.current);
+      setRecenter((n) => n + 1);
+    });
+    observer.observe(scroller);
+    return () => observer.disconnect();
+  }, [isFull, pages.length]);
+  // After the new layout, stay on the page she was on.
+  useLayoutEffect(() => {
+    if (recenter) showPage(currentRef.current);
+  }, [recenter]);
 
   // ---------- Gestures: two fingers pan and pinch; ⌘/ctrl + wheel and trackpad pinch zoom ----------
   const zoomToRef = useRef(zoomTo);
@@ -665,12 +720,21 @@ function Viewer({ doc }: { doc: Doc }) {
         nudgeSelected(k === 'arrowleft' ? -step : k === 'arrowright' ? step : 0, k === 'arrowup' ? -step : k === 'arrowdown' ? step : 0);
         return;
       }
+      if (isFull && !isWeb) {
+        const turn = ['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(e.key) ? 1 : ['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key) ? -1 : 0;
+        if (turn) {
+          e.preventDefault();
+          goToPage(current + 1 + turn);
+          return;
+        }
+      }
       if (e.key === 'Escape') {
         if (marqueeDrag.current) cancelMarquee();
         else if (selected) setSelected(null);
         else setTool('select');
         return;
       }
+      if (k === 'f' && canFullscreen) return toggleFullscreen();
       const t = TOOLS.find((x) => x.key.toLowerCase() === k);
       if (t) setTool(t.id);
     };
@@ -742,10 +806,17 @@ function Viewer({ doc }: { doc: Doc }) {
   const canUndo = undoStack.current.length > 0;
   const canRedo = redoStack.current.length > 0;
   const showHighlightButton = hasTextSelection && (tool === 'select' || tool === 'texthl');
-  const pageStyle = useMemo(() => ({ padding: `${gutter}px ${gutter}px calc(150px + var(--safe-bottom))` }), [gutter]);
+  const tallestOnScreen = Math.max(...pages.map((p) => p.height), 1) * zoom;
+  const pageStyle = useMemo(() => {
+    if (!isFull) return { padding: `${gutter}px ${gutter}px calc(150px + var(--safe-bottom))` };
+    if (isWeb) return { padding: 0 };
+    // One page per screen: the room left over goes around each page, so the next one can't peek in.
+    const spare = Math.max(0, frameHeight - tallestOnScreen);
+    return { padding: `${spare / 2}px 0`, gap: spare };
+  }, [gutter, isFull, isWeb, frameHeight, tallestOnScreen]);
 
   return (
-    <div className="doc-viewer flex h-dvh flex-col bg-page">
+    <div className={`doc-viewer flex h-dvh flex-col bg-page${isFull ? ' is-full' : ''}`}>
       <header
         className="flex shrink-0 items-center justify-between gap-2 border-b border-line bg-page px-2 md:px-4"
         style={{ paddingTop: 'var(--safe-top)', minHeight: 'calc(52px + var(--safe-top))' }}
@@ -784,6 +855,11 @@ function Viewer({ doc }: { doc: Doc }) {
             <IconButton label="Acercar" onClick={() => zoomAtCenter(zoomRef.current * 1.2)}>
               <ZoomIn size={17} />
             </IconButton>
+            {canFullscreen && (
+              <IconButton label="Pantalla completa" title="Pantalla completa · F" onClick={toggleFullscreen}>
+                <Maximize size={16} />
+              </IconButton>
+            )}
           </div>
           <div className="hidden h-5 w-px bg-line md:block" />
           <IconButton label="Deshacer" onClick={undo} disabled={!canUndo}>
@@ -869,6 +945,7 @@ function Viewer({ doc }: { doc: Doc }) {
             onDeleteSelected={deleteSelected}
             onCaptureVisible={captureVisible}
             onCaptureAll={captureAll}
+            onExitFullscreen={isFull ? toggleFullscreen : undefined}
             extra={
               showHighlightButton ? (
                 <button
