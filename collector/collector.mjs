@@ -12,7 +12,7 @@
 //   node collector.mjs daemon
 //   node collector.mjs install | uninstall | status
 //
-// Sin dependencias: Node 18+.
+// Sin dependencias: Node 18+ (los registros comprimidos de Codex, .jsonl.zst, necesitan Node 22.15+).
 
 import { closeSync, copyFileSync, existsSync, mkdirSync, openSync, readFileSync, readSync, readdirSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { homedir, hostname } from 'node:os';
@@ -20,8 +20,9 @@ import { basename, dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import zlib from 'node:zlib';
 
-export const VERSION = '1.1.0';
+export const VERSION = '1.2.0';
 const HOME = homedir();
 const BASE_DIR = process.env.VENA_OS_DIR || join(HOME, '.os-vena');
 const LABEL = 'com.venadigital.os-collector';
@@ -105,6 +106,27 @@ export function readNewLines(path, offset, onLine) {
   return consumed;
 }
 
+const canZstd = typeof zlib.zstdDecompressSync === 'function';
+
+/** Codex compresses finished sessions: read the whole file once, again only if it changes. Returns its size. */
+function readCompressed(path, readSize, onLine) {
+  let size;
+  try {
+    size = statSync(path).size;
+  } catch {
+    return readSize;
+  }
+  if (size === readSize) return readSize;
+  let text;
+  try {
+    text = zlib.zstdDecompressSync(readFileSync(path)).toString('utf8');
+  } catch {
+    return readSize; // still being written: try on the next sync
+  }
+  for (const line of text.split('\n')) if (line.trim()) onLine(line);
+  return size;
+}
+
 // ---------------------------------------------------------------- state
 const STATE_VERSION = 2;
 
@@ -114,6 +136,7 @@ export function emptyState() {
     files: {},
     seen: {},
     codex: {},
+    codexVersion: CODEX_VERSION,
     totals: {},
     dirty: {},
     sessions: {},
@@ -126,7 +149,7 @@ export function emptyState() {
 
 export function loadState(path) {
   const s = readJson(path, null);
-  if (s && s.version === STATE_VERSION) return { ...emptyState(), ...s };
+  if (s && s.version === STATE_VERSION) return { ...emptyState(), ...s, codexVersion: s.codexVersion ?? 1 };
   // Older state: rescan everything (to build sessions) but keep the account history.
   const fresh = emptyState();
   if (s) {
@@ -254,6 +277,20 @@ export function ingestClaudeLine(state, line) {
 }
 
 // ---------------------------------------------------------------- Codex
+// When the way Codex logs are read changes, its counts are rebuilt once from the logs.
+// v2: forked subagents no longer count the parent's history again.
+const CODEX_VERSION = 2;
+// A forked subagent starts by copying the parent's history (token totals included) in one burst.
+const FORK_REPLAY_MS = 1000;
+
+function resetCodex(state, codexDir) {
+  for (const path of Object.keys(state.files)) if (path.startsWith(codexDir)) delete state.files[path];
+  for (const k of Object.keys(state.totals)) if (k.split('|')[1] === 'codex') delete state.totals[k];
+  for (const k of Object.keys(state.sessions)) if (k.startsWith('codex:')) delete state.sessions[k];
+  state.codex = {};
+  state.codexVersion = CODEX_VERSION;
+}
+
 export function ingestCodexLine(state, line, file, account) {
   let row;
   try {
@@ -264,7 +301,10 @@ export function ingestCodexLine(state, line, file, account) {
   const p = row?.payload ?? {};
   const f = (state.files[file] ??= { offset: 0 });
   if (row.type === 'session_meta' && typeof p.id === 'string') {
+    // A forked subagent's log also carries the parent's session_meta: the file's own one comes first.
+    if (f.session) return;
     f.session = p.id;
+    if (p.forked_from_id) f.forkedAt = Date.parse(row.timestamp ?? p.timestamp) || null;
     if (typeof p.cwd === 'string') {
       f.cwd = p.cwd;
       (state.codex[p.id] ??= {}).cwd = p.cwd;
@@ -297,6 +337,8 @@ export function ingestCodexLine(state, line, file, account) {
     cw: Math.max(0, cur.cw - last.cw),
   };
   s.max = { in: Math.max(cur.in, last.in), cached: Math.max(cur.cached, last.cached), out: Math.max(cur.out, last.out), cw: Math.max(cur.cw, last.cw) };
+  // The parent's copied history was already counted in the parent: it only sets the starting point.
+  if (f.forkedAt && Date.parse(row.timestamp) - f.forkedAt < FORK_REPLAY_MS) return;
   if (!d.in && !d.cached && !d.out && !d.cw) return;
   const model = f.model ?? s.model ?? 'codex-unknown';
   const counts = {
@@ -318,14 +360,15 @@ export function scan(state, { claudeDir = join(HOME, '.claude', 'projects'), cod
     const f = (state.files[file] ??= { offset: 0 });
     f.offset = readNewLines(file, f.offset, (line) => ingestClaudeLine(state, line));
   }
-  const codexFiles = [
-    ...walk(join(codexDir, 'sessions'), (n) => n.endsWith('.jsonl')),
-    ...walk(join(codexDir, 'archived_sessions'), (n) => n.endsWith('.jsonl')),
-  ];
+  if (state.codexVersion !== CODEX_VERSION) resetCodex(state, codexDir);
+  const isCodexLog = (n) => n.endsWith('.jsonl') || (canZstd && n.endsWith('.jsonl.zst'));
+  const codexFiles = [...walk(join(codexDir, 'sessions'), isCodexLog), ...walk(join(codexDir, 'archived_sessions'), isCodexLog)];
   const acct = codexAccount(join(codexDir, 'auth.json'));
   for (const file of codexFiles) {
     const f = (state.files[file] ??= { offset: 0 });
-    f.offset = readNewLines(file, f.offset, (line) => ingestCodexLine(state, line, file, acct));
+    const onLine = (line) => ingestCodexLine(state, line, file, acct);
+    // Totals are cumulative per session, so a compressed copy of a log already read adds nothing.
+    f.offset = file.endsWith('.zst') ? readCompressed(file, f.offset, onLine) : readNewLines(file, f.offset, onLine);
   }
   pruneSeen(state);
   return { claudeFiles: claudeFiles.length, codexFiles: codexFiles.length };
