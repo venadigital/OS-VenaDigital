@@ -15,6 +15,7 @@ import { dayKey } from '@/lib/time';
 import { CollectorDialog } from '@/features/consumo/dialogs';
 import { useApiMutation, useCalendarStatus } from '@/data/hooks';
 import { startGoogleConnect } from '@/features/calendario/connect';
+import { HomeSettingsCard } from '@/features/home/HomeSettingsCard';
 
 export function AjustesPage() {
   const { user, signOut, mode } = useAccount();
@@ -38,6 +39,8 @@ export function AjustesPage() {
           {mode === 'demo' ? 'Salir del modo demo' : 'Cerrar sesión'}
         </Button>
       </Card>
+
+      <HomeSettingsCard />
 
       <Card>
         <CardHead title="Apariencia" />

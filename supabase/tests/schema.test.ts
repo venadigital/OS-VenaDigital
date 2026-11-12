@@ -526,3 +526,45 @@ describe('tareas · fecha de terminado', () => {
     });
   });
 });
+
+describe('inicio · ajustes y fotos', () => {
+  it('keeps one row of home settings per user, private, with empty defaults', async () => {
+    const mine = await as(USER_A, 'authenticated', () =>
+      db.query<{ user_id: string; city_name: string | null; quotes: unknown[]; photos: string[] }>(
+        `insert into public.home_settings (city_name, city_lat, city_lon) values ('Bogotá, Colombia', 4.61, -74.08) returning user_id, city_name, quotes, photos`,
+      ),
+    );
+    expect(mine.rows[0]).toEqual({ user_id: USER_A, city_name: 'Bogotá, Colombia', quotes: [], photos: [] });
+
+    // Saving again updates the same row (the app upserts on user_id).
+    await as(USER_A, 'authenticated', () =>
+      db.query(
+        `insert into public.home_settings (user_id, quotes) values ($1, $2::jsonb)
+         on conflict (user_id) do update set quotes = excluded.quotes`,
+        [USER_A, JSON.stringify([{ text: 'Confínate al presente.', author: 'Marco Aurelio' }])],
+      ),
+    );
+    const again = await as(USER_A, 'authenticated', () => db.query<{ city_name: string; quotes: unknown[] }>(`select city_name, quotes from public.home_settings`));
+    expect(again.rows).toEqual([{ city_name: 'Bogotá, Colombia', quotes: [{ text: 'Confínate al presente.', author: 'Marco Aurelio' }] }]);
+
+    expect((await as(USER_B, 'authenticated', () => db.query(`select 1 from public.home_settings`))).rows).toHaveLength(0);
+    await expect(as(USER_B, 'authenticated', () => db.query(`insert into public.home_settings (user_id, city_name) values ($1, 'Intrusa')`, [USER_A]))).rejects.toThrow();
+    await expect(as(null, 'anon', () => db.query(`select 1 from public.home_settings`))).rejects.toThrow();
+  });
+
+  it('refuses coordinates off the map and quotes that are not a list', async () => {
+    await expect(as(USER_B, 'authenticated', () => db.query(`insert into public.home_settings (city_lat) values (120)`))).rejects.toThrow();
+    await expect(as(USER_B, 'authenticated', () => db.query(`insert into public.home_settings (quotes) values ('{"text":"suelta"}'::jsonb)`))).rejects.toThrow();
+  });
+
+  it('keeps home photos in a private bucket, one folder per user', async () => {
+    const bucket = await db.query(`select public, allowed_mime_types from storage.buckets where id = 'home'`);
+    expect(bucket.rows).toEqual([{ public: false, allowed_mime_types: ['image/jpeg', 'image/png', 'image/webp'] }]);
+    await as(USER_A, 'authenticated', () => db.query(`insert into storage.objects (bucket_id, name) values ('home', $1)`, [`${USER_A}/foto.jpg`]));
+    expect((await as(USER_A, 'authenticated', () => db.query(`select name from storage.objects where bucket_id = 'home'`))).rows).toHaveLength(1);
+    expect((await as(USER_B, 'authenticated', () => db.query(`select name from storage.objects where bucket_id = 'home'`))).rows).toHaveLength(0);
+    await expect(
+      as(USER_B, 'authenticated', () => db.query(`insert into storage.objects (bucket_id, name) values ('home', $1)`, [`${USER_A}/intrusa.jpg`])),
+    ).rejects.toThrow();
+  });
+});

@@ -22,6 +22,8 @@ import type {
   DocAnnotations,
   Capture,
   DocSummary,
+  HomeSettings,
+  HomeSettingsInput,
   UsageSession,
   LinkPreview,
   ModelPrice,
@@ -102,6 +104,15 @@ export interface Api {
   createNoteSection(input: NoteSectionInput & { list_id: string; name: string }): Promise<NoteSection>;
   updateNoteSection(id: string, patch: NoteSectionInput): Promise<void>;
   deleteNoteSection(id: string): Promise<void>;
+
+  // Inicio
+  /** The saved choices, or empty ones the first time. */
+  getHomeSettings(): Promise<HomeSettings>;
+  saveHomeSettings(patch: HomeSettingsInput): Promise<void>;
+  /** Stores a photo for the photo widget; returns its path. */
+  uploadHomePhoto(file: Blob): Promise<string>;
+  removeHomePhoto(path: string): Promise<void>;
+  homePhotoUrls(paths: string[]): Promise<Record<string, string>>;
 
   // Tableros
   listBoards(): Promise<BoardSummary[]>;

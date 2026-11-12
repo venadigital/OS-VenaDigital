@@ -11,6 +11,7 @@ import type {
   Invoice,
   CollectorToken,
   Doc,
+  HomeSettings,
   ModelPrice,
   Note,
   NoteInput,
@@ -355,6 +356,17 @@ export function createDemoApi(): Api {
   const boardFiles = new Map<string, Blob>(); // "<board id>/<file id>"
   const docFiles = new Map<string, Blob>(); // file_path → PDF
   const captureFiles = new Map<string, Blob>(); // file_path → image
+  const home: HomeSettings = {
+    city_name: 'Bogotá, Colombia',
+    city_lat: 4.60971,
+    city_lon: -74.08175,
+    quotes: [
+      { text: 'Confínate al presente.', author: 'Marco Aurelio' },
+      { text: 'No es que tengamos poco tiempo, sino que perdemos mucho.', author: 'Séneca' },
+      { text: 'Un viaje de mil millas comienza con un solo paso.', author: 'Lao Tse' },
+    ],
+    photos: [],
+  };
   const timerListeners = new Set<() => void>();
   const notifyTimer = () => timerListeners.forEach((fn) => fn());
 
@@ -625,6 +637,24 @@ export function createDemoApi(): Api {
     async noteImageUrls(paths) {
       return Object.fromEntries(paths.map((p) => [p, p]));
     },
+
+    // ---------- Inicio ----------
+    getHomeSettings: async () => later(clone(home)),
+    async saveHomeSettings(patch) {
+      Object.assign(home, clone(patch));
+      return later(undefined);
+    },
+    async uploadHomePhoto(file) {
+      // Demo: keep the photo in memory as a data URL.
+      return new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result));
+        r.onerror = () => reject(r.error);
+        r.readAsDataURL(file);
+      });
+    },
+    removeHomePhoto: async () => later(undefined),
+    homePhotoUrls: async (paths) => later(Object.fromEntries(paths.map((p) => [p, p]))),
 
     // ---------- Tableros ----------
     listBoards: async () =>

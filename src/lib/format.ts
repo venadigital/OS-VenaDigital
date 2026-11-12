@@ -71,6 +71,16 @@ export function longDate(d: Date): string {
   return cap(format(d, "EEEE, d 'de' MMMM", { locale: es }));
 }
 
+/** "Jueves". */
+export function weekdayName(d: Date): string {
+  return cap(format(d, 'EEEE', { locale: es }));
+}
+
+/** "12 de noviembre". */
+export function dayMonth(d: Date): string {
+  return format(d, "d 'de' MMMM", { locale: es });
+}
+
 export function shortDate(d: Date): string {
   return format(d, 'd MMM', { locale: es }).replace('.', '');
 }

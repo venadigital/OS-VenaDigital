@@ -4,7 +4,7 @@ Sistema operativo personal de trabajo de Vena Digital. Funciona en el navegador 
 
 | Módulo | Qué hace |
 |---|---|
-| **Inicio** | Resumen del día: cronómetro en curso, tiempo de hoy, consumo de IA del mes, notas fijadas y tableros recientes. Captura rápida de notas. |
+| **Inicio** | Widgets en calma: foto con la frase del día, hora, clima de tu ciudad, cronómetro en curso, agenda de hoy y pendientes. Captura rápida de notas. Fotos, frases y ciudad se eligen en Ajustes. |
 | **Tiempo** | Proyectos → tareas → registros. Cronómetro único (si inicias otra tarea, la anterior se detiene). Vista por día, semana y mes, filtro por proyecto, edición de registros. Se sincroniza en vivo entre dispositivos. |
 | **Calendario** | Tu Google Calendar dentro del OS: día, semana, mes y agenda; crear, editar y eliminar eventos, invitados, Google Meet y eventos recurrentes. Los eventos viven en Google, aquí no se copian. |
 | **Consumo IA** | Tokens de Claude Code y Codex convertidos a USD a precio de API, por día, cuenta y modelo. Compara con lo que pagas en suscripciones. Precios editables. |

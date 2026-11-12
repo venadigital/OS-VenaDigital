@@ -410,3 +410,16 @@ export type NewsItem = {
   image_url: string | null;
   published_at: string;
 };
+
+// Inicio
+export type HomeQuote = { text: string; author: string | null };
+
+/** What the person chose for Inicio: weather city, quotes and photos (paths in the `home` bucket). */
+export type HomeSettings = {
+  city_name: string | null;
+  city_lat: number | null;
+  city_lon: number | null;
+  quotes: HomeQuote[];
+  photos: string[];
+};
+export type HomeSettingsInput = Partial<HomeSettings>;

@@ -13,6 +13,7 @@ import type {
   Doc,
   Capture,
   DocSummary,
+  HomeSettings,
   LinkPreview,
   ModelPrice,
   NewsItem,
@@ -256,6 +257,33 @@ export function createSupabaseApi(sb: SupabaseClient): Api {
     async noteImageUrls(paths) {
       if (!paths.length) return {};
       const res = await sb.storage.from('notes').createSignedUrls(paths, 60 * 60);
+      if (res.error) return {};
+      const out: Record<string, string> = {};
+      for (const item of res.data ?? []) if (item.path && item.signedUrl) out[item.path] = item.signedUrl;
+      return out;
+    },
+
+    // ---------- Inicio ----------
+    async getHomeSettings() {
+      const row = check(await sb.from('home_settings').select('city_name, city_lat, city_lon, quotes, photos').maybeSingle()) as HomeSettings | null;
+      return row ?? { city_name: null, city_lat: null, city_lon: null, quotes: [], photos: [] };
+    },
+    async saveHomeSettings(patch) {
+      check(await sb.from('home_settings').upsert({ user_id: await userId(), ...patch }, { onConflict: 'user_id' }));
+    },
+    async uploadHomePhoto(file) {
+      const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
+      const path = `${await userId()}/${crypto.randomUUID()}.${ext}`;
+      const res = await sb.storage.from('home').upload(path, file, { contentType: file.type || 'image/jpeg', upsert: false });
+      if (res.error) throw new Error(res.error.message);
+      return path;
+    },
+    async removeHomePhoto(path) {
+      await sb.storage.from('home').remove([path]);
+    },
+    async homePhotoUrls(paths) {
+      if (!paths.length) return {};
+      const res = await sb.storage.from('home').createSignedUrls(paths, 60 * 60);
       if (res.error) return {};
       const out: Record<string, string> = {};
       for (const item of res.data ?? []) if (item.path && item.signedUrl) out[item.path] = item.signedUrl;

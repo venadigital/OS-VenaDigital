@@ -16,6 +16,8 @@ export const qk = {
   noteImages: (paths: string[]) => ['note-images', ...paths] as const,
   noteLists: ['note-lists'] as const,
   noteSections: ['note-sections'] as const,
+  homeSettings: ['home-settings'] as const,
+  homePhotos: (paths: string[]) => ['home-photos', ...paths] as const,
   boards: ['boards'] as const,
   board: (id: string) => ['board', id] as const,
   documents: ['documents'] as const,
@@ -108,6 +110,14 @@ export const useNoteImages = (paths: string[]) => {
     enabled: paths.length > 0,
     staleTime: 50 * 60_000,
   });
+};
+export const useHomeSettings = () => {
+  const api = useApi();
+  return useQuery({ queryKey: qk.homeSettings, queryFn: () => api.getHomeSettings(), staleTime: 5 * 60_000 });
+};
+export const useHomePhotos = (paths: string[]) => {
+  const api = useApi();
+  return useQuery({ queryKey: qk.homePhotos(paths), queryFn: () => api.homePhotoUrls(paths), enabled: paths.length > 0, staleTime: 50 * 60_000 });
 };
 export const useBoards = () => {
   const api = useApi();

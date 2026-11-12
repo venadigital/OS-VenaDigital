@@ -1,21 +1,17 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowUpRight, ChartNoAxesColumnIncreasing, ChevronRight, Circle, CircleCheck, Play, Plus, Shapes, Sparkles, Square, Timer } from 'lucide-react';
-import { Page, PageHeader } from '@/components/Shell';
-import { Button, Card, cx, Dot, Label, LiveDot, Pill, Skeleton } from '@/components/ui';
+import { ArrowUpRight, Circle, CircleCheck, Play, Plus, Square, Timer } from 'lucide-react';
+import { Page } from '@/components/Shell';
+import { Button, Card, cx, Dot, Label, LiveDot, Skeleton } from '@/components/ui';
 import { useAccount } from '@/data/ApiContext';
-import { qk, useApiMutation, useBoards, useClients, useEntries, useNoteImages, useNotes, useNow, useStartTimer, useStopTimer } from '@/data/hooks';
-import { clock, dur, greeting, hhmm, longDate, monthName, ratio, relativeDay, usd } from '@/lib/format';
+import { qk, useApiMutation, useClients, useEntries, useNotes, useNow, useStartTimer, useStopTimer } from '@/data/hooks';
+import { clock, greeting, hhmm } from '@/lib/format';
 import { dayKey, rangeFor } from '@/lib/time';
-import { useWorkspaceView } from '@/lib/workspaceView';
 import { CaptureBar } from '@/features/notas/CaptureBar';
-import { NoteCard } from '@/features/notas/NoteCard';
-import { totalsByProject, useRunningTimer, useTimeData } from '@/features/tiempo/model';
-import { useConsumo } from '@/features/consumo/model';
+import { useRunningTimer, useTimeData } from '@/features/tiempo/model';
 import { TodayAgendaCard } from '@/features/calendario/TodayAgendaCard';
-import { ClientsTodayCard } from '@/features/clientes/ClientsTodayCard';
 import { dueLabel, pendingItems, type PendingItem } from './pending';
-import type { NoteInput } from '@/data/types';
+import { ClockWidget, PhotoWidget, WeatherWidget } from './widgets';
 
 export function HomePage() {
   const { user } = useAccount();
@@ -23,44 +19,23 @@ export function HomePage() {
 
   return (
     <Page>
-      <PageHeader
-        eyebrow={
-          <>
-            <span className="flex-1">{longDate(now)}</span>
-          </>
-        }
-        title={`${greeting(now)}, ${user.name}`}
-      />
-      <CaptureBar placeholder="Anota una idea, un pendiente o pega un link…" />
-      <div className="home-workspace">
-        <TimerCard />
-        <TodayAgendaCard now={now} />
-        <PendingCard now={now} />
-      </div>
-      <ClientsTodayCard />
-      <section className="home-summary" aria-label="Resumen de actividad">
-        <h2 className="section-title">Tu actividad, de un vistazo</h2>
-        <div className="home-summary-grid"><TodayCard now={now} /><AiCard now={now} /></div>
-      </section>
-      <div className="home-lower">
-        <PinnedNotes />
-        <RecentBoards />
+      <header className="home-head">
+        <h1 className="page-title">{`${greeting(now)}, ${user.name}`}</h1>
+        <CaptureBar placeholder="Anota una idea, un pendiente o pega un link…" />
+      </header>
+      <div className="home-widgets">
+        <div className="home-row home-row--calm">
+          <PhotoWidget now={now} />
+          <ClockWidget />
+          <WeatherWidget />
+        </div>
+        <div className="home-row home-row--work">
+          <TimerCard />
+          <TodayAgendaCard now={now} />
+          <PendingCard now={now} />
+        </div>
       </div>
     </Page>
-  );
-}
-
-function CardTop({ title, to, link }: { title: string; to?: string; link?: string }) {
-  return (
-    <div className="flex items-center justify-between gap-3">
-      <span className="metric-label"><span className="icon-tile">{title === 'Hoy' ? <ChartNoAxesColumnIncreasing size={18} /> : <Sparkles size={18} />}</span>{title}</span>
-      {to && (
-        <Link to={to} className="flex shrink-0 items-center gap-0.5 text-[13px] font-medium whitespace-nowrap text-ink-2 hover:text-ink">
-          {link}
-          <ArrowUpRight size={15} className="text-ink-3" />
-        </Link>
-      )}
-    </div>
   );
 }
 
@@ -73,7 +48,7 @@ function TimerCard() {
   const [switching, setSwitching] = useState(false);
 
   return (
-    <Card className="timer-card">
+    <Card className={cx('timer-card', timer && 'is-running')}>
       <div className="flex items-center justify-between">
         <span className="metric-label"><span className="icon-tile"><Timer size={18} /></span><Label>Tu foco ahora</Label></span>
         {timer && <LiveDot />}
@@ -148,7 +123,7 @@ function PendingCard({ now }: { now: Date }) {
   };
   return <Card className="pending-card">
     <div className="section-heading"><h2 className="metric-label"><span className="icon-tile"><CircleCheck size={18}/></span>Pendientes a mano <span className="count-badge">{pending.length}</span></h2><Link to="/notas?vista=hoy" className="text-link">Ver todos <ArrowUpRight size={15}/></Link></div>
-    {notes.isLoading || loading ? <Skeleton className="h-28"/> : pending.length ? <div className="pending-list">{pending.slice(0,4).map(item => <div key={item.key} className="pending-row">
+    {notes.isLoading || loading ? <Skeleton className="h-28"/> : pending.length ? <div className="pending-list">{pending.slice(0,3).map(item => <div key={item.key} className="pending-row">
       <button type="button" className="pending-check" aria-label={`Completar: ${item.title}`} disabled={update.isPending} onClick={() => update.mutate({item, done:true}, {onSuccess: () => setCompleted(item)})}><Circle size={21}/></button>
       <button type="button" className="pending-content" onClick={() => open(item)}><span>{item.title}</span><small className={item.due && item.due < today ? 'text-crit' : ''}>{dueLabel(item.due, now)}{item.project ? ` · ${item.project.name}` : ''}{item.pinned ? ' · Fijada' : ''}</small></button>
     </div>)}</div> : <p className="text-ink-3">No tienes pendientes. Puedes capturar uno arriba.</p>}
@@ -165,184 +140,4 @@ function useRecentTasks() {
   const lastUsed = new Map<string, string>();
   for (const e of entries) if (!lastUsed.has(e.task_id) || lastUsed.get(e.task_id)! < e.started_at) lastUsed.set(e.task_id, e.started_at);
   return tasks.filter((t) => !t.archived).sort((a, b) => (lastUsed.get(b.id) ?? '').localeCompare(lastUsed.get(a.id) ?? ''));
-}
-
-function TodayCard({ now }: { now: Date }) {
-  const { from, to } = rangeFor('day', now);
-  const entries = useEntries(from, to);
-  const { taskById, projectById } = useTimeData();
-  const { timer } = useRunningTimer();
-  const live = useNow(30_000, Boolean(timer));
-  const totals = totalsByProject(entries.data ?? [], from, to, live, taskById, projectById);
-  const top = totals.byProject.slice(0, 3);
-  const rest = totals.byProject.slice(3);
-  const restMin = rest.reduce((s, x) => s + x.minutes, 0);
-
-  return (
-    <Card className="today-card">
-      <CardTop title="Hoy" to="/tiempo" link="Ver tiempo" />
-      <div className="flex flex-col gap-0.5">
-        <div className="metric-value text-ink">{dur(totals.total)}</div>
-        <div className="text-[12.5px] text-ink-3">
-          {totals.byProject.length} {totals.byProject.length === 1 ? 'proyecto' : 'proyectos'} · {(entries.data ?? []).length}{' '}
-          {(entries.data ?? []).length === 1 ? 'sesión' : 'sesiones'}
-        </div>
-      </div>
-      {totals.total > 0 ? (
-        <>
-          <div className="today-track flex h-2.5 w-full gap-0.5">
-            {totals.byProject.map((b, i) => (
-              <div
-                key={b.project.id}
-                className={cx(i === 0 && 'rounded-l', i === totals.byProject.length - 1 && 'rounded-r')}
-                style={{ flexGrow: b.minutes, flexBasis: 0, background: b.project.color }}
-              />
-            ))}
-          </div>
-          <div className="flex flex-col gap-[7px]">
-            {top.map((b) => (
-              <div key={b.project.id} className="flex items-center gap-2 text-[13px]">
-                <Dot color={b.project.color} />
-                <span className="flex-1 truncate text-ink">{b.project.name}</span>
-                <span className="tnum text-ink-2">{dur(b.minutes)}</span>
-              </div>
-            ))}
-            {rest.length > 0 && (
-              <div className="flex items-center gap-2 text-[13px] text-ink-3">
-                <span className="w-2" />
-                <span className="flex-1">{rest.length} más</span>
-                <span className="tnum">{dur(restMin)}</span>
-              </div>
-            )}
-          </div>
-        </>
-      ) : (
-        <p className="text-[13.5px] text-ink-3">Aún no registras tiempo hoy.</p>
-      )}
-    </Card>
-  );
-}
-
-function AiCard({ now }: { now: Date }) {
-  const { from, to } = rangeFor('month', now);
-  const { summary, monthly, ratio: r, loading } = useConsumo(from, to, 'month');
-  const days = [...summary.byDay.entries()].sort(([a], [b]) => a.localeCompare(b));
-  const values = days.map(([, m]) => [...m.values()].reduce((s, v) => s + v, 0)).slice(-14);
-  const max = Math.max(...values, 0.01);
-
-  return (
-    <Card className="ai-card">
-      <CardTop title="Consumo IA" to="/consumo" link="Ver consumo" />
-      {loading ? (
-        <Skeleton className="h-28" />
-      ) : (
-        <>
-          <div className="flex flex-col gap-0.5">
-            <div className="metric-value text-ink">{usd(summary.cost)}</div>
-            <div className="text-[12.5px] text-ink-3">
-              Valor a precio API · {monthName(now)}
-              {summary.unpriced.length > 0 && ` · ${summary.unpriced.length} ${summary.unpriced.length === 1 ? 'modelo' : 'modelos'} sin precio`}
-            </div>
-          </div>
-          {values.length > 0 ? (
-            <div className="ai-sparkline flex h-14 items-end gap-1.5" aria-hidden>
-              {values.map((v, i) => (
-                <div
-                  key={i}
-                  className="w-3.5 rounded-t-[2px]"
-                  style={{ height: `${Math.max(4, (v / max) * 100)}%`, background: i === values.length - 1 ? 'var(--stay-lime)' : i % 3 === 0 ? 'var(--stay-lilac)' : 'var(--color-bar)' }}
-                />
-              ))}
-            </div>
-          ) : (
-            <p className="text-[13px] text-ink-3">Sin datos todavía: instala el colector desde Consumo IA.</p>
-          )}
-          <div className="metric-footer mt-auto flex items-center justify-between gap-2 text-[13px] text-ink-2">
-            <span>{monthly > 0 ? `Pagas ${usd(monthly).replace(',00', '')}/mes en suscripciones` : 'Agrega tus suscripciones'}</span>
-            {r !== null && <Pill>Rinde {ratio(r)}</Pill>}
-          </div>
-        </>
-      )}
-    </Card>
-  );
-}
-
-function PinnedNotes() {
-  const navigate = useNavigate();
-  const notesQ = useNotes();
-  const notes = (notesQ.data ?? []).filter(n => n.type !== 'hacer' && !n.done);
-  const pinned = notes.filter((n) => n.pinned);
-  const shown = (pinned.length ? pinned : notes).slice(0, 2);
-  const paths = shown.map((n) => n.image_path).filter((p): p is string => Boolean(p));
-  const images = useNoteImages(paths).data ?? {};
-  const update = useApiMutation((api, v: { id: string; patch: NoteInput }) => api.updateNote(v.id, v.patch), [qk.notes]);
-
-  return (
-    <section className="flex flex-col gap-3">
-      <div className="flex min-h-[22px] items-center justify-between">
-        <h2 className="text-[17px] font-medium text-ink">{pinned.length ? 'Notas fijadas' : 'Notas recientes'}</h2>
-        <Link to="/notas" className="flex items-center gap-0.5 text-[13px] font-medium text-ink-2 hover:text-ink">
-          Todas las notas <ArrowUpRight size={15} className="text-ink-3" />
-        </Link>
-      </div>
-      {notesQ.isLoading ? (
-        <Skeleton className="h-36" />
-      ) : shown.length === 0 ? (
-        <p className="rounded-[14px] border border-dashed border-line-2 px-4 py-6 text-center text-[13px] text-ink-3">Tus notas fijadas aparecen aquí.</p>
-      ) : (
-        <div className="home-notes-grid">
-          {shown.map((n) => (
-            <NoteCard
-              key={n.id}
-              note={n}
-              compact
-              onEdit={(x) => navigate(`/notas?nota=${x.id}`)}
-              imageUrl={n.image_path ? images[n.image_path] : undefined}
-              onToggleDone={(x) => update.mutate({ id: x.id, patch: { done: !x.done } })}
-              onTogglePin={(x) => update.mutate({ id: x.id, patch: { pinned: !x.pinned } })}
-            />
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function RecentBoards() {
-  const boardsQ = useBoards();
-  const { favorites } = useWorkspaceView();
-  const saved = (boardsQ.data ?? []).filter(b => favorites.includes(b.id));
-  const boards = (saved.length ? saved : boardsQ.data ?? []).slice(0, 3);
-  return (
-    <section className="flex flex-col gap-3">
-      <div className="flex min-h-[22px] items-center justify-between">
-        <h2 className="text-[17px] font-medium text-ink">{saved.length ? 'Tableros favoritos' : 'Tableros recientes'}</h2>
-        <Link to="/tableros" className="flex items-center gap-0.5 text-[13px] font-medium text-ink-2 hover:text-ink">
-          Todos <ArrowUpRight size={15} className="text-ink-3" />
-        </Link>
-      </div>
-      {boardsQ.isLoading ? (
-        <Skeleton className="h-36" />
-      ) : boards.length === 0 ? (
-        <Link to="/tableros?nuevo=1" className="rounded-[14px] border border-dashed border-line-2 px-4 py-6 text-center text-[13px] text-ink-3 hover:bg-plane">
-          Crea tu primer tablero →
-        </Link>
-      ) : (
-        <div className="recent-boards flex flex-col rounded-[18px] border border-line bg-surface py-1">
-          {boards.map((b, i) => (
-            <Link key={b.id} to={`/tableros/${b.id}`} className={cx('flex items-center gap-3.5 px-3 py-2.5 hover:bg-plane', i > 0 && 'border-t border-rule')}>
-              <div className="dots-bg flex h-[50px] w-[76px] shrink-0 items-center justify-center overflow-hidden rounded-lg border border-line">
-                {b.thumbnail ? <img src={b.thumbnail} alt="" className="board-thumb h-full w-full object-contain" /> : <Shapes size={18} className="text-ink-4" />}
-              </div>
-              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                <span className="truncate text-[14px] font-medium text-ink">{b.name}</span>
-                <span className="text-[12.5px] text-ink-3">Editado {relativeDay(new Date(b.updated_at)).toLowerCase()}</span>
-              </div>
-              <ChevronRight size={16} className="text-ink-4" />
-            </Link>
-          ))}
-        </div>
-      )}
-    </section>
-  );
 }
