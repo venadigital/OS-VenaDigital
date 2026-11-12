@@ -1,12 +1,11 @@
 // The calm row of Inicio: photo with the quote of the day, the time and the weather.
 import { Link } from 'react-router-dom';
-import { Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudMoon, CloudRain, CloudSnow, CloudSun, Moon, Sun, type LucideIcon } from 'lucide-react';
 import { Skeleton } from '@/components/ui';
 import { useHomePhotos, useHomeSettings, useNow } from '@/data/hooks';
 import { dayMonth, hhmm, weekdayName } from '@/lib/format';
 import { pickDaily, quoteSize } from './daily';
 import { arcPoint, sunState } from './sun';
-import { degrees, describeWeather, useWeather, type WeatherKind } from './weather';
+import { degrees, describeWeather, rangePosition, useWeather } from './weather';
 
 export function PhotoWidget({ now }: { now: Date }) {
   const settings = useHomeSettings();
@@ -86,18 +85,7 @@ export function ClockWidget() {
   );
 }
 
-const ICONS: Record<WeatherKind, LucideIcon> = {
-  clear: Sun,
-  partly: CloudSun,
-  cloudy: Cloud,
-  fog: CloudFog,
-  drizzle: CloudDrizzle,
-  rain: CloudRain,
-  snow: CloudSnow,
-  storm: CloudLightning,
-};
-const NIGHT_ICONS: Partial<Record<WeatherKind, LucideIcon>> = { clear: Moon, partly: CloudMoon };
-
+/** Today's low-to-high bar with the current temperature on it, and the chance of rain. */
 export function WeatherWidget() {
   const settings = useHomeSettings();
   const s = settings.data;
@@ -106,45 +94,45 @@ export function WeatherWidget() {
   // "Bogotá, Bogotá D.C., Colombia" → "Bogotá"
   const city = s?.city_name?.split(',')[0].trim() || 'Clima';
   const w = weather.data;
-  const { label, kind } = describeWeather(w?.code ?? -1);
-  const Icon = (w && !w.isDay && NIGHT_ICONS[kind]) || ICONS[kind];
+  const label = w ? describeWeather(w.code).label : '';
 
   return (
     <section className="widget widget-weather" aria-label="Clima">
-      {settings.isLoading ? (
-        <Skeleton className="h-full min-h-24" />
+      <div className="widget-weather-top">
+        <span>{city}</span>
+        {label && <small>{label}</small>}
+      </div>
+      {settings.isLoading || (hasCity && weather.isLoading) ? (
+        <Skeleton className="h-24" />
       ) : !hasCity ? (
-        <>
-          <div className="widget-weather-top">
-            <span>Clima</span>
-            <Sun size={24} strokeWidth={1.75} aria-hidden="true" />
-          </div>
-          <Link to="/ajustes" className="text-link">
-            Elige tu ciudad
-          </Link>
-        </>
+        <Link to="/ajustes" className="text-link">
+          Elige tu ciudad
+        </Link>
+      ) : !w ? (
+        <p className="widget-weather-off">Sin datos del clima por ahora.</p>
       ) : (
         <>
-          <div className="widget-weather-top">
-            <span>{city}</span>
-            {w && <Icon size={24} strokeWidth={1.75} aria-hidden="true" />}
-          </div>
-          {w ? (
-            <div>
-              <div className="widget-weather-temp">{degrees(w.temp)}</div>
-              <div className="widget-weather-now">
-                {label}
-                {w.max != null && w.min != null && (
-                  <small>
-                    Máx {degrees(w.max)} · Mín {degrees(w.min)}
-                  </small>
-                )}
+          <div className="widget-weather-temp">{degrees(w.temp)}</div>
+          {w.max != null && w.min != null && (
+            <div className="weather-range">
+              <div className="weather-range-bar">
+                <span className="weather-range-mark" style={{ left: `${rangePosition(w.temp, w.min, w.max)}%` }}>
+                  <i />
+                </span>
+              </div>
+              <div className="weather-range-ends">
+                <span>Mín {degrees(w.min)}</span>
+                <span>Máx {degrees(w.max)}</span>
               </div>
             </div>
-          ) : weather.isLoading ? (
-            <Skeleton className="h-20" />
-          ) : (
-            <p className="widget-weather-off">Sin datos del clima por ahora.</p>
+          )}
+          {w.rain != null && (
+            <div className="weather-rain">
+              <svg aria-hidden="true" width="14" height="16" viewBox="0 0 14 16">
+                <path d="M7 1C4.5 5 2 7.6 2 10.2a5 5 0 0 0 10 0C12 7.6 9.5 5 7 1z" />
+              </svg>
+              Lluvia {w.rain} % en la próxima hora
+            </div>
           )}
         </>
       )}

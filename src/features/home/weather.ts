@@ -12,6 +12,8 @@ export type Weather = {
   isDay: boolean;
   max: number | null;
   min: number | null;
+  /** Chance of rain (%) over the next hour, or null when unknown. */
+  rain: number | null;
   /** Local times ("2026-11-12T05:50") for today and tomorrow, in the city's time zone. */
   sun: { sunrise: string; sunset: string }[];
 };
@@ -25,6 +27,8 @@ export function forecastUrl(lat: number, lon: number): string {
     latitude: lat.toFixed(4),
     longitude: lon.toFixed(4),
     current: 'temperature_2m,weather_code,is_day',
+    hourly: 'precipitation_probability',
+    forecast_hours: '2',
     daily: 'temperature_2m_max,temperature_2m_min,sunrise,sunset',
     timezone: 'auto',
     forecast_days: '2',
@@ -36,7 +40,7 @@ const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFi
 
 /** The forecast response reduced to what the widget shows; null when it is not a forecast. */
 export function parseWeather(json: unknown): Weather | null {
-  const body = json as { current?: Record<string, unknown>; daily?: Record<string, unknown> } | null;
+  const body = json as { current?: Record<string, unknown>; daily?: Record<string, unknown>; hourly?: Record<string, unknown> } | null;
   const current = body?.current;
   if (!current || !finite(current.temperature_2m) || !finite(current.weather_code)) return null;
   const first = (v: unknown) => (Array.isArray(v) && finite(v[0]) ? v[0] : null);
@@ -46,8 +50,22 @@ export function parseWeather(json: unknown): Weather | null {
     isDay: current.is_day !== 0,
     max: first(body?.daily?.temperature_2m_max),
     min: first(body?.daily?.temperature_2m_min),
+    rain: nextHourRain(body?.hourly?.precipitation_probability),
     sun: sunTimes(body?.daily?.sunrise, body?.daily?.sunset),
   };
+}
+
+/** The hourly list starts at the current hour; the next hour is its first two entries. */
+function nextHourRain(values: unknown): number | null {
+  if (!Array.isArray(values)) return null;
+  const known = values.slice(0, 2).filter(finite);
+  return known.length ? Math.round(Math.max(...known)) : null;
+}
+
+/** Where the current temperature sits between today's low and high, as a percentage. */
+export function rangePosition(temp: number, min: number, max: number): number {
+  if (max <= min) return 50;
+  return Math.min(100, Math.max(0, ((temp - min) / (max - min)) * 100));
 }
 
 function sunTimes(rises: unknown, sets: unknown): Weather['sun'] {
