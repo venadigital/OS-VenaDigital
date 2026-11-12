@@ -8,28 +8,44 @@ const FORECAST = {
   timezone: 'America/Bogota',
   current_units: { time: 'iso8601', interval: 'seconds', temperature_2m: '°C', weather_code: 'wmo code', is_day: '' },
   current: { time: '2026-11-12T14:45', interval: 900, temperature_2m: 18.0, weather_code: 3, is_day: 1 },
-  daily_units: { time: 'iso8601', temperature_2m_max: '°C', temperature_2m_min: '°C' },
-  daily: { time: ['2026-11-12'], temperature_2m_max: [18.3], temperature_2m_min: [10.5] },
+  daily_units: { time: 'iso8601', temperature_2m_max: '°C', temperature_2m_min: '°C', sunrise: 'iso8601', sunset: 'iso8601' },
+  daily: {
+    time: ['2026-11-12', '2026-11-13'],
+    temperature_2m_max: [18.3, 19.1],
+    temperature_2m_min: [10.5, 11.2],
+    sunrise: ['2026-11-12T05:50', '2026-11-13T05:50'],
+    sunset: ['2026-11-12T17:41', '2026-11-13T17:41'],
+  },
 };
 
 describe('forecastUrl', () => {
-  it('asks for the current weather and today’s range in the city’s own time zone', () => {
+  it('asks for the current weather, today’s range and the sun times for two days, in the city’s own time zone', () => {
     const url = new URL(forecastUrl(4.6097, -74.0818));
     expect(url.origin + url.pathname).toBe('https://api.open-meteo.com/v1/forecast');
     expect(Object.fromEntries(url.searchParams)).toEqual({
       latitude: '4.6097',
       longitude: '-74.0818',
       current: 'temperature_2m,weather_code,is_day',
-      daily: 'temperature_2m_max,temperature_2m_min',
+      daily: 'temperature_2m_max,temperature_2m_min,sunrise,sunset',
       timezone: 'auto',
-      forecast_days: '1',
+      forecast_days: '2',
     });
   });
 });
 
 describe('parseWeather', () => {
   it('keeps what the widget shows', () => {
-    expect(parseWeather(FORECAST)).toEqual({ temp: 18, code: 3, isDay: true, max: 18.3, min: 10.5 });
+    expect(parseWeather(FORECAST)).toEqual({
+      temp: 18,
+      code: 3,
+      isDay: true,
+      max: 18.3,
+      min: 10.5,
+      sun: [
+        { sunrise: '2026-11-12T05:50', sunset: '2026-11-12T17:41' },
+        { sunrise: '2026-11-13T05:50', sunset: '2026-11-13T17:41' },
+      ],
+    });
   });
 
   it('reads the night flag', () => {
@@ -37,7 +53,7 @@ describe('parseWeather', () => {
   });
 
   it('still works without the daily range', () => {
-    expect(parseWeather({ current: FORECAST.current })).toEqual({ temp: 18, code: 3, isDay: true, max: null, min: null });
+    expect(parseWeather({ current: FORECAST.current })).toEqual({ temp: 18, code: 3, isDay: true, max: null, min: null, sun: [] });
   });
 
   it('refuses anything that is not a forecast', () => {

@@ -5,6 +5,7 @@ import { Skeleton } from '@/components/ui';
 import { useHomePhotos, useHomeSettings, useNow } from '@/data/hooks';
 import { dayMonth, hhmm, weekdayName } from '@/lib/format';
 import { pickDaily, quoteSize } from './daily';
+import { arcPoint, sunState } from './sun';
 import { degrees, describeWeather, useWeather, type WeatherKind } from './weather';
 
 export function PhotoWidget({ now }: { now: Date }) {
@@ -50,17 +51,37 @@ function Landscape() {
   );
 }
 
+/** The time over a sky that follows the day: the sun crosses an arc from sunrise to sunset, then the moon. */
 export function ClockWidget() {
   const now = useNow(5_000);
+  const settings = useHomeSettings();
+  const s = settings.data;
+  const weather = useWeather(s?.city_lat ?? null, s?.city_lon ?? null);
+  const sky = sunState(now, weather.data?.sun);
+  const orb = arcPoint(sky.t);
+  const label = sky.next && `${sky.next.kind === 'sunset' ? 'Atardece' : 'Amanece'} ${hhmm(sky.next.at)}`;
+
   return (
-    <section className="widget widget-clock" aria-label="Hora">
+    <section className={`widget widget-clock is-${sky.phase}`} aria-label="Hora">
       <div className="widget-clock-date">
         <strong>{weekdayName(now)}</strong>
         <span>{dayMonth(now)}</span>
       </div>
-      <time className="tnum" dateTime={now.toISOString()}>
-        {hhmm(now)}
-      </time>
+      <div className="sun-arc" aria-hidden="true">
+        <svg viewBox="0 0 232 124" preserveAspectRatio="none">
+          <path d="M 8 116 A 108 108 0 0 1 224 116" />
+          <line x1="0" y1="116" x2="232" y2="116" />
+        </svg>
+        <span className={sky.isDay ? 'sun-orb' : 'sun-orb is-moon'} style={{ left: `${orb.x}%`, top: `${orb.y}%` }}>
+          <i />
+        </span>
+      </div>
+      <div className="widget-clock-time">
+        <time className="tnum" dateTime={now.toISOString()}>
+          {hhmm(now)}
+        </time>
+        {label && <span>{label}</span>}
+      </div>
     </section>
   );
 }

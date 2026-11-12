@@ -12,6 +12,8 @@ export type Weather = {
   isDay: boolean;
   max: number | null;
   min: number | null;
+  /** Local times ("2026-11-12T05:50") for today and tomorrow, in the city's time zone. */
+  sun: { sunrise: string; sunset: string }[];
 };
 
 export type WeatherKind = 'clear' | 'partly' | 'cloudy' | 'fog' | 'drizzle' | 'rain' | 'snow' | 'storm';
@@ -23,9 +25,9 @@ export function forecastUrl(lat: number, lon: number): string {
     latitude: lat.toFixed(4),
     longitude: lon.toFixed(4),
     current: 'temperature_2m,weather_code,is_day',
-    daily: 'temperature_2m_max,temperature_2m_min',
+    daily: 'temperature_2m_max,temperature_2m_min,sunrise,sunset',
     timezone: 'auto',
-    forecast_days: '1',
+    forecast_days: '2',
   });
   return `${FORECAST}?${q}`;
 }
@@ -44,7 +46,17 @@ export function parseWeather(json: unknown): Weather | null {
     isDay: current.is_day !== 0,
     max: first(body?.daily?.temperature_2m_max),
     min: first(body?.daily?.temperature_2m_min),
+    sun: sunTimes(body?.daily?.sunrise, body?.daily?.sunset),
   };
+}
+
+function sunTimes(rises: unknown, sets: unknown): Weather['sun'] {
+  if (!Array.isArray(rises) || !Array.isArray(sets)) return [];
+  const out: Weather['sun'] = [];
+  for (let i = 0; i < Math.min(rises.length, sets.length); i++) {
+    if (typeof rises[i] === 'string' && typeof sets[i] === 'string') out.push({ sunrise: rises[i], sunset: sets[i] });
+  }
+  return out;
 }
 
 const CODES: Record<number, [label: string, kind: WeatherKind]> = {
