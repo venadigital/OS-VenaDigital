@@ -38,6 +38,17 @@ describe('sessionCost', () => {
     expect(r.unpriced).toBe(false);
   });
 
+  it('prices the models released after September at their official rates', () => {
+    const all = { ...counts, input: 1e6, output: 1e6, cache_read: 1e6, cache_write: 1e6, cache_write_1h: 1e6 };
+    const cost = (model: string) => sessionCost(session({ [model]: all }), prices);
+    // input + output + cache read + 5-min write + 1-h write
+    expect(cost('claude-fable-5-2').cost).toBeCloseTo(8 + 40 + 0.2 + 10 + 16, 6);
+    expect(cost('claude-sonnet-5-5').cost).toBeCloseTo(2 + 10 + 0.1 + 2.5 + 4, 6);
+    expect(cost('claude-haiku-5-5').cost).toBeCloseTo(0.1 + 0.5 + 0.01 + 0.125 + 0.2, 6);
+    expect(cost('gpt-6.1-sol').cost).toBeCloseTo(2 + 10 + 0.1 + 2.5, 6);
+    expect(cost('codex-auto-review').unpriced).toBe(false);
+  });
+
   it('flags models without a price instead of counting them as $0', () => {
     const r = sessionCost(session({ 'modelo-nuevo': { ...counts, input: 10 } }), prices);
     expect(r).toEqual({ cost: 0, tokens: 10, unpriced: true });

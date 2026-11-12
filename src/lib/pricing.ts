@@ -4,13 +4,15 @@ import { foldName } from './text';
 
 type Rates = Omit<ModelPriceInput, 'model'>;
 
-// Anthropic: cache read = 0.1× input, 5-min write = 1.25×, 1-h write = 2× (Fable 5.1 reads at $0.25).
+// Anthropic: cache read = 0.1× input, 5-min write = 1.25×, 1-h write = 2×. Exceptions to the read
+// rate: Fable 5.1/5.2 read at 0.025× input, Opus 5.5 and Sonnet 5.5 at 0.05×.
+const round4 = (n: number) => Math.round(n * 1e4) / 1e4; // the table stores 4 decimals
 const claude = (input: number, output: number, cacheRead = input * 0.1): Rates => ({
   input,
   output,
-  cache_read: cacheRead,
-  cache_write: input * 1.25,
-  cache_write_1h: input * 2,
+  cache_read: round4(cacheRead),
+  cache_write: round4(input * 1.25),
+  cache_write_1h: round4(input * 2),
 });
 // OpenAI: cached input is its own rate. The 5.6 and 6 families also charge for cache
 // writes (1.25× input); the older models don't, so that rate stays in 0.
@@ -22,8 +24,9 @@ const openai = (input: number, cached: number, output: number, cacheWrite = 0): 
   cache_write_1h: 0,
 });
 
-/** Reference API prices (USD per 1M tokens), checked 23 Sep 2026. */
+/** Reference API prices (USD per 1M tokens), checked 11 Nov 2026. */
 export const DEFAULT_PRICES: ModelPriceInput[] = [
+  { model: 'claude-fable-5-2', ...claude(8, 40, 0.2) },
   { model: 'claude-fable-5-1', ...claude(10, 50, 0.25) },
   { model: 'claude-fable-5', ...claude(10, 50) },
   { model: 'claude-opus-5-5', ...claude(4, 20, 0.2) },
@@ -33,10 +36,15 @@ export const DEFAULT_PRICES: ModelPriceInput[] = [
   { model: 'claude-opus-4-6', ...claude(5, 25) },
   { model: 'claude-opus-4-5', ...claude(5, 25) },
   { model: 'claude-opus-4-1', ...claude(15, 75) },
+  { model: 'claude-sonnet-5-5', ...claude(2, 10, 0.1) },
   { model: 'claude-sonnet-5', ...claude(2, 10) },
   { model: 'claude-sonnet-4-6', ...claude(3, 15) },
   { model: 'claude-sonnet-4-5', ...claude(3, 15) },
+  // Haiku 5.5 rate for prompts up to 100K tokens; longer prompts cost 5× (daily totals can't tell them apart).
+  { model: 'claude-haiku-5-5', ...claude(0.1, 0.5) },
   { model: 'claude-haiku-4-5', ...claude(1, 5) },
+  // GPT-6.x rates are for prompts up to 272K tokens (longer ones cost more).
+  { model: 'gpt-6.1-sol', ...openai(2, 0.1, 10, 2.5) },
   { model: 'gpt-6-astra', ...openai(10, 1, 50, 12.5) },
   { model: 'gpt-6-sol', ...openai(2, 0.2, 10, 2.5) },
   { model: 'gpt-6-luna', ...openai(0.1, 0.01, 0.5, 0.125) },
@@ -46,6 +54,8 @@ export const DEFAULT_PRICES: ModelPriceInput[] = [
   { model: 'gpt-5.5', ...openai(5, 0.5, 30) },
   { model: 'gpt-5.4', ...openai(2.5, 0.25, 15) },
   { model: 'gpt-5.4-mini', ...openai(0.75, 0.075, 4.5) },
+  // Codex's auto-review (Guardian) has no public price; it replaced gpt-5.4 there, so it uses that rate.
+  { model: 'codex-auto-review', ...openai(2.5, 0.25, 15) },
   { model: 'gpt-5.3-codex', ...openai(1.75, 0.175, 14) },
   { model: 'gpt-5.2', ...openai(1.75, 0.175, 14) },
   // Codex variants not listed on the pricing page: same rate as their base model.
