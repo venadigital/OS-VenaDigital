@@ -568,3 +568,16 @@ describe('inicio · ajustes y fotos', () => {
     ).rejects.toThrow();
   });
 });
+
+describe('teleprompter', () => {
+  it('keeps scripts private to their owner and refuses unknown platforms', async () => {
+    const made = await as(USER_A, 'authenticated', () =>
+      db.query<{ title: string; body: string; platform: string }>(`insert into public.scripts (title) values ('Bienvenida') returning title, body, platform`),
+    );
+    expect(made.rows).toEqual([{ title: 'Bienvenida', body: '', platform: 'instagram' }]);
+    expect((await as(USER_B, 'authenticated', () => db.query(`select id from public.scripts`))).rows).toHaveLength(0);
+    await expect(as(USER_B, 'authenticated', () => db.query(`insert into public.scripts (user_id, title) values ($1, 'Intruso')`, [USER_A]))).rejects.toThrow();
+    await expect(as(USER_A, 'authenticated', () => db.query(`insert into public.scripts (platform) values ('tiktok')`))).rejects.toThrow();
+    await expect(as(null, 'anon', () => db.query(`select 1 from public.scripts`))).rejects.toThrow();
+  });
+});

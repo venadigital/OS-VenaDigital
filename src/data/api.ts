@@ -37,6 +37,8 @@ import type {
   NoteSection,
   NoteSectionInput,
   Project,
+  Script,
+  ScriptInput,
   Task,
   TimeEntry,
   UsageRow,
@@ -141,6 +143,13 @@ export interface Api {
   updateCapture(id: string, patch: { name: string }): Promise<void>;
   deleteCapture(id: string): Promise<void>;
   captureFile(capture: Pick<Capture, 'file_path'>): Promise<Blob>;
+
+  // Teleprompter
+  /** Most recently edited first. */
+  listScripts(): Promise<Script[]>;
+  createScript(input: ScriptInput): Promise<Script>;
+  updateScript(id: string, patch: ScriptInput): Promise<void>;
+  deleteScript(id: string): Promise<void>;
 
   // Noticias (la Edge Function `news-sync` llena estas tablas; la app solo las lee)
   /** Newest first; `source` limits them to one source. */

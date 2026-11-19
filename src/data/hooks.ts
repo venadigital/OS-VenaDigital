@@ -23,6 +23,7 @@ export const qk = {
   documents: ['documents'] as const,
   document: (id: string) => ['document', id] as const,
   captures: ['captures'] as const,
+  scripts: ['scripts'] as const,
   news: (source: string | null, limit: number) => ['news', source, limit] as const,
   newsSources: ['news-sources'] as const,
   usage: (from: string, to: string) => ['usage', from, to] as const,
@@ -130,6 +131,10 @@ export const useBoard = (id: string) => {
 export const useDocuments = () => {
   const api = useApi();
   return useQuery({ queryKey: qk.documents, queryFn: () => api.listDocuments() });
+};
+export const useScripts = () => {
+  const api = useApi();
+  return useQuery({ queryKey: qk.scripts, queryFn: () => api.listScripts() });
 };
 export const useCaptures = () => {
   const api = useApi();

@@ -133,6 +133,20 @@ export type Doc = DocSummary & {
   annotations: DocAnnotations;
 };
 
+export type ScriptPlatform = 'instagram' | 'youtube';
+
+/** A script to read on screen while recording. In `body`, a line starting with "# " opens a section. */
+export type Script = {
+  id: string;
+  title: string;
+  body: string;
+  platform: ScriptPlatform;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ScriptInput = Partial<Pick<Script, 'title' | 'body' | 'platform'>>;
+
 /** A saved screenshot of part of a document, with its marks drawn in. */
 export type Capture = {
   id: string;

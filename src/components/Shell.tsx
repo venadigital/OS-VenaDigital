@@ -1,6 +1,6 @@
 import { useEffect, useMemo, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import { CalendarDays, Download, FileText, Home, Moon, Newspaper, NotebookPen, Search, Settings2, Shapes, Sparkles, Square, Sun, Timer, Users } from 'lucide-react';
+import { CalendarDays, Download, FileText, Home, Moon, Newspaper, NotebookPen, ScrollText, Search, Settings2, Shapes, Sparkles, Square, Sun, Timer, Users } from 'lucide-react';
 import { useAccount } from '@/data/ApiContext';
 import { useBoards, useTimerSync } from '@/data/hooks';
 import { useRunningTimer } from '@/features/tiempo/model';
@@ -22,6 +22,8 @@ export const NAV = [
   { to: '/tableros', label: 'Tableros', short: 'Tableros', icon: Shapes },
   { to: '/documentos', label: 'Documentos', short: 'Docs', icon: FileText },
   { to: '/notas', label: 'Notas', short: 'Notas', icon: NotebookPen },
+  // The phone's bar has no room for one more: there it is reached from Buscar.
+  { to: '/teleprompter', label: 'Teleprompter', short: 'Guiones', icon: ScrollText, offBar: true },
   // Only on a computer where the local download service answers; never on the phone.
   { to: '/descargar', label: 'Descargar', short: 'Descargar', icon: Download, needsDownloader: true },
 ];
@@ -183,7 +185,7 @@ function MobileNav({ showTimer }: { showTimer: boolean }) {
     <div className="fixed inset-x-0 bottom-0 z-40 md:hidden">
       {showTimer && <MiniTimer />}
       <nav aria-label="Navegación móvil" className="os-mobile-nav flex border-t border-line bg-page px-2" style={{ paddingBottom: 'var(--safe-bottom)' }}>
-        {nav.map((n) => (
+        {nav.filter((n) => !('offBar' in n)).map((n) => (
           <NavLink
             key={n.to}
             to={n.to}

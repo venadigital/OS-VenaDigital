@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarPlus, CircleCheck, CornerDownLeft, FileText, Folder, ListTodo, FileUp, Globe, Moon, NotebookPen, Play, Search, Settings2, Shapes, Sun, UserPlus, Users } from 'lucide-react';
-import { useBoards, useClients, useDocuments, useNoteLists, useNotes, useStartTimer } from '@/data/hooks';
+import { CalendarPlus, CircleCheck, CornerDownLeft, FileText, Folder, ListTodo, FileUp, Globe, Moon, NotebookPen, Play, ScrollText, Search, Settings2, Shapes, Sun, UserPlus, Users } from 'lucide-react';
+import { useBoards, useClients, useDocuments, useNoteLists, useNotes, useScripts, useStartTimer } from '@/data/hooks';
 import { notasPlaces, type Place, recentPlaces, VIEW_ICONS, WALL_ICON } from '@/features/notas/places';
 import { isTask, taskTitle } from '@/features/notas/tasks';
 import { useDownloaderStatus } from '@/features/descargar/service';
 import { useTimeData } from '@/features/tiempo/model';
+import { scriptTitle } from '@/features/teleprompter/model';
 import { useNav } from './Shell';
 import { cx, Dialog, Dot } from './ui';
 import { norm } from '@/lib/text';
@@ -27,6 +28,7 @@ export function CommandPalette() {
   const noteLists = useNoteLists();
   const boards = useBoards();
   const documents = useDocuments();
+  const scripts = useScripts();
   const clients = useClients();
   const { tasks, projectById } = useTimeData();
   const start = useStartTimer();
@@ -69,6 +71,7 @@ export function CommandPalette() {
       { id: 'act:event', group: 'Crear', label: 'Nuevo evento', icon: <CalendarPlus size={16} />, run: go('/calendario?nuevo=1') },
       { id: 'act:board', group: 'Crear', label: 'Nuevo tablero', icon: <Shapes size={16} />, run: go('/tableros?nuevo=1') },
       { id: 'act:client', group: 'Crear', label: 'Nuevo cliente', icon: <UserPlus size={16} />, run: go('/clientes?nuevo=1') },
+      { id: 'act:script', group: 'Crear', label: 'Nuevo guion', icon: <ScrollText size={16} />, run: go('/teleprompter?nuevo=1') },
       { id: 'act:document', group: 'Crear', label: 'Subir PDF', icon: <FileUp size={16} />, run: go('/documentos?subir=1') },
       ...(capture ? [{ id: 'act:web', group: 'Crear', label: 'Abrir web', icon: <Globe size={16} />, run: go('/documentos?web=1') }] : []),
       theme === 'dark'
@@ -127,6 +130,10 @@ export function CommandPalette() {
         .filter((d) => match(d.name))
         .slice(0, 6)
         .map((d) => ({ id: `doc:${d.id}`, group: 'Documentos', label: d.name, icon: <FileText size={16} />, run: go(`/documentos/${d.id}`) })),
+      ...(scripts.data ?? [])
+        .filter((s) => match(s.title) || match(s.body))
+        .slice(0, 6)
+        .map((s) => ({ id: `script:${s.id}`, group: 'Guiones', label: scriptTitle(s), icon: <ScrollText size={16} />, run: go(`/teleprompter?guion=${s.id}`) })),
       ...(notes.data ?? [])
         .filter((n) => match(n.body) || match(n.link_title) || match(n.url))
         .slice(0, 8)
@@ -139,7 +146,7 @@ export function CommandPalette() {
         })),
     ];
     return [...base.filter((i) => match(i.label)), ...found];
-  }, [q, open, tasks, boards.data, documents.data, notes.data, noteLists.data, clients.data, projectById, navigate, start, theme, nav, capture]);
+  }, [q, open, tasks, boards.data, documents.data, scripts.data, notes.data, noteLists.data, clients.data, projectById, navigate, start, theme, nav, capture]);
 
   if (!open) return null;
 

@@ -16,6 +16,8 @@ import { AjustesPage } from '@/features/ajustes/AjustesPage';
 import { DescargarPage } from '@/features/descargar/DescargarPage';
 import { DocumentosPage } from '@/features/documentos/DocumentosPage';
 import { NoticiasPage } from '@/features/noticias/NoticiasPage';
+import { TeleprompterPage } from '@/features/teleprompter/TeleprompterPage';
+import { PrompterPage } from '@/features/teleprompter/PrompterPage';
 
 // Excalidraw is heavy: load the editor only when a board is opened.
 const BoardEditor = lazy(() => import('@/features/tableros/BoardEditor'));
@@ -41,6 +43,7 @@ function AppRoutes() {
           </Suspense>
         }
       />
+      <Route path="/teleprompter/:id/leer" element={<PrompterPage />} />
       <Route element={<Shell />}>
         <Route index element={<HomePage />} />
         <Route path="tiempo" element={<TiempoPage />} />
@@ -52,6 +55,7 @@ function AppRoutes() {
         <Route path="tableros" element={<TablerosPage />} />
         <Route path="documentos" element={<DocumentosPage />} />
         <Route path="notas" element={<NotasPage />} />
+        <Route path="teleprompter" element={<TeleprompterPage />} />
         <Route path="descargar" element={<DescargarPage />} />
         <Route path="ajustes" element={<AjustesPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

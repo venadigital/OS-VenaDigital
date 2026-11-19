@@ -22,6 +22,7 @@ import type {
   NoteList,
   NoteSection,
   Project,
+  Script,
   Task,
   TimeEntry,
   UsageRow,
@@ -382,6 +383,20 @@ export function createSupabaseApi(sb: SupabaseClient): Api {
       const res = await sb.storage.from('documents').download(doc.file_path);
       if (res.error || !res.data) throw new Error(res.error?.message ?? 'No se pudo descargar el PDF');
       return res.data;
+    },
+
+    // ---------- Teleprompter ----------
+    async listScripts() {
+      return check(await sb.from('scripts').select('*').order('updated_at', { ascending: false })) as Script[];
+    },
+    async createScript(input) {
+      return check(await sb.from('scripts').insert(input).select('*').single()) as Script;
+    },
+    async updateScript(id, patch) {
+      check(await sb.from('scripts').update(patch).eq('id', id));
+    },
+    async deleteScript(id) {
+      check(await sb.from('scripts').delete().eq('id', id));
     },
 
     // ---------- Capturas ----------
