@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type TextareaHTMLAttributes } from 'react';
+import { useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type Ref, type TextareaHTMLAttributes } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, Clock, Play, Plus, ScrollText, Trash2, X } from 'lucide-react';
+import { ChevronLeft, Clock, Play, Plus, ScrollText, Trash2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Page } from '@/components/Shell';
 import { Button, Empty, IconButton, Menu, Segmented, Skeleton } from '@/components/ui';
@@ -9,19 +9,7 @@ import { qk, useApiMutation, useScripts } from '@/data/hooks';
 import type { Script, ScriptInput, ScriptPlatform } from '@/data/types';
 import { useToast } from '@/components/Toast';
 import { relativeDay } from '@/lib/format';
-import {
-  loadSettings,
-  mergeSectionUp,
-  minSec,
-  NEW_SCRIPT_BODY,
-  parseSections,
-  PLATFORM_LABEL,
-  readingSeconds,
-  scriptTitle,
-  serializeSections,
-  wordCount,
-  type Section,
-} from './model';
+import { loadSettings, minSec, plainText, PLATFORM_LABEL, readingSeconds, scriptTitle, wordCount } from './model';
 import './teleprompter.css';
 
 type Filter = 'todos' | ScriptPlatform;
@@ -67,7 +55,7 @@ export function TeleprompterPage() {
 
   const { mutateAsync: createScript } = create;
   const newScript = useCallback(async () => {
-    const script = await createScript({ title: '', body: NEW_SCRIPT_BODY, platform: filter === 'todos' ? 'instagram' : filter }).catch(() => null);
+    const script = await createScript({ title: '', body: '', platform: filter === 'todos' ? 'instagram' : filter }).catch(() => null);
     if (script) setParams({ guion: script.id });
   }, [createScript, filter, setParams]);
 
@@ -148,11 +136,10 @@ function Editor({ script, wpm, onDelete }: { script: Script; wpm: number; onDele
   const qc = useQueryClient();
   const toast = useToast();
   const navigate = useNavigate();
-  const [title, setTitle] = useState(script.title);
   const [platform, setPlatform] = useState(script.platform);
-  const [sections, setSections] = useState(() => parseSections(script.body));
-  const body = useMemo(() => serializeSections(sections), [sections]);
-  const docRef = useRef<HTMLDivElement>(null);
+  // Older scripts lose their section lines the first time they are edited.
+  const [body, setBody] = useState(() => plainText(script.body));
+  const textRef = useRef<HTMLTextAreaElement>(null);
 
   // What is typed shows in the list right away and is saved a moment after the last key.
   const pending = useRef<ScriptInput | null>(null);
@@ -194,23 +181,11 @@ function Editor({ script, wpm, onDelete }: { script: Script; wpm: number; onDele
     };
   }, [flush]);
 
-  // A script that has no title yet starts there.
+  // An empty script starts with the cursor in it.
   useEffect(() => {
-    if (!script.title && window.matchMedia(WIDE).matches) docRef.current?.querySelector<HTMLTextAreaElement>('.tp-title-input')?.focus();
+    if (!body && window.matchMedia(WIDE).matches) textRef.current?.focus();
     // Only when the script opens.
   }, []);
-
-  const editSections = (next: Section[]) => {
-    setSections(next);
-    change({ body: serializeSections(next) });
-  };
-  const patchSection = (i: number, patch: Partial<Section>) => editSections(sections.map((s, j) => (j === i ? { ...s, ...patch } : s)));
-  const focusText = (i: number) => docRef.current?.querySelectorAll<HTMLTextAreaElement>('.tp-text')[i]?.focus();
-  const addSection = () => {
-    editSections([...sections, { name: '', text: '' }]);
-    // The new heading exists after this render.
-    setTimeout(() => docRef.current?.querySelector<HTMLInputElement>('.tp-section:last-of-type .tp-section-name')?.focus(), 0);
-  };
 
   const read = async () => {
     await flush();
@@ -244,74 +219,27 @@ function Editor({ script, wpm, onDelete }: { script: Script; wpm: number; onDele
         </div>
       </div>
 
-      <div className="tp-doc" ref={docRef}>
-        {/* A long title wraps instead of hiding its end. */}
+      <div className="tp-doc">
         <AutoTextarea
-          className="tp-title-input"
-          aria-label="Título"
-          placeholder="Sin título"
-          value={title}
-          maxLength={200}
+          ref={textRef}
+          className="tp-text"
+          aria-label="Guion"
+          placeholder="Escribe o pega el guion"
+          value={body}
           onChange={(e) => {
-            const next = e.target.value.replace(/\s*\n\s*/g, ' ');
-            setTitle(next);
-            change({ title: next });
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              focusText(0);
-            }
+            setBody(e.target.value);
+            change({ body: e.target.value });
           }}
         />
-        {sections.map((s, i) => {
-          // A script without headings is one plain text; its first heading appears with "Añadir sección".
-          const plain = i === 0 && !s.name && sections.length === 1;
-          return (
-            <div key={i} className="tp-section">
-              {!plain && (
-                <div className="tp-section-head">
-                  <input
-                    className="tp-section-name"
-                    aria-label="Nombre de la sección"
-                    placeholder="Sección"
-                    value={s.name}
-                    maxLength={60}
-                    onChange={(e) => patchSection(i, { name: e.target.value })}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        focusText(i);
-                      }
-                    }}
-                  />
-                  <IconButton label="Quitar sección" size={30} className="tp-section-remove" onClick={() => editSections(mergeSectionUp(sections, i))}>
-                    <X size={15} />
-                  </IconButton>
-                </div>
-              )}
-              <AutoTextarea
-                className="tp-text"
-                aria-label={s.name ? `Texto de ${s.name}` : 'Texto'}
-                placeholder="Escribe aquí"
-                value={s.text}
-                onChange={(e) => patchSection(i, { text: e.target.value })}
-              />
-            </div>
-          );
-        })}
-        <button type="button" className="tp-add" onClick={addSection}>
-          <Plus size={16} />
-          Añadir sección
-        </button>
       </div>
     </>
   );
 }
 
 /** A textarea as tall as its text, so the script reads as one page. */
-function AutoTextarea({ value, ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+function AutoTextarea({ value, ref: outer, ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement> & { ref?: Ref<HTMLTextAreaElement> }) {
   const ref = useRef<HTMLTextAreaElement>(null);
+  useImperativeHandle(outer, () => ref.current as HTMLTextAreaElement);
   const fit = useCallback(() => {
     const el = ref.current;
     if (!el) return;

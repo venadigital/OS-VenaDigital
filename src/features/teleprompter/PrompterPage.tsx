@@ -177,7 +177,7 @@ function Reader({ script }: { script: Script }) {
     moveTo(0);
   };
   const jump = (dir: 1 | -1) => {
-    // Each paragraph's first line lands on the reading line; a section's name stays just above it.
+    // Each paragraph's first line lands on the reading line.
     const tops = Array.from(content.current?.querySelectorAll('p') ?? []).map((el) => el.offsetTop);
     if (dir > 0) {
       const next = tops.find((t) => t > y.current + 2);
@@ -295,11 +295,8 @@ function Reader({ script }: { script: Script }) {
         <div className="tp-read-column" style={{ left: lay.left, width: lay.width }}>
           <div ref={text} className="tp-read-text" style={{ paddingTop: lay.lineY, paddingBottom: view.h, fontSize: settings.size, lineHeight: LINE_HEIGHT }}>
             <div ref={content} className="tp-read-content">
-              {blocks.map((b, i) => (
-                <div key={i} className="tp-read-block">
-                  {b.section && <div className="tp-read-section">{b.section}</div>}
-                  <p>{b.text}</p>
-                </div>
+              {blocks.map((text, i) => (
+                <p key={i}>{text}</p>
               ))}
             </div>
           </div>

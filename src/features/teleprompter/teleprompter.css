@@ -18,24 +18,12 @@
 .tp-back { display: none; align-items: center; gap: 2px; min-height: 44px; margin-left: -6px; padding-right: 10px; font-size: 16px; color: var(--color-ink); }
 .tp-duration { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--color-ink-2); }
 
-.tp-doc { display: flex; flex-direction: column; gap: 24px; width: 100%; max-width: 700px; }
-.tp-title-input { display: block; width: 100%; padding: 0; border: 0; background: none; outline: none; resize: none; overflow: hidden; font-size: 32px; font-weight: 600; line-height: 1.2; letter-spacing: -.8px; color: var(--color-ink); }
-.tp-title-input::placeholder, .tp-text::placeholder, .tp-section-name::placeholder { color: var(--color-ink-4); }
-/* The script is one page to write on: the caret shows where, as in a task's title and notes. */
-.tp-title-input:focus-visible, .tp-section-name:focus-visible, .tp-text:focus-visible { outline: none; }
-.tp-section { display: flex; flex-direction: column; gap: 4px; }
-.tp-section-head { display: flex; align-items: center; gap: 6px; min-height: 30px; }
-.tp-section-name { flex: 1; min-width: 0; padding: 0; border: 0; background: none; outline: none; font-size: 12px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--color-ink-2); }
-.tp-section-name::placeholder { text-transform: uppercase; }
-.tp-section-remove { opacity: 0; }
-.tp-section:hover .tp-section-remove, .tp-section-remove:focus-visible { opacity: 1; }
-.tp-text { display: block; width: 100%; min-height: 28px; padding: 0; border: 0; background: none; outline: none; resize: none; overflow: hidden; font-size: 17px; line-height: 1.6; color: var(--color-ink); }
-.tp-add { display: inline-flex; align-items: center; align-self: flex-start; gap: 8px; min-height: 38px; margin-left: -10px; padding: 0 12px 0 10px; border-radius: 10px; font-size: 13.5px; color: var(--color-ink-2); }
-.tp-add:hover { color: var(--color-ink); background: var(--color-fill); }
+.tp-doc { width: 100%; max-width: 700px; }
+.tp-text::placeholder { color: var(--color-ink-4); }
+/* The script is one page to write on: the caret shows where. */
+.tp-text:focus-visible { outline: none; }
+.tp-text { display: block; width: 100%; min-height: 60vh; padding: 0; border: 0; background: none; outline: none; resize: none; overflow: hidden; font-size: 17px; line-height: 1.6; color: var(--color-ink); }
 
-@media (hover: none) {
-  .tp-section-remove { opacity: 1; }
-}
 @media (max-width: 999px) {
   .tp-layout { display: block; min-height: 0; }
   .tp-layout[data-open="true"] .tp-list { display: none; }
@@ -48,9 +36,6 @@
   .tp-editor { padding: 8px 18px 120px; gap: 22px; }
   .tp-back { display: inline-flex; }
   .tp-toolbar .tp-back { width: 100%; }
-  .tp-title-input { font-size: 28px; }
-  /* Under 16px, iOS zooms the page when a field takes focus. */
-  .tp-section-name { font-size: 16px; letter-spacing: .04em; }
 }
 
 /* Reading screen: always black, whatever the theme, so the monitor lights the face as little as possible. */
@@ -60,9 +45,7 @@
 .tp-read-column { position: absolute; top: 0; bottom: 0; overflow: hidden; }
 .tp-read-text { font-weight: 600; letter-spacing: -.012em; will-change: transform; }
 .tp-read-content { position: relative; display: flex; flex-direction: column; gap: .75em; }
-.tp-read-block { display: flex; flex-direction: column; gap: .25em; }
-.tp-read-block p { margin: 0; white-space: pre-line; overflow-wrap: break-word; }
-.tp-read-section { font-size: max(13px, .3em); font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: #8ab4f0; }
+.tp-read-content p { margin: 0; white-space: pre-line; overflow-wrap: break-word; }
 .tp-read-fade { position: absolute; inset-inline: 0; pointer-events: none; }
 .tp-read-marker { position: absolute; width: 0; height: 0; border-left: 13px solid #4b8fe8; border-top: 9px solid transparent; border-bottom: 9px solid transparent; }
 .tp-read-count { position: absolute; inset: 0; display: grid; place-items: center; background: rgb(0 0 0 / .72); font-size: min(32vh, 260px); font-weight: 600; font-variant-numeric: tabular-nums; }

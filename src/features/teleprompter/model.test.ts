@@ -1,82 +1,31 @@
 import { describe, expect, it } from 'vitest';
-import {
-  cleanSettings,
-  DEFAULT_SETTINGS,
-  defaultSize,
-  layout,
-  mergeSectionUp,
-  minSec,
-  NEW_SCRIPT_BODY,
-  paragraphs,
-  parseSections,
-  pixelsPerSecond,
-  readingSeconds,
-  serializeSections,
-  wordCount,
-} from './model';
+import { cleanSettings, DEFAULT_SETTINGS, defaultSize, layout, minSec, paragraphs, pixelsPerSecond, plainText, readingSeconds, scriptTitle, wordCount } from './model';
 
-const BODY = ['# Gancho', 'Uno dos tres.', '', 'Cuatro cinco.', '', '# Cierre', 'Seis.'].join('\n');
+const BODY = 'Uno dos tres.\n\nCuatro cinco.\nSeis.';
 
-describe('sections', () => {
-  it('splits a script at its headings', () => {
-    expect(parseSections(BODY)).toEqual([
-      { name: 'Gancho', text: 'Uno dos tres.\n\nCuatro cinco.' },
-      { name: 'Cierre', text: 'Seis.' },
-    ]);
+describe('text', () => {
+  it('drops the section lines of older scripts and keeps hashtags', () => {
+    expect(plainText('# Gancho\nUno.\n\n# Cierre\nDos.')).toBe('Uno.\n\nDos.');
+    expect(plainText('#ia para negocios')).toBe('#ia para negocios');
+    expect(plainText('# Gancho\n\n# Desarrollo\n\n# Cierre')).toBe('');
   });
 
-  it('keeps text before the first heading as a section without a name', () => {
-    expect(parseSections('Hola.\n# Cierre\nAdiós.')).toEqual([
-      { name: '', text: 'Hola.' },
-      { name: 'Cierre', text: 'Adiós.' },
-    ]);
-  });
-
-  it('does not take a hashtag for a heading', () => {
-    expect(parseSections('#ia para negocios')).toEqual([{ name: '', text: '#ia para negocios' }]);
-  });
-
-  it('always has a section to write in', () => {
-    expect(parseSections('')).toEqual([{ name: '', text: '' }]);
-  });
-
-  it('keeps the empty sections of a new script', () => {
-    expect(parseSections(NEW_SCRIPT_BODY).map((s) => s.name)).toEqual(['Gancho', 'Desarrollo', 'Cierre']);
-  });
-
-  it('writes back what it read', () => {
-    expect(serializeSections(parseSections(BODY))).toBe(BODY);
-    expect(serializeSections(parseSections(NEW_SCRIPT_BODY))).toBe(NEW_SCRIPT_BODY);
-    expect(serializeSections([{ name: '', text: ' Hola. ' }])).toBe('Hola.');
-    expect(serializeSections([{ name: '', text: '' }])).toBe('');
-  });
-
-  it('gives a heading to a later section without a name, so it stays apart', () => {
-    const body = serializeSections([
-      { name: 'Gancho', text: 'Uno.' },
-      { name: '', text: 'Dos.' },
-    ]);
-    expect(parseSections(body)).toHaveLength(2);
-  });
-
-  it('removes a heading without losing its text', () => {
-    expect(mergeSectionUp(parseSections(BODY), 1)).toEqual([{ name: 'Gancho', text: 'Uno dos tres.\n\nCuatro cinco.\n\nSeis.' }]);
-    expect(mergeSectionUp(parseSections(BODY), 0)[0]).toEqual({ name: '', text: 'Uno dos tres.\n\nCuatro cinco.' });
+  it('names a script by how it starts', () => {
+    expect(scriptTitle({ title: '', body: '# Gancho\nSi tienes un negocio…\nSegunda línea' })).toBe('Si tienes un negocio…');
+    expect(scriptTitle({ title: 'Bienvenida', body: 'Hola.' })).toBe('Bienvenida');
+    expect(scriptTitle({ title: '', body: '' })).toBe('Sin texto');
+    expect(scriptTitle({ title: '', body: 'a'.repeat(200) })).toHaveLength(121);
   });
 });
 
 describe('reading', () => {
-  it('lists the paragraphs, naming the section on its first one', () => {
-    expect(paragraphs(BODY)).toEqual([
-      { section: 'Gancho', text: 'Uno dos tres.' },
-      { section: null, text: 'Cuatro cinco.' },
-      { section: 'Cierre', text: 'Seis.' },
-    ]);
+  it('splits the text at blank lines', () => {
+    expect(paragraphs(BODY)).toEqual(['Uno dos tres.', 'Cuatro cinco.\nSeis.']);
   });
 
-  it('counts only the words that are read aloud', () => {
+  it('counts the words that are read aloud', () => {
     expect(wordCount(BODY)).toBe(6);
-    expect(wordCount(NEW_SCRIPT_BODY)).toBe(0);
+    expect(wordCount('# Gancho\nHola.')).toBe(1);
   });
 
   it('estimates the time from the pace', () => {

@@ -4,82 +4,39 @@ import type { Script, ScriptPlatform } from '@/data/types';
 
 export const PLATFORM_LABEL: Record<ScriptPlatform, string> = { instagram: 'Instagram', youtube: 'YouTube' };
 
-export const scriptTitle = (s: Pick<Script, 'title'>) => s.title.trim() || 'Sin título';
+/** Scripts from before the text went in one piece had "# Gancho" lines: they are dropped. */
+const HEADING = /^#(?:\s+.*)?$/;
 
-/** The sections a new script starts with. */
-export const NEW_SCRIPT_BODY = '# Gancho\n\n# Desarrollo\n\n# Cierre';
-
-// ---------------------------------------------------------------- sections
-export type Section = { name: string; text: string };
-
-/** "# Gancho" opens a section; "#etiqueta" is just text. */
-const HEADING = /^#(?:\s+(.*))?$/;
-
-/** The script as sections. Text before the first heading is a section without a name. */
-export function parseSections(body: string): Section[] {
-  const sections: Section[] = [];
-  let name = '';
-  let lines: string[] = [];
-  let named = false;
-  const close = () => {
-    const text = lines.join('\n').trim();
-    if (named || text) sections.push({ name, text });
-  };
-  for (const line of body.split('\n')) {
-    const heading = HEADING.exec(line.trimEnd());
-    if (!heading) {
-      lines.push(line);
-      continue;
-    }
-    close();
-    name = (heading[1] ?? '').trim();
-    lines = [];
-    named = true;
-  }
-  close();
-  return sections.length ? sections : [{ name: '', text: '' }];
+/** The script as one continuous text. */
+export function plainText(body: string): string {
+  return body
+    .split('\n')
+    .filter((line) => !HEADING.test(line.trimEnd()))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
-export function serializeSections(sections: Section[]): string {
-  return sections
-    .map((s, i) => {
-      const name = s.name.trim();
-      const text = s.text.trim();
-      // Only the first section may go without a heading.
-      const heading = name || i > 0 ? `# ${name}`.trimEnd() : '';
-      return [heading, text].filter(Boolean).join('\n');
-    })
-    .filter((block, i) => block || i > 0)
-    .join('\n\n');
-}
-
-/** Removes a section's heading and keeps its text, joined to the section above. */
-export function mergeSectionUp(sections: Section[], index: number): Section[] {
-  if (index <= 0) return sections.map((s, i) => (i === 0 ? { ...s, name: '' } : s));
-  const next = sections.map((s) => ({ ...s }));
-  const [removed] = next.splice(index, 1);
-  const above = next[index - 1];
-  above.text = [above.text.trim(), removed.text.trim()].filter(Boolean).join('\n\n');
-  return next;
+/** The list names a script by how it starts. */
+export function scriptTitle(s: Pick<Script, 'title' | 'body'>): string {
+  const own = s.title.trim();
+  if (own) return own;
+  const first = plainText(s.body).split('\n')[0]?.trim() ?? '';
+  if (!first) return 'Sin texto';
+  return first.length > 120 ? `${first.slice(0, 120).trimEnd()}…` : first;
 }
 
 // ---------------------------------------------------------------- reading
-/** One block on the reading screen; `section` is set on the first paragraph of each section. */
-export type Paragraph = { section: string | null; text: string };
-
-export function paragraphs(body: string): Paragraph[] {
-  return parseSections(body).flatMap((s) =>
-    s.text
-      .split(/\n\s*\n/)
-      .map((t) => t.trim())
-      .filter(Boolean)
-      .map((text, i) => ({ section: i === 0 && s.name ? s.name : null, text })),
-  );
+/** The blocks on the reading screen: blank lines separate them. */
+export function paragraphs(body: string): string[] {
+  return plainText(body)
+    .split(/\n\s*\n/)
+    .map((t) => t.trim())
+    .filter(Boolean);
 }
 
-/** Words that are read aloud: section names don't count. */
 export function wordCount(body: string): number {
-  return parseSections(body).reduce((n, s) => n + (s.text.match(/\S+/g)?.length ?? 0), 0);
+  return plainText(body).match(/\S+/g)?.length ?? 0;
 }
 
 export function readingSeconds(body: string, wpm: number): number {

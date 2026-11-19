@@ -62,9 +62,9 @@ type Store = {
 };
 
 function seedScripts(now: Date): Script[] {
-  const script = (title: string, platform: Script['platform'], daysAgo: number, body: string): Script => ({
+  const script = (platform: Script['platform'], daysAgo: number, body: string): Script => ({
     id: uid(),
-    title,
+    title: '',
     platform,
     body,
     created_at: iso(subDays(now, daysAgo + 2)),
@@ -72,50 +72,31 @@ function seedScripts(now: Date): Script[] {
   });
   return [
     script(
-      'Tres tareas que ya puedes delegar a la IA',
       'instagram',
       0,
       [
-        '# Gancho',
         'Si tienes un negocio y sigues respondiendo los mismos mensajes todos los días, este video es para ti.',
-        '',
         'Hoy te muestro tres tareas que puedes delegar a la inteligencia artificial esta misma semana, sin saber programar.',
-        '',
-        '# Desarrollo',
         'La primera: las preguntas frecuentes. Horarios, precios, formas de pago. Un asistente bien configurado las responde por ti, a cualquier hora.',
-        '',
         'La segunda: el seguimiento. Ese cliente que pidió una cotización y nunca volvió. Una automatización le escribe a los tres días, con tu tono y con tu nombre.',
-        '',
         'La tercera: tus reuniones. Grabas, y al terminar tienes el acta, los compromisos y las fechas, listos para enviar.',
-        '',
         'Ninguna de las tres reemplaza tu criterio. Lo que hacen es devolverte horas para lo que solo tú puedes hacer.',
-        '',
-        '# Cierre',
         'Empieza por una. La que más tiempo te quite hoy.',
-        '',
         'Si quieres que te muestre cómo montar la primera paso a paso, escríbeme la palabra ASISTENTE en los comentarios.',
-        '',
         'Soy Laura, de Vena Digital. Nos vemos en el próximo video.',
-      ].join('\n'),
+      ].join('\n\n'),
     ),
     script(
-      'Cómo elegir tu primera automatización',
       'youtube',
       1,
       [
-        '# Gancho',
         'Automatizar lo equivocado es la forma más rápida de perder un mes.',
-        '',
-        '# Desarrollo',
         'Antes de abrir cualquier herramienta, anota durante una semana qué tareas repites y cuánto te toma cada una.',
-        '',
         'Elige la que cumpla tres condiciones: se repite, sigue siempre los mismos pasos y no depende de tu criterio.',
-        '',
-        '# Cierre',
         'Esa es tu primera automatización. En el próximo video la montamos juntos.',
-      ].join('\n'),
+      ].join('\n\n'),
     ),
-    script('Un prompt no es una estrategia', 'instagram', 11, 'Un prompt te da una respuesta. Una estrategia te dice qué pregunta vale la pena hacer.'),
+    script('instagram', 11, 'Un prompt te da una respuesta. Una estrategia te dice qué pregunta vale la pena hacer.'),
   ];
 }
 
