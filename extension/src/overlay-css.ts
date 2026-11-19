@@ -17,6 +17,9 @@ export const OVERLAY_CSS = `
 .surface.pen, .surface.marker, .surface.shape, .surface.capture { cursor: crosshair; }
 .surface.text { cursor: text; }
 .surface.eraser { cursor: cell; }
+.surface.laser { cursor: default; }
+.surface.laser[data-laser] { cursor: none; }
+.laser-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .marks { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; pointer-events: none; }
 .editor {
   position: absolute; margin: 0; padding: 0; border: 0; resize: none; overflow: hidden; background: transparent; white-space: pre;

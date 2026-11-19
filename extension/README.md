@@ -26,8 +26,11 @@ Presiona el ícono en cualquier página y aparece la barra. Presiónalo otra vez
 | Texto | T |
 | Formas: rectángulo, círculo, línea y flecha | R |
 | Captura | C |
+| Puntero láser | L |
 
 Deshacer y rehacer con **Cmd + Z** y **Cmd + Shift + Z**. Con la rueda o el trackpad la página sigue bajando mientras dibujas, y los trazos bajan con ella.
+
+**Puntero láser:** un punto rojo con una estela que se desvanece, como en el visor de Documentos. No deja trazos ni sale en las capturas.
 
 **Captura:** arrastra un recuadro, o elige **Pantalla** o **Completo**. La imagen lleva tus trazos, sin la barra, y queda en Capturas sin sacarte de la página: una pestaña del OS se abre atrás, la guarda con tu sesión y se cierra sola. Si no tienes la sesión iniciada, esa pestaña pasa al frente para que entres.
 

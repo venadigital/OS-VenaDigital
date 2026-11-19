@@ -1,0 +1,68 @@
+{
+  "el botón está en la barra": {
+    "ok": true,
+    "detail": "Puntero láser · L"
+  },
+  "al elegirlo aparece su lienzo y no hay barra de estilos": {
+    "ok": true,
+    "detail": {
+      "canvas": true,
+      "red": 0,
+      "cursor": "default",
+      "marks": 0,
+      "pressed": [
+        "Puntero láser · L"
+      ],
+      "styles": false
+    }
+  },
+  "el cursor sigue visible hasta que se mueve": {
+    "ok": true,
+    "detail": "default"
+  },
+  "al moverse dibuja el punto rojo con su estela": {
+    "ok": true,
+    "detail": 2865
+  },
+  "y esconde el cursor": {
+    "ok": true,
+    "detail": "none"
+  },
+  "hacer clic o arrastrar no deja trazos": {
+    "ok": true,
+    "detail": 0
+  },
+  "quieto, la estela se va y queda solo el punto": {
+    "ok": true,
+    "detail": {
+      "resting": 263,
+      "moving": 1359
+    }
+  },
+  "al salir del área el punto se apaga": {
+    "ok": true,
+    "detail": 0
+  },
+  "otra herramienta quita el lienzo y devuelve el cursor": {
+    "ok": true,
+    "detail": {
+      "canvas": false,
+      "red": 0,
+      "cursor": "crosshair",
+      "marks": 0,
+      "pressed": [
+        "Lápiz · P"
+      ],
+      "styles": true
+    }
+  },
+  "la tecla L lo vuelve a elegir": {
+    "ok": true,
+    "detail": [
+      "Puntero láser · L"
+    ]
+  },
+  "al cerrar la barra no queda nada": {
+    "ok": true
+  }
+}

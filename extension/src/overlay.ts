@@ -27,12 +27,13 @@ import {
   uid,
   type ToolStyles,
 } from '@/features/documentos/model';
+import { createLaser, type Laser } from '@/features/documentos/laser';
 import { ICONS } from './icons';
 import { OVERLAY_CSS } from './overlay-css';
 
 declare const chrome: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-type Tool = 'hand' | 'pen' | 'marker' | 'eraser' | 'text' | 'shape' | 'capture';
+type Tool = 'hand' | 'pen' | 'marker' | 'eraser' | 'text' | 'shape' | 'capture' | 'laser';
 type TextMark = Extract<Annotation, { type: 'text' }>;
 type Rect = { left: number; top: number; width: number; height: number };
 type Status = { status: 'idle' | 'saving' | 'saved' | 'error'; message?: string };
@@ -50,8 +51,9 @@ const TOOLS: { id: Tool; label: string; key: string }[] = [
   { id: 'text', label: 'Texto', key: 'T' },
   { id: 'shape', label: 'Formas', key: 'R' },
   { id: 'capture', label: 'Captura', key: 'C' },
+  { id: 'laser', label: 'Puntero láser', key: 'L' },
 ];
-const TOOL_ICONS: Record<Exclude<Tool, 'shape'>, string> = { hand: 'mouse-pointer-2', pen: 'pen-line', marker: 'highlighter', eraser: 'eraser', text: 'type', capture: 'camera' };
+const TOOL_ICONS: Record<Exclude<Tool, 'shape'>, string> = { hand: 'mouse-pointer-2', pen: 'pen-line', marker: 'highlighter', eraser: 'eraser', text: 'type', capture: 'camera', laser: 'presentation' };
 
 // ---------- Small DOM helpers ----------
 function svg(tag: string, attrs: Record<string, string | number> = {}): SVGElement {
@@ -162,6 +164,8 @@ function start() {
   let confirmingClose = false;
   let saving = 0;
   let toastTimer: ReturnType<typeof setTimeout> | null = null;
+  let laser: Laser | null = null;
+  let laserCanvas: HTMLCanvasElement | null = null;
 
   chrome.storage?.local.get(['overlayStyles', 'overlayShape']).then((saved: { overlayStyles?: Partial<ToolStyles>; overlayShape?: ShapeKind }) => {
     if (saved.overlayStyles) styles = { ...styles, ...saved.overlayStyles };
@@ -226,6 +230,7 @@ function start() {
     closeEditor();
     cancelMarquee();
     tool = t;
+    toggleLaser(t === 'laser');
     surface.className = `surface ${t === 'hand' ? 'off' : t}`;
     confirmingClose = false;
     renderDock();
@@ -606,6 +611,38 @@ function start() {
     { passive: false },
   );
 
+  // ---------- Laser ----------
+  // Only the dot and its trail, in screen coordinates: nothing is drawn, undone or captured.
+  function toggleLaser(on: boolean) {
+    if (on && !laser) {
+      laserCanvas = document.createElement('canvas');
+      laserCanvas.className = 'laser-canvas';
+      laserCanvas.setAttribute('aria-hidden', 'true');
+      surface.append(laserCanvas);
+      laser = createLaser(laserCanvas);
+    } else if (!on && laser) {
+      laser.dispose();
+      laserCanvas?.remove();
+      laser = laserCanvas = null;
+      delete surface.dataset.laser;
+    }
+  }
+  const aim = (e: PointerEvent) => {
+    if (tool !== 'laser' || !laser || busy) return;
+    // Only now: a laser picked with the keyboard must not hide a cursor that hasn't moved.
+    if (!laser.showing) surface.dataset.laser = '';
+    const samples = e.getCoalescedEvents?.() ?? [];
+    laser.move(samples.length ? samples : [e]);
+  };
+  const lift = () => laser?.lift();
+  surface.addEventListener('pointerdown', aim);
+  surface.addEventListener('pointermove', aim);
+  surface.addEventListener('pointerup', (e) => {
+    if (e.pointerType !== 'mouse') lift(); // a mouse stays where it is; a finger is gone
+  });
+  surface.addEventListener('pointercancel', lift);
+  surface.addEventListener('pointerleave', lift);
+
   // ---------- Capture ----------
   function requestShot(mode: 'region' | 'visible' | 'page', box?: Rect) {
     if (busy) return;
@@ -693,6 +730,7 @@ function start() {
   }
   function stop() {
     closeEditor();
+    toggleLaser(false);
     chrome.runtime.onMessage.removeListener(onMessage);
     window.removeEventListener('keydown', onKey, true);
     window.removeEventListener('resize', place);

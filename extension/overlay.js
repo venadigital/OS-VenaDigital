@@ -488,6 +488,164 @@
 		return null;
 	}
 	//#endregion
+	//#region src/features/documentos/laser.ts
+	/** How long each stretch of the trail lasts, in milliseconds. */
+	var TRAIL_MS = 300;
+	var DOT_RADIUS = 5;
+	var TRAIL_RADIUS = 2.1;
+	/** Samples closer than this add nothing, and would pile up on a fast mouse. */
+	var MIN_STEP = 2;
+	var GLOW_COLOR = "rgba(255, 38, 38, 0.85)";
+	var TAU = Math.PI * 2;
+	/** Rounds the corners between pointer samples, so a fast sweep doesn't look like a polygon. */
+	function smooth(pts) {
+		if (pts.length < 3) return pts;
+		const mid = (a, b) => ({
+			x: (a.x + b.x) / 2,
+			y: (a.y + b.y) / 2,
+			at: (a.at + b.at) / 2
+		});
+		const out = [pts[0]];
+		for (let i = 1; i < pts.length - 1; i++) {
+			const corner = pts[i];
+			const from = mid(pts[i - 1], corner);
+			const to = mid(corner, pts[i + 1]);
+			const steps = Math.max(1, Math.min(8, Math.ceil(Math.hypot(to.x - from.x, to.y - from.y) / 5)));
+			for (let s = 0; s <= steps; s++) {
+				const u = s / steps;
+				const v = 1 - u;
+				out.push({
+					x: v * v * from.x + 2 * v * u * corner.x + u * u * to.x,
+					y: v * v * from.y + 2 * v * u * corner.y + u * u * to.y,
+					at: from.at + (to.at - from.at) * u
+				});
+			}
+		}
+		out.push(pts[pts.length - 1]);
+		return out;
+	}
+	/** Adds a tapered stroke to the current path, as circles joined by quads. */
+	function traceTrail(ctx, pts, radiusOf) {
+		pts.forEach((p, i) => {
+			const r = radiusOf(p);
+			ctx.moveTo(p.x + r, p.y);
+			ctx.arc(p.x, p.y, r, 0, TAU);
+			if (i === 0) return;
+			const prev = pts[i - 1];
+			const dx = p.x - prev.x;
+			const dy = p.y - prev.y;
+			const length = Math.hypot(dx, dy);
+			if (!length) return;
+			const nx = -dy / length;
+			const ny = dx / length;
+			const q = radiusOf(prev);
+			ctx.moveTo(prev.x - nx * q, prev.y - ny * q);
+			ctx.lineTo(p.x - nx * r, p.y - ny * r);
+			ctx.lineTo(p.x + nx * r, p.y + ny * r);
+			ctx.lineTo(prev.x + nx * q, prev.y + ny * q);
+			ctx.closePath();
+		});
+	}
+	/** Draws the laser on `canvas`, which keeps its own size in sync. */
+	function createLaser(canvas) {
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return null;
+		let dpr = window.devicePixelRatio || 1;
+		let frame = 0;
+		let trails = [];
+		let live = null;
+		let head = null;
+		const schedule = () => {
+			if (!frame) frame = requestAnimationFrame(draw);
+		};
+		const draw = () => {
+			frame = 0;
+			const now = performance.now();
+			trails = trails.filter((t) => {
+				while (t.length && now - t[0].at >= TRAIL_MS) t.shift();
+				return t.length > 0 || t === live;
+			});
+			ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+			ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+			const paths = trails.map(smooth);
+			const life = (p) => Math.max(0, 1 - (now - p.at) / TRAIL_MS) ** .8;
+			const trail = (scale) => () => {
+				for (const path of paths) traceTrail(ctx, path, (p) => TRAIL_RADIUS * scale * life(p));
+			};
+			const dot = (scale) => () => {
+				if (!head) return;
+				const r = DOT_RADIUS * scale;
+				ctx.moveTo(head.x + r, head.y);
+				ctx.arc(head.x, head.y, r, 0, TAU);
+			};
+			const fill = (trace, color, glow = 0) => {
+				ctx.beginPath();
+				trace();
+				ctx.fillStyle = color;
+				ctx.shadowColor = glow ? GLOW_COLOR : "transparent";
+				ctx.shadowBlur = glow * dpr;
+				ctx.fill();
+			};
+			fill(trail(1.5), "rgba(255, 38, 38, 0.16)", 5);
+			fill(dot(2.2), "rgba(255, 38, 38, 0.32)", 18);
+			fill(trail(1), "#ff2b2b");
+			fill(dot(1), "#ff2b2b");
+			fill(dot(.32), "#ffc9c4");
+			if (trails.some((t) => t.length)) schedule();
+		};
+		const fit = () => {
+			dpr = window.devicePixelRatio || 1;
+			const { width, height } = canvas.getBoundingClientRect();
+			canvas.width = Math.round(width * dpr);
+			canvas.height = Math.round(height * dpr);
+			schedule();
+		};
+		const observer = new ResizeObserver(fit);
+		observer.observe(canvas);
+		return {
+			move(samples) {
+				const box = canvas.getBoundingClientRect();
+				const now = performance.now();
+				for (const sample of samples) {
+					const x = sample.clientX - box.left;
+					const y = sample.clientY - box.top;
+					if (!live) {
+						live = [];
+						trails.push(live);
+					}
+					const last = live[live.length - 1];
+					if (!last || Math.hypot(x - last.x, y - last.y) >= MIN_STEP) live.push({
+						x,
+						y,
+						at: now
+					});
+					head = {
+						x,
+						y
+					};
+				}
+				schedule();
+			},
+			lift() {
+				if (!head) return;
+				live?.push({
+					...head,
+					at: performance.now()
+				});
+				live = null;
+				head = null;
+				schedule();
+			},
+			get showing() {
+				return head !== null;
+			},
+			dispose() {
+				cancelAnimationFrame(frame);
+				observer.disconnect();
+			}
+		};
+	}
+	//#endregion
 	//#region extension/src/icons.ts
 	var ICONS = {
 		"mouse-pointer-2": [["path", { "d": "M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z" }]],
@@ -513,6 +671,11 @@
 		}]],
 		"slash": [["path", { "d": "M22 2 2 22" }]],
 		"move-up-right": [["path", { "d": "M13 5H19V11" }], ["path", { "d": "M19 5L5 19" }]],
+		"presentation": [
+			["path", { "d": "M2 3h20" }],
+			["path", { "d": "M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3" }],
+			["path", { "d": "m7 21 5-5 5 5" }]
+		],
 		"camera": [["path", { "d": "M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z" }], ["circle", {
 			"cx": "12",
 			"cy": "13",
@@ -581,6 +744,9 @@
 .surface.pen, .surface.marker, .surface.shape, .surface.capture { cursor: crosshair; }
 .surface.text { cursor: text; }
 .surface.eraser { cursor: cell; }
+.surface.laser { cursor: default; }
+.surface.laser[data-laser] { cursor: none; }
+.laser-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .marks { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: visible; pointer-events: none; }
 .editor {
   position: absolute; margin: 0; padding: 0; border: 0; resize: none; overflow: hidden; background: transparent; white-space: pre;
@@ -678,6 +844,11 @@ button[disabled] { opacity: 0.35; cursor: default; }
 			id: "capture",
 			label: "Captura",
 			key: "C"
+		},
+		{
+			id: "laser",
+			label: "Puntero láser",
+			key: "L"
 		}
 	];
 	var TOOL_ICONS = {
@@ -686,7 +857,8 @@ button[disabled] { opacity: 0.35; cursor: default; }
 		marker: "highlighter",
 		eraser: "eraser",
 		text: "type",
-		capture: "camera"
+		capture: "camera",
+		laser: "presentation"
 	};
 	function svg(tag, attrs = {}) {
 		const el = document.createElementNS(SVG, tag);
@@ -851,6 +1023,8 @@ button[disabled] { opacity: 0.35; cursor: default; }
 		let confirmingClose = false;
 		let saving = 0;
 		let toastTimer = null;
+		let laser = null;
+		let laserCanvas = null;
 		chrome.storage?.local.get(["overlayStyles", "overlayShape"]).then((saved) => {
 			if (saved.overlayStyles) styles = {
 				...styles,
@@ -924,6 +1098,7 @@ button[disabled] { opacity: 0.35; cursor: default; }
 			closeEditor();
 			cancelMarquee();
 			tool = t;
+			toggleLaser(t === "laser");
 			surface.className = `surface ${t === "hand" ? "off" : t}`;
 			confirmingClose = false;
 			renderDock();
@@ -1369,6 +1544,34 @@ button[disabled] { opacity: 0.35; cursor: default; }
 				behavior: "instant"
 			});
 		}, { passive: false });
+		function toggleLaser(on) {
+			if (on && !laser) {
+				laserCanvas = document.createElement("canvas");
+				laserCanvas.className = "laser-canvas";
+				laserCanvas.setAttribute("aria-hidden", "true");
+				surface.append(laserCanvas);
+				laser = createLaser(laserCanvas);
+			} else if (!on && laser) {
+				laser.dispose();
+				laserCanvas?.remove();
+				laser = laserCanvas = null;
+				delete surface.dataset.laser;
+			}
+		}
+		const aim = (e) => {
+			if (tool !== "laser" || !laser || busy) return;
+			if (!laser.showing) surface.dataset.laser = "";
+			const samples = e.getCoalescedEvents?.() ?? [];
+			laser.move(samples.length ? samples : [e]);
+		};
+		const lift = () => laser?.lift();
+		surface.addEventListener("pointerdown", aim);
+		surface.addEventListener("pointermove", aim);
+		surface.addEventListener("pointerup", (e) => {
+			if (e.pointerType !== "mouse") lift();
+		});
+		surface.addEventListener("pointercancel", lift);
+		surface.addEventListener("pointerleave", lift);
 		function requestShot(mode, box) {
 			if (busy) return;
 			closeEditor();
@@ -1459,6 +1662,7 @@ button[disabled] { opacity: 0.35; cursor: default; }
 		}
 		function stop() {
 			closeEditor();
+			toggleLaser(false);
 			chrome.runtime.onMessage.removeListener(onMessage);
 			window.removeEventListener("keydown", onKey, true);
 			window.removeEventListener("resize", place);
