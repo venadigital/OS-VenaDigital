@@ -17,16 +17,18 @@ No cambies de lugar la carpeta: Chrome la lee de ahí. Después de actualizarla,
 
 Presiona el ícono en cualquier página y aparece la barra. Presiónalo otra vez, o la X, para cerrarla.
 
-| Herramienta | Tecla |
-|---|---|
-| Usar la página (hacer clic, seleccionar, abrir secciones) | V |
-| Lápiz | P |
-| Resaltador | H |
-| Borrador | E |
-| Texto | T |
-| Formas: rectángulo, círculo, línea y flecha | R |
-| Captura | C |
-| Puntero láser | L |
+| Herramienta | Tecla | Con la página en uso |
+|---|---|---|
+| Usar la página (hacer clic, seleccionar, abrir secciones) | V | |
+| Texto | T | Ctrl + T |
+| Formas: rectángulo, círculo, línea y flecha | F | Cmd + F |
+| Resaltador | R | Cmd + R |
+| Lápiz | L | Cmd + L |
+| Captura | C | Cmd + C |
+| Puntero láser | P | |
+| Borrador | E | |
+
+Las letras solas funcionan con una herramienta en la mano; cuando estás usando la página, sus teclas son de ella. Los atajos con Cmd funcionan siempre que la barra está abierta, así que mientras tanto no sirven para buscar, recargar ni ir a la barra de direcciones. Cmd + C sigue copiando si hay texto seleccionado. Texto usa Ctrl porque Chrome se reserva Cmd + T para abrir una pestaña.
 
 Deshacer y rehacer con **Cmd + Z** y **Cmd + Shift + Z**. Con la rueda o el trackpad la página sigue bajando mientras dibujas, y los trazos bajan con ella.
 

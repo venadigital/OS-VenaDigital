@@ -1,0 +1,61 @@
+{
+  "T elige Texto": {
+    "ok": true,
+    "detail": "Texto · T"
+  },
+  "F elige Formas": {
+    "ok": true,
+    "detail": "Formas · F"
+  },
+  "R elige Resaltador": {
+    "ok": true,
+    "detail": "Resaltador · R"
+  },
+  "L elige Lápiz": {
+    "ok": true,
+    "detail": "Lápiz · L"
+  },
+  "C elige Captura": {
+    "ok": true,
+    "detail": "Captura · C"
+  },
+  "P elige Puntero láser": {
+    "ok": true,
+    "detail": "Puntero láser · P"
+  },
+  "E elige Borrador": {
+    "ok": true,
+    "detail": "Borrador · E"
+  },
+  "Cmd+F elige Formas aunque la página esté en uso": {
+    "ok": true,
+    "detail": "Formas · F"
+  },
+  "Cmd+R elige Resaltador aunque la página esté en uso": {
+    "ok": true,
+    "detail": "Resaltador · R"
+  },
+  "Cmd+L elige Lápiz aunque la página esté en uso": {
+    "ok": true,
+    "detail": "Lápiz · L"
+  },
+  "Cmd+C elige Captura aunque la página esté en uso": {
+    "ok": true,
+    "detail": "Captura · C"
+  },
+  "Ctrl+T elige Texto aunque la página esté en uso": {
+    "ok": true,
+    "detail": "Texto · T"
+  },
+  "con la página en uso, una letra sola es de la página": {
+    "ok": true
+  },
+  "Cmd+C con texto seleccionado sigue copiando": {
+    "ok": true,
+    "detail": "Usar la página · V"
+  },
+  "escribiendo en un texto, ni Cmd+L ni F cambian de herramienta": {
+    "ok": true,
+    "detail": "Texto · T"
+  }
+}

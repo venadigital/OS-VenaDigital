@@ -45,14 +45,18 @@ const SHAPE_ICONS: Record<ShapeKind, string> = { rect: 'square', ellipse: 'circl
 const SHAPE_LABELS: Record<ShapeKind, string> = { rect: 'Rectángulo', ellipse: 'Círculo', line: 'Línea', arrow: 'Flecha' };
 const TOOLS: { id: Tool; label: string; key: string }[] = [
   { id: 'hand', label: 'Usar la página', key: 'V' },
-  { id: 'pen', label: 'Lápiz', key: 'P' },
-  { id: 'marker', label: 'Resaltador', key: 'H' },
+  { id: 'pen', label: 'Lápiz', key: 'L' },
+  { id: 'marker', label: 'Resaltador', key: 'R' },
   { id: 'eraser', label: 'Borrador', key: 'E' },
   { id: 'text', label: 'Texto', key: 'T' },
-  { id: 'shape', label: 'Formas', key: 'R' },
+  { id: 'shape', label: 'Formas', key: 'F' },
   { id: 'capture', label: 'Captura', key: 'C' },
-  { id: 'laser', label: 'Puntero láser', key: 'L' },
+  { id: 'laser', label: 'Puntero láser', key: 'P' },
 ];
+/** The same tools with Cmd, which reach the bar even while the page is in use. Cmd+T always
+ *  opens a tab (Chrome keeps it for itself), so the text tool takes Ctrl+T. */
+const CMD_TOOLS: Record<string, Tool> = { f: 'shape', r: 'marker', l: 'pen', c: 'capture' };
+const CTRL_TOOLS: Record<string, Tool> = { t: 'text' };
 const TOOL_ICONS: Record<Exclude<Tool, 'shape'>, string> = { hand: 'mouse-pointer-2', pen: 'pen-line', marker: 'highlighter', eraser: 'eraser', text: 'type', capture: 'camera', laser: 'presentation' };
 
 // ---------- Small DOM helpers ----------
@@ -688,10 +692,20 @@ function start() {
       }
       return;
     }
-    if (tool === 'hand') return; // the page is in use: its keys are its own
     const t = e.composedPath()[0] as HTMLElement;
-    if (t?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t?.tagName)) return;
+    const typing = t?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(t?.tagName);
     const k = e.key.toLowerCase();
+    if (!typing && !e.altKey && !e.shiftKey) {
+      const command = e.metaKey && !e.ctrlKey ? CMD_TOOLS[k] : e.ctrlKey && !e.metaKey ? CTRL_TOOLS[k] : undefined;
+      // With text selected on the page, Cmd+C still copies.
+      if (command && !(command === 'capture' && String(getSelection() ?? ''))) {
+        handled();
+        setTool(command);
+        return;
+      }
+    }
+    if (tool === 'hand') return; // the page is in use: its keys are its own
+    if (typing) return;
     if ((e.metaKey || e.ctrlKey) && k === 'z') {
       handled();
       if (e.shiftKey) redo();

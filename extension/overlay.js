@@ -818,12 +818,12 @@ button[disabled] { opacity: 0.35; cursor: default; }
 		{
 			id: "pen",
 			label: "Lápiz",
-			key: "P"
+			key: "L"
 		},
 		{
 			id: "marker",
 			label: "Resaltador",
-			key: "H"
+			key: "R"
 		},
 		{
 			id: "eraser",
@@ -838,7 +838,7 @@ button[disabled] { opacity: 0.35; cursor: default; }
 		{
 			id: "shape",
 			label: "Formas",
-			key: "R"
+			key: "F"
 		},
 		{
 			id: "capture",
@@ -848,9 +848,18 @@ button[disabled] { opacity: 0.35; cursor: default; }
 		{
 			id: "laser",
 			label: "Puntero láser",
-			key: "L"
+			key: "P"
 		}
 	];
+	/** The same tools with Cmd, which reach the bar even while the page is in use. Cmd+T always
+	*  opens a tab (Chrome keeps it for itself), so the text tool takes Ctrl+T. */
+	var CMD_TOOLS = {
+		f: "shape",
+		r: "marker",
+		l: "pen",
+		c: "capture"
+	};
+	var CTRL_TOOLS = { t: "text" };
 	var TOOL_ICONS = {
 		hand: "mouse-pointer-2",
 		pen: "pen-line",
@@ -1618,14 +1627,23 @@ button[disabled] { opacity: 0.35; cursor: default; }
 				}
 				return;
 			}
-			if (tool === "hand") return;
 			const t = e.composedPath()[0];
-			if (t?.isContentEditable || [
+			const typing = t?.isContentEditable || [
 				"INPUT",
 				"TEXTAREA",
 				"SELECT"
-			].includes(t?.tagName)) return;
+			].includes(t?.tagName);
 			const k = e.key.toLowerCase();
+			if (!typing && !e.altKey && !e.shiftKey) {
+				const command = e.metaKey && !e.ctrlKey ? CMD_TOOLS[k] : e.ctrlKey && !e.metaKey ? CTRL_TOOLS[k] : void 0;
+				if (command && !(command === "capture" && String(getSelection() ?? ""))) {
+					handled();
+					setTool(command);
+					return;
+				}
+			}
+			if (tool === "hand") return;
+			if (typing) return;
 			if ((e.metaKey || e.ctrlKey) && k === "z") {
 				handled();
 				if (e.shiftKey) redo();

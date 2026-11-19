@@ -1,5 +1,5 @@
 // The laser in the bar, with a real pointer: it draws a red dot and a trail that fades, adds no
-// marks, hides the cursor only once it moves, answers to L, and leaves nothing behind.
+// marks, hides the cursor only once it moves, answers to P, and leaves nothing behind.
 // Needs Chromium on port 9333 with the extension loaded and ./paginas on 127.0.0.1:8765.
 //
 //   node pruebas/laser.mjs
@@ -46,7 +46,7 @@ const state = () =>
   })()`);
 
 const button = await page.eval(`[...${ROOT}.querySelectorAll('button')].map((b) => b.getAttribute('aria-label')).find((l) => l.startsWith('Puntero láser'))`);
-check('el botón está en la barra', button === 'Puntero láser · L', button);
+check('el botón está en la barra', button === 'Puntero láser · P', button);
 
 await page.eval(`[...${ROOT}.querySelectorAll('button')].find((b) => b.getAttribute('aria-label').startsWith('Puntero láser')).click()`);
 await sleep(150);
@@ -83,15 +83,15 @@ await page.eval(`${ROOT}.querySelector('.surface').dispatchEvent(new PointerEven
 await sleep(450);
 check('al salir del área el punto se apaga', (await state()).red === 0, (await state()).red);
 
-await key('p');
+await key('l');
 await sleep(100);
 s = await state();
 check('otra herramienta quita el lienzo y devuelve el cursor', !s.canvas && s.cursor === 'crosshair', s);
 
-await key('l');
+await key('p');
 await sleep(100);
 s = await state();
-check('la tecla L lo vuelve a elegir', s.canvas && s.pressed[0]?.startsWith('Puntero láser'), s.pressed);
+check('la tecla P lo vuelve a elegir', s.canvas && s.pressed[0]?.startsWith('Puntero láser'), s.pressed);
 
 await page.eval(`[...${ROOT}.querySelectorAll('button')].find((b) => b.getAttribute('aria-label') === 'Cerrar').click()`);
 await sleep(150);
