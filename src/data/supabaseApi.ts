@@ -266,8 +266,8 @@ export function createSupabaseApi(sb: SupabaseClient): Api {
 
     // ---------- Inicio ----------
     async getHomeSettings() {
-      const row = check(await sb.from('home_settings').select('city_name, city_lat, city_lon, quotes, photos').maybeSingle()) as HomeSettings | null;
-      return row ?? { city_name: null, city_lat: null, city_lon: null, quotes: [], photos: [] };
+      const row = check(await sb.from('home_settings').select('city_name, city_lat, city_lon, quotes, photos, photo_rotation').maybeSingle()) as HomeSettings | null;
+      return row ?? { city_name: null, city_lat: null, city_lon: null, quotes: [], photos: [], photo_rotation: 'day' };
     },
     async saveHomeSettings(patch) {
       check(await sb.from('home_settings').upsert({ user_id: await userId(), ...patch }, { onConflict: 'user_id' }));

@@ -557,6 +557,13 @@ describe('inicio · ajustes y fotos', () => {
     await expect(as(USER_B, 'authenticated', () => db.query(`insert into public.home_settings (quotes) values ('{"text":"suelta"}'::jsonb)`))).rejects.toThrow();
   });
 
+  it('changes the Inicio photo daily by default and only at the known frequencies', async () => {
+    const row = await as(USER_B, 'authenticated', () => db.query<{ photo_rotation: string }>(`insert into public.home_settings (city_name) values ('Medellín') returning photo_rotation`));
+    expect(row.rows[0].photo_rotation).toBe('day');
+    for (const value of ['visit', 'hour', 'week']) await as(USER_B, 'authenticated', () => db.query(`update public.home_settings set photo_rotation = $1`, [value]));
+    await expect(as(USER_B, 'authenticated', () => db.query(`update public.home_settings set photo_rotation = 'minute'`))).rejects.toThrow();
+  });
+
   it('keeps home photos in a private bucket, one folder per user', async () => {
     const bucket = await db.query(`select public, allowed_mime_types from storage.buckets where id = 'home'`);
     expect(bucket.rows).toEqual([{ public: false, allowed_mime_types: ['image/jpeg', 'image/png', 'image/webp'] }]);

@@ -408,6 +408,7 @@ export function createDemoApi(): Api {
       { text: 'Un viaje de mil millas comienza con un solo paso.', author: 'Lao Tse' },
     ],
     photos: [],
+    photo_rotation: 'day',
   };
   const timerListeners = new Set<() => void>();
   const notifyTimer = () => timerListeners.forEach((fn) => fn());

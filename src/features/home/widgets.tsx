@@ -1,15 +1,17 @@
 // The calm row of Inicio: photo with the quote of the day, the time and the weather.
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Skeleton } from '@/components/ui';
 import { useHomePhotos, useHomeSettings, useNow } from '@/data/hooks';
 import { dayMonth, hhmm, weekdayName } from '@/lib/format';
-import { pickDaily, quoteSize } from './daily';
+import { nextVisit, pickDaily, pickTurn, quoteSize, rotationTurn } from './daily';
 import { arcPoint, sunState } from './sun';
 import { degrees, describeWeather, rangePosition, useWeather } from './weather';
 
 export function PhotoWidget({ now }: { now: Date }) {
   const settings = useHomeSettings();
-  const path = pickDaily(settings.data?.photos ?? [], now);
+  const [visit] = useState(nextVisit);
+  const path = pickTurn(settings.data?.photos ?? [], rotationTurn(settings.data?.photo_rotation ?? 'day', now, visit));
   const urls = useHomePhotos(path ? [path] : []);
   const url = path ? urls.data?.[path] : undefined;
   const quote = pickDaily(settings.data?.quotes ?? [], now);

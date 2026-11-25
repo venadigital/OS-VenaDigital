@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dayNumber, formatQuotes, parseQuotes, pickDaily, quoteSize } from './daily';
+import { dayNumber, formatQuotes, parseQuotes, pickDaily, pickTurn, quoteSize, rotationTurn } from './daily';
 
 describe('pickDaily', () => {
   const items = ['a', 'b', 'c'];
@@ -24,6 +24,39 @@ describe('pickDaily', () => {
 
   it('counts whole calendar days across a month change', () => {
     expect(dayNumber(new Date(2026, 11, 1)) - dayNumber(new Date(2026, 10, 30))).toBe(1);
+  });
+});
+
+describe('rotationTurn', () => {
+  const at = (d: number, h = 9) => new Date(2026, 10, d, h, 30);
+
+  it('changes every day by default, at local midnight', () => {
+    expect(rotationTurn('day', at(25, 0), 0)).toBe(rotationTurn('day', at(25, 23), 0));
+    expect(rotationTurn('day', at(26, 0), 0) - rotationTurn('day', at(25, 23), 0)).toBe(1);
+  });
+
+  it('changes every hour', () => {
+    expect(rotationTurn('hour', new Date(2026, 10, 25, 9, 0), 0)).toBe(rotationTurn('hour', new Date(2026, 10, 25, 9, 59), 0));
+    expect(rotationTurn('hour', at(25, 10), 0) - rotationTurn('hour', at(25, 9), 0)).toBe(1);
+    expect(rotationTurn('hour', at(26, 0), 0) - rotationTurn('hour', at(25, 23), 0)).toBe(1);
+  });
+
+  it('changes every week on Monday', () => {
+    // 23 Nov 2026 is a Monday.
+    expect(rotationTurn('week', at(23), 0)).toBe(rotationTurn('week', at(29, 23), 0));
+    expect(rotationTurn('week', at(30), 0) - rotationTurn('week', at(29, 23), 0)).toBe(1);
+  });
+
+  it('follows the visit count when it changes on each visit', () => {
+    expect(rotationTurn('visit', at(25), 7)).toBe(7);
+    expect(rotationTurn('visit', at(26), 8)).toBe(8);
+  });
+});
+
+describe('pickTurn', () => {
+  it('goes around the list in order and handles an empty one', () => {
+    expect(pickTurn([], 3)).toBeNull();
+    expect([0, 1, 2, 3].map((t) => pickTurn(['a', 'b', 'c'], t))).toEqual(['a', 'b', 'c', 'a']);
   });
 });
 

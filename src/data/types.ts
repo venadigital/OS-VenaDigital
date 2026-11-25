@@ -428,6 +428,9 @@ export type NewsItem = {
 // Inicio
 export type HomeQuote = { text: string; author: string | null };
 
+/** How often the Inicio photo changes: each time Inicio opens, every hour, day or week. */
+export type PhotoRotation = 'visit' | 'hour' | 'day' | 'week';
+
 /** What the person chose for Inicio: weather city, quotes and photos (paths in the `home` bucket). */
 export type HomeSettings = {
   city_name: string | null;
@@ -435,5 +438,6 @@ export type HomeSettings = {
   city_lon: number | null;
   quotes: HomeQuote[];
   photos: string[];
+  photo_rotation: PhotoRotation;
 };
 export type HomeSettingsInput = Partial<HomeSettings>;

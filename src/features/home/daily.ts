@@ -1,5 +1,6 @@
-// What rotates on Inicio: one photo and one quote per day, and the quotes as editable text.
-import type { HomeQuote } from '@/data/types';
+// What rotates on Inicio: the photo (as often as the person chose), one quote per day,
+// and the quotes as editable text.
+import type { HomeQuote, PhotoRotation } from '@/data/types';
 
 /** Limits kept by the database (see the home_settings migration). */
 export const MAX_PHOTOS = 60;
@@ -15,6 +16,45 @@ export function dayNumber(d: Date): number {
 export function pickDaily<T>(items: T[], date: Date): T | null {
   if (!items.length) return null;
   return items[dayNumber(date) % items.length];
+}
+
+export const PHOTO_ROTATIONS: { value: PhotoRotation; label: string }[] = [
+  { value: 'visit', label: 'Cada vez que abres Inicio' },
+  { value: 'hour', label: 'Cada hora' },
+  { value: 'day', label: 'Cada día' },
+  { value: 'week', label: 'Cada semana' },
+];
+
+/**
+ * Which turn of the rotation `date` falls in: hours or days on the person's own clock,
+ * weeks starting on Monday. For `visit` the turn is the count of times Inicio was opened.
+ */
+export function rotationTurn(rotation: PhotoRotation, date: Date, visit: number): number {
+  const day = dayNumber(date);
+  if (rotation === 'visit') return visit;
+  if (rotation === 'hour') return day * 24 + date.getHours();
+  // Day 0 (1 Jan 1970) was a Thursday; shifting by 3 makes each week start on Monday.
+  if (rotation === 'week') return Math.floor((day + 3) / 7);
+  return day;
+}
+
+/** One item per turn, going around the list in order. */
+export function pickTurn<T>(items: T[], turn: number): T | null {
+  if (!items.length) return null;
+  return items[((turn % items.length) + items.length) % items.length];
+}
+
+const VISIT_KEY = 'vd-home-photo-visit';
+
+/** Counts this opening of Inicio and returns the count; 0 when storage is unavailable. */
+export function nextVisit(): number {
+  try {
+    const n = (Number(localStorage.getItem(VISIT_KEY)) || 0) + 1;
+    localStorage.setItem(VISIT_KEY, String(n));
+    return n;
+  } catch {
+    return 0;
+  }
 }
 
 const WRAPPING_MARKS = /^["“”«»']+|["“”«»']+$/g;

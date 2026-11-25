@@ -1,12 +1,12 @@
 // "Inicio" in Ajustes: the weather city, the quotes and the photos that rotate on Inicio.
 import { useEffect, useRef, useState } from 'react';
 import { ImagePlus, MapPin, Search, X } from 'lucide-react';
-import { Button, Card, CardHead, Field, Input, Skeleton, Textarea } from '@/components/ui';
+import { Button, Card, CardHead, Field, Input, Select, Skeleton, Textarea } from '@/components/ui';
 import { useToast } from '@/components/Toast';
 import { useApi } from '@/data/ApiContext';
 import { qk, useApiMutation, useHomePhotos, useHomeSettings } from '@/data/hooks';
-import type { HomeQuote, HomeSettingsInput } from '@/data/types';
-import { formatQuotes, MAX_PHOTOS, parseQuotes } from './daily';
+import type { HomeQuote, HomeSettingsInput, PhotoRotation } from '@/data/types';
+import { formatQuotes, MAX_PHOTOS, parseQuotes, PHOTO_ROTATIONS } from './daily';
 import { preparePhoto } from './photo';
 import { searchCities, type City } from './weather';
 
@@ -31,7 +31,13 @@ export function HomeSettingsCard() {
         <div className="settings-home-grid">
           <CitySection name={s.city_name} busy={save.isPending} onPick={(c) => savePatch({ city_name: c.name, city_lat: c.lat, city_lon: c.lon })} />
           <QuotesSection quotes={s.quotes} busy={save.isPending} onSave={(quotes) => savePatch({ quotes })} />
-          <PhotosSection photos={s.photos} busy={save.isPending} onChange={(photos) => savePatch({ photos })} />
+          <PhotosSection
+            photos={s.photos}
+            rotation={s.photo_rotation}
+            busy={save.isPending}
+            onChange={(photos) => savePatch({ photos })}
+            onRotation={(photo_rotation) => savePatch({ photo_rotation })}
+          />
         </div>
       )}
     </Card>
@@ -131,7 +137,19 @@ function QuotesSection({ quotes, busy, onSave }: { quotes: HomeQuote[]; busy: bo
   );
 }
 
-function PhotosSection({ photos, busy, onChange }: { photos: string[]; busy: boolean; onChange: (photos: string[]) => Promise<boolean> }) {
+function PhotosSection({
+  photos,
+  rotation,
+  busy,
+  onChange,
+  onRotation,
+}: {
+  photos: string[];
+  rotation: PhotoRotation;
+  busy: boolean;
+  onChange: (photos: string[]) => Promise<boolean>;
+  onRotation: (rotation: PhotoRotation) => Promise<boolean>;
+}) {
   const api = useApi();
   const toast = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -177,6 +195,17 @@ function PhotosSection({ photos, busy, onChange }: { photos: string[]; busy: boo
       <Button icon={<ImagePlus size={15} />} className="self-start" disabled={busy || uploading || room <= 0} onClick={() => fileRef.current?.click()}>
         {uploading ? 'Subiendo…' : 'Subir fotos'}
       </Button>
+      {photos.length > 1 && (
+        <Field label="Cambiar la foto">
+          <Select value={rotation} disabled={busy} onChange={(e) => void onRotation(e.target.value as PhotoRotation)}>
+            {PHOTO_ROTATIONS.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      )}
     </div>
   );
 }
