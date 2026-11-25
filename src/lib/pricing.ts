@@ -24,7 +24,7 @@ const openai = (input: number, cached: number, output: number, cacheWrite = 0): 
   cache_write_1h: 0,
 });
 
-/** Reference API prices (USD per 1M tokens), checked 11 Nov 2026. */
+/** Reference API prices (USD per 1M tokens), checked 25 Nov 2026. */
 export const DEFAULT_PRICES: ModelPriceInput[] = [
   { model: 'claude-fable-5-2', ...claude(8, 40, 0.2) },
   { model: 'claude-fable-5-1', ...claude(10, 50, 0.25) },
@@ -44,6 +44,7 @@ export const DEFAULT_PRICES: ModelPriceInput[] = [
   { model: 'claude-haiku-5-5', ...claude(0.1, 0.5) },
   { model: 'claude-haiku-4-5', ...claude(1, 5) },
   // GPT-6.x rates are for prompts up to 272K tokens (longer ones cost more).
+  { model: 'gpt-6.2-astra', ...openai(8, 0.4, 40, 10) },
   { model: 'gpt-6.1-sol', ...openai(2, 0.1, 10, 2.5) },
   { model: 'gpt-6-astra', ...openai(10, 1, 50, 12.5) },
   { model: 'gpt-6-sol', ...openai(2, 0.2, 10, 2.5) },
